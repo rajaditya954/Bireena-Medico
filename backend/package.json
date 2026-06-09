@@ -1,0 +1,41 @@
+{
+  "name": "medico-hospital-backend",
+  "version": "2.0.0",
+  "description": "Hospital Management System Backend — Express + MongoDB + Socket.io",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "dev": "nodemon server.js",
+    "start": "node server.js",
+    "seed": "node script/seed.js",
+    "lint": "eslint ."
+  },
+  "keywords": [
+    "hospital",
+    "management",
+    "express",
+    "mongodb",
+    "socket.io"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cloudinary": "^1.40.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "express-rate-limit": "^7.1.5",
+    "joi": "^17.11.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.5.1",
+    "morgan": "^1.10.0",
+    "multer": "^1.4.5-lts.1",
+    "nodemailer": "^6.9.7",
+    "razorpay": "^2.9.2",
+    "socket.io": "^4.7.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.4"
+  }
+}

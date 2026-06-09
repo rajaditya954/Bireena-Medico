@@ -1,0 +1,6 @@
+{
+  "name": "Medico",
+  "description": "A comprehensive healthcare management system with role-based access control, secure authentication, and interactive dashboards for admins, doctors, and patients.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}

@@ -1,1 +1,2 @@
-# Bireena-Medico
+# Hospital management system
+
