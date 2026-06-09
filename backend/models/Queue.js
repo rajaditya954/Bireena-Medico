@@ -6,13 +6,20 @@ const QueueSchema = new mongoose.Schema(
     patientId: { type: mongoose.Schema.Types.ObjectId, ref: "Patient", required: true },
     doctorId: { type: mongoose.Schema.Types.ObjectId, ref: "Doctor", required: true },
     queueNumber: { type: Number, required: true },
-    status: { 
-      type: String, 
-      enum: ["waiting", "in-progress", "completed"], 
-      default: "waiting" 
+    tokenNumber: { type: Number },
+    currentPosition: { type: Number, default: 0 },
+    queueStatus: {
+      type: String,
+      enum: ["ACTIVE", "WAITING", "IN_PROGRESS", "COMPLETED", "CANCELLED"],
+      default: "ACTIVE",
+    },
+    status: {
+      type: String,
+      enum: ["waiting", "in-progress", "completed", "cancelled"],
+      default: "waiting",
     },
     estimatedWaitTime: { type: Number }, // minutes
-    checkedInAt: { type: Date },
+    calledAt: { type: Date },
     completedAt: { type: Date },
   },
   { timestamps: true }
