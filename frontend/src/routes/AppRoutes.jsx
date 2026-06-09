@@ -34,7 +34,8 @@ import EMR from "../pages/EMR";
 import Billing from "../pages/Billing";
 import Addtest from "../pages/lab/add-test";
 import TestManagementPage from "../pages/lab/tests";
-
+import AddMedicine from "../pages/clinic/AddMedicine";
+import ExpiredMedicine from "../pages/clinic/ExpiredMedicine";
 /* ===================================================== */
 /* DOCTOR PAGES */
 /* ===================================================== */
@@ -79,6 +80,7 @@ import ClinicHistory from "../pages/clinic/ClinicHistory";
 import ClinicBilling from "../pages/clinic/ClinicBilling";
 import MedicineInventory from "../pages/clinic/MedicineInventory";
 import MedicineDispense from "../pages/clinic/MedicineDispense";
+import Stocks from "../pages/clinic/StockMedicine"
 
 /* ===================================================== */
 /* ROLE BASED DASHBOARD REDIRECT */
@@ -176,10 +178,18 @@ export default function AppRoutes() {
           }
         />
         <Route
+          path="/clinic/stock"
+          element={
+            <Layout>
+              <Stocks />
+            </Layout>
+          }
+        />
+        <Route
           path="/lab/add-test"
           element={
             <Layout>
-              <Addtest />
+              <Addtest/>
             </Layout>
           }
         />
@@ -271,30 +281,8 @@ export default function AppRoutes() {
             </Layout>
           }
         />
-        <Route
-          path="/clinic/patients"
-          element={
-            <Layout>
-              <Patient />
-            </Layout>
-          }
-        />
-        <Route
-          path="/clinic/history"
-          element={
-            <Layout>
-              <ClinicHistory />
-            </Layout>
-          }
-        />
-        <Route
-          path="/clinic/billing"
-          element={
-            <Layout>
-              <ClinicBilling />
-            </Layout>
-          }
-        />
+        
+        
         <Route
           path="/clinic/dispense"
           element={
@@ -303,7 +291,23 @@ export default function AppRoutes() {
             </Layout>
           }
         />
+        <Route
+          path="/clinic/add-medicine"
+          element={
+            <Layout>
+              <AddMedicine />
+            </Layout>
+          }
+        />
       </Route>
+      <Route
+        path="/clinic/expired-medicines"
+        element={
+          <Layout>
+            <ExpiredMedicine />
+          </Layout>
+        }
+      />
 
       {/* ========== DOCTOR ROUTES (Doctor + Admin) ========== */}
       <Route element={<RoleGuard allowedRoles={[Role.DOCTOR, Role.ADMIN]} />}>
@@ -471,11 +475,23 @@ export default function AppRoutes() {
 
       {/* ========== CLINIC ROUTES (Clinic + Admin) ========== */}
       <Route element={<RoleGuard allowedRoles={[Role.CLINIC, Role.ADMIN]} />}>
-        <Route
+        
+        
+
+          <Route
           path="/clinic/dashboard"
           element={
             <Layout>
               <ClinicDashboard />
+            </Layout>
+          }
+        />
+        
+        <Route
+          path="/clinic/expired-medicines"
+          element={
+            <Layout>
+              <ExpiredMedicine />
             </Layout>
           }
         />
@@ -500,6 +516,14 @@ export default function AppRoutes() {
           element={
             <Layout>
               <ClinicBilling />
+            </Layout>
+          }
+        />
+        <Route
+          path="/clinic/stocks"
+          element={
+            <Layout>
+              <Stocks />
             </Layout>
           }
         />

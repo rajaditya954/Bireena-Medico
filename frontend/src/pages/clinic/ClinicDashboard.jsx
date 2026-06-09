@@ -192,7 +192,7 @@ export default function DistributorDashboard() {
       <div className="max-w-[1600px] mx-auto">
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-[#06402B] tracking-tight">Welcome, Distributor</h1>
+          <h1 className="text-2xl font-bold text-[#06402B] tracking-tight">Welcome</h1>
           <p className="text-gray-500 text-sm">Overview of inventory stock and request status.</p>
         </div>
 

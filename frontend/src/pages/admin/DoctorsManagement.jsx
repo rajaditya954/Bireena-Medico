@@ -1,225 +1,348 @@
-import React, { useState, useEffect } from "react";
-import { adminService } from "../../services/adminService";
+// src/pages/admin/AddDoctor.jsx
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { motion } from "motion/react";
+import {
+  ArrowLeft,
+  User,
+  Stethoscope,
+  Clock,
+  Calendar,
+  FileText,
+  Plus,
+  Trash2,
+  Save,
+  AlertCircle,
+  CheckCircle2,
+} from "lucide-react";
+import { cn } from "../../lib/utils";
+import { Button } from "../../components/common/Button";
 
-const DoctorsManagement = () => {
-  const [doctors, setDoctors] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [showForm, setShowForm] = useState(false);
+// ==================== Main Component ====================
+export default function AddDoctor() {
+  const navigate = useNavigate();
+
+  // Form state
   const [formData, setFormData] = useState({
-    name: "",
-    email: "",
+    fullName: "",
     specialization: "",
-    phone: "",
+    experience: "",
+    about: "",
   });
 
-  useEffect(() => {
-    fetchDoctors();
-  }, []);
+  // Time slots state
+  const [timeSlots, setTimeSlots] = useState([
+    { id: 1, from: "09:00", to: "13:00" },
+    { id: 2, from: "14:00", to: "18:00" },
+    { id: 3, from: "18:30", to: "21:00" },
+  ]);
 
-  const fetchDoctors = async () => {
-    try {
-      setLoading(true);
-      // TODO: Replace with actual API call
-      // const response = await adminService.getDoctors();
-      // setDoctors(response.data);
-      setDoctors([]);
-      setError(null);
-    } catch (err) {
-      setError(err.message);
-      console.error("Error fetching doctors:", err);
-    } finally {
-      setLoading(false);
+  // UI state
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+  const [submitSuccess, setSubmitSuccess] = useState("");
+
+  // Specializations (common list)
+  const specializations = [
+    "Cardiology",
+    "Neurology",
+    "Orthopedics",
+    "Pediatrics",
+    "Dermatology",
+    "Psychiatry",
+    "Radiology",
+    "General Medicine",
+    "Gastroenterology",
+    "Endocrinology",
+    "Ophthalmology",
+    "ENT",
+  ];
+
+  const handleChange = (field, value) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const addTimeSlot = () => {
+    const newId = Math.max(...timeSlots.map(s => s.id), 0) + 1;
+    setTimeSlots([...timeSlots, { id: newId, from: "09:00", to: "13:00" }]);
+  };
+
+  const removeTimeSlot = (id) => {
+    if (timeSlots.length === 1) {
+      setSubmitError("At least one time slot is required.");
+      return;
     }
+    setTimeSlots(timeSlots.filter(slot => slot.id !== id));
   };
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+  const updateTimeSlot = (id, field, value) => {
+    setTimeSlots(timeSlots.map(slot =>
+      slot.id === id ? { ...slot, [field]: value } : slot
+    ));
   };
 
-  const handleAddDoctor = async (e) => {
+  const validateForm = () => {
+    if (!formData.fullName.trim()) return "Full name is required";
+    if (!formData.specialization) return "Specialization is required";
+    if (!formData.experience || isNaN(parseFloat(formData.experience)) || parseFloat(formData.experience) < 0)
+      return "Valid experience in years is required";
+    if (timeSlots.length === 0) return "At least one time slot is required";
+    return null;
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    const error = validateForm();
+    if (error) {
+      setSubmitError(error);
+      return;
+    }
+
+    setIsSubmitting(true);
+    setSubmitError("");
+    setSubmitSuccess("");
+
     try {
-      // TODO: Replace with actual API call
-      // await adminService.addDoctor(formData);
-      setFormData({ name: "", email: "", specialization: "", phone: "" });
-      setShowForm(false);
-      fetchDoctors();
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Build doctor object
+      const newDoctor = {
+        id: `DOC-${Date.now()}`,
+        name: formData.fullName,
+        specialization: formData.specialization,
+        experience: parseFloat(formData.experience),
+        about: formData.about,
+        availabilitySlots: timeSlots,
+        createdAt: new Date().toISOString(),
+      };
+
+      // Save to localStorage
+      const existingDoctors = JSON.parse(localStorage.getItem("medico_doctors") || "[]");
+      localStorage.setItem("medico_doctors", JSON.stringify([...existingDoctors, newDoctor]));
+
+      setSubmitSuccess("Doctor added successfully!");
+      setTimeout(() => {
+        navigate("/admin/doctors");
+      }, 1500);
     } catch (err) {
-      setError(err.message);
-      console.error("Error adding doctor:", err);
+      setSubmitError("Failed to add doctor. Please try again.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
-
-  const handleDeleteDoctor = async (doctorId) => {
-    if (window.confirm("Are you sure you want to delete this doctor?")) {
-      try {
-        // TODO: Replace with actual API call
-        // await adminService.deleteDoctor(doctorId);
-        fetchDoctors();
-      } catch (err) {
-        setError(err.message);
-        console.error("Error deleting doctor:", err);
-      }
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600"></div>
-      </div>
-    );
-  }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-gray-900">Doctors Management</h1>
-        <button
-          onClick={() => setShowForm(!showForm)}
-          className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition"
-        >
-          {showForm ? "Cancel" : "Add Doctor"}
-        </button>
+    <div className="space-y-8 pb-12">
+      {/* Header with back button */}
+      <div>
+        
+        <h1 className="text-3xl font-black text-primary-dark tracking-tighter italic">Add Doctor</h1>
+        <p className="text-gray-400 text-xs font-bold uppercase tracking-widest mt-1">
+          Doctors &gt; Add Doctor
+        </p>
       </div>
 
-      {error && (
-        <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
-          {error}
+      <form onSubmit={handleSubmit} className="space-y-8">
+        {/* Two column layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Left column */}
+          <div className="space-y-6">
+            {/* Basic Information Card */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden"
+            >
+              <div className="p-6 border-b border-gray-100 bg-gradient-to-r from-primary/5 to-transparent">
+                <h2 className="text-xl font-black text-slate-800 flex items-center gap-2">
+                  <User className="w-5 h-5 text-primary" />
+                  Basic Information
+                </h2>
+              </div>
+              <div className="p-6 space-y-5">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-black text-gray-400 uppercase tracking-wider">
+                    Full Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Enter full name"
+                    className="w-full h-12 px-4 bg-gray-50 border-none rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-primary/20"
+                    value={formData.fullName}
+                    onChange={(e) => handleChange("fullName", e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-black text-gray-400 uppercase tracking-wider">
+                    Specialization <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    className="w-full h-12 px-4 bg-gray-50 border-none rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-primary/20"
+                    value={formData.specialization}
+                    onChange={(e) => handleChange("specialization", e.target.value)}
+                    required
+                  >
+                    <option value="">Select specialization</option>
+                    {specializations.map(spec => (
+                      <option key={spec} value={spec}>{spec}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-black text-gray-400 uppercase tracking-wider">
+                    Experience (Years) <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    step="0.5"
+                    placeholder="Enter years of experience"
+                    className="w-full h-12 px-4 bg-gray-50 border-none rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-primary/20"
+                    value={formData.experience}
+                    onChange={(e) => handleChange("experience", e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+            </motion.div>
+          </div>
+
+          {/* Right column */}
+          <div className="space-y-6">
+            {/* About Doctor Card */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.05 }}
+              className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden"
+            >
+              <div className="p-6 border-b border-gray-100 bg-gradient-to-r from-primary/5 to-transparent">
+                <h2 className="text-xl font-black text-slate-800 flex items-center gap-2">
+                  <FileText className="w-5 h-5 text-primary" />
+                  About Doctor
+                </h2>
+              </div>
+              <div className="p-6">
+                <textarea
+                  rows={4}
+                  placeholder="Enter brief description about the doctor..."
+                  className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-primary/20 resize-none"
+                  value={formData.about}
+                  onChange={(e) => handleChange("about", e.target.value)}
+                />
+              </div>
+            </motion.div>
+          </div>
         </div>
-      )}
 
-      {showForm && (
-        <form
-          onSubmit={handleAddDoctor}
-          className="bg-white p-6 rounded-lg shadow-md space-y-4"
+        {/* Availability Slots Card (full width) */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden"
         >
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Name
-            </label>
-            <input
-              type="text"
-              name="name"
-              value={formData.name}
-              onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-emerald-500"
-              required
-            />
+          <div className="p-6 border-b border-gray-100 bg-gradient-to-r from-primary/5 to-transparent">
+            <h2 className="text-xl font-black text-slate-800 flex items-center gap-2">
+              <Clock className="w-5 h-5 text-primary" />
+              Availability Slots
+            </h2>
+            <p className="text-gray-400 text-xs font-medium mt-1">
+              Add available time slots for the doctor.
+            </p>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Email
-            </label>
-            <input
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-emerald-500"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Specialization
-            </label>
-            <input
-              type="text"
-              name="specialization"
-              value={formData.specialization}
-              onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-emerald-500"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Phone
-            </label>
-            <input
-              type="tel"
-              name="phone"
-              value={formData.phone}
-              onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-emerald-500"
-              required
-            />
-          </div>
-          <button
-            type="submit"
-            className="w-full px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition"
-          >
-            Add Doctor
-          </button>
-        </form>
-      )}
-
-      <div className="bg-white rounded-lg shadow-md overflow-hidden">
-        {doctors.length === 0 ? (
-          <div className="p-6 text-center text-gray-500">
-            No doctors found. Add one to get started.
-          </div>
-        ) : (
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
-                  Name
-                </th>
-                <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
-                  Email
-                </th>
-                <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
-                  Specialization
-                </th>
-                <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
-                  Phone
-                </th>
-                <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {doctors.map((doctor) => (
-                <tr
-                  key={doctor._id}
-                  className="border-b border-gray-200 hover:bg-gray-50"
+          <div className="p-6 space-y-4">
+            {timeSlots.map((slot) => (
+              <div
+                key={slot.id}
+                className="flex flex-wrap items-center gap-3 p-4 bg-gray-50 rounded-xl"
+              >
+                <div className="flex-1 min-w-[120px]">
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider block mb-1">
+                    From
+                  </label>
+                  <input
+                    type="time"
+                    className="w-full h-10 px-3 bg-white border border-gray-200 rounded-lg text-sm font-medium outline-none focus:ring-2 focus:ring-primary/20"
+                    value={slot.from}
+                    onChange={(e) => updateTimeSlot(slot.id, "from", e.target.value)}
+                  />
+                </div>
+                <div className="text-gray-400 font-bold text-sm">to</div>
+                <div className="flex-1 min-w-[120px]">
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider block mb-1">
+                    To
+                  </label>
+                  <input
+                    type="time"
+                    className="w-full h-10 px-3 bg-white border border-gray-200 rounded-lg text-sm font-medium outline-none focus:ring-2 focus:ring-primary/20"
+                    value={slot.to}
+                    onChange={(e) => updateTimeSlot(slot.id, "to", e.target.value)}
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => removeTimeSlot(slot.id)}
+                  className="mt-5 w-8 h-8 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 transition-all flex items-center justify-center"
                 >
-                  <td className="px-6 py-4 text-sm text-gray-900">
-                    {doctor.name}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-600">
-                    {doctor.email}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-600">
-                    {doctor.specialization}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-600">
-                    {doctor.phone}
-                  </td>
-                  <td className="px-6 py-4 text-sm">
-                    <button
-                      onClick={() => handleDeleteDoctor(doctor._id)}
-                      className="text-red-600 hover:text-red-900 transition"
-                    >
-                      Delete
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            ))}
+
+            <button
+              type="button"
+              onClick={addTimeSlot}
+              className="w-full py-3 rounded-xl border-2 border-dashed border-gray-200 text-gray-500 hover:border-primary hover:text-primary transition-all flex items-center justify-center gap-2 text-sm font-medium"
+            >
+              <Plus className="w-4 h-4" />
+              Add Time Slot
+            </button>
+          </div>
+        </motion.div>
+
+        {/* Submit Messages */}
+        {submitError && (
+          <div className="bg-red-50 rounded-xl p-4 text-red-700 text-sm flex items-center gap-2">
+            <AlertCircle className="w-4 h-4" />
+            {submitError}
+          </div>
         )}
-      </div>
+        {submitSuccess && (
+          <div className="bg-emerald-50 rounded-xl p-4 text-emerald-700 text-sm flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4" />
+            {submitSuccess}
+          </div>
+        )}
+
+        {/* Form Actions */}
+        <div className="flex gap-4 justify-end bg-white/80 backdrop-blur-sm p-4 rounded-2xl border border-gray-100 shadow-lg">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => navigate("/admin/doctors")}
+            className="h-12 px-6 rounded-xl"
+          >
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            disabled={isSubmitting}
+            className="h-12 px-8 rounded-xl shadow-lg shadow-primary/20 flex items-center gap-2"
+          >
+            {isSubmitting ? (
+              <RefreshCw className="w-4 h-4 animate-spin" />
+            ) : (
+              <Save className="w-4 h-4" />
+            )}
+            {isSubmitting ? "Saving..." : "Save Doctor"}
+          </Button>
+        </div>
+      </form>
     </div>
   );
-};
+}
 
-export default DoctorsManagement;
+// Add missing import for RefreshCw if not already present
+import { RefreshCw } from "lucide-react";

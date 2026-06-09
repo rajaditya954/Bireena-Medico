@@ -20,6 +20,7 @@ import {
   Upload,
   Calendar,
   Receipt,
+  UserPlus,
 } from "lucide-react";
 
 import { cn } from "../../lib/utils";
@@ -46,7 +47,8 @@ export default function Sidebar({ user, isSidebarOpen, handleLogout }) {
         return [
           { name: "Doctor Dashboard", path: "/doctor/dashboard", icon: LayoutDashboard },
           {
-            name: "All Patients", path: "/doctor/patients", icon: Users},
+            name: "All Patients", path: "/doctor/patients", icon: Users
+          },
           {
             name: "Patient", path: "/doctor/patients", icon: Users,
             hasSubmenu: true,
@@ -88,18 +90,27 @@ export default function Sidebar({ user, isSidebarOpen, handleLogout }) {
           { name: "Clinic Dashboard", path: "/clinic/dashboard", icon: LayoutDashboard },
           { name: "Add Medicine", path: "/clinic/Patients", icon: Pill },
           { name: "Billing", path: "/clinic/billing", icon: Receipt },
+          { name: "Stocks", path: "/clinic/stocks", icon: BarChart3 },
           { name: "History", path: "/clinic/history", icon: BarChart3 },
+
         ];
 
       case Role.ADMIN:
       default:
         return [
           { name: "Admin Dashboard", path: "/admin/dashboard", icon: LayoutDashboard },
-          { name: "All Patients", path: "/patients", icon: Users },
+          { name: "Doctor Dashboard", path: "/doctor/dashboard", icon: LayoutDashboard },
           { name: "Doctor Management", path: "/admin/doctors", icon: Stethoscope },
-          { name: "Appointments", path: "/appointments", icon: ClipboardList },
-          { name: "Add Lab Test", path: "/lab/add-test", icon: Plus },
-          { name: "Test Catalog", path: "/lab/tests", icon: Plus },
+          { name: "All Patients", path: "/patients", icon: Users },
+          { name: "Appointment Dashboard", path: "/appointment/dashboard", icon: LayoutDashboard },
+          {
+            name: "Lab Dashboard", path: "/lab/dashboard", icon: LayoutDashboard, hasSubmenu: true, submenu: [
+              { name: "Lab Dashboard", path: "/lab/dashboard" },
+              { name: "Test Catalog", path: "/lab/tests" },
+              { name: "Add Lab Test", path: "/lab/add-test" },
+            ]
+          },
+
           {
             name: "Dispensary",
             icon: Pill,
@@ -107,10 +118,13 @@ export default function Sidebar({ user, isSidebarOpen, handleLogout }) {
             submenu: [
               { name: "Medicine Inventory", path: "/clinic/dashboard" },
               { name: "Add Medicine", path: "/clinic/add-medicine" },
+              { name: "Expired Medicines", path: "/clinic/expired-medicines" },
+              { name: "Stocks", path: "/clinic/stock", icon: BarChart3 },
+
             ],
           },
           { name: "User Management", path: "/admin/users", icon: ShieldCheck },
-          { name: "Analytics", path: "/admin/analytics", icon: BarChart3 },
+          { name: "Add User", path: "/admin/roles", icon: UserPlus },
           { name: "Settings", path: "/settings", icon: Settings },
         ];
     }
