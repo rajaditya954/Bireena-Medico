@@ -1,30 +1,32 @@
-import joi from "joi";
+// backend/validators/payment.validator.js
+import { body, param, query } from "express-validator";
 
-export const paymentSchema = joi.object({
-  invoiceId: joi.string().required(),
-  patientId: joi.string().required(),
-  amount: joi.number().required().min(0),
-  paymentMethod: joi.string().valid("credit_card", "debit_card", "upi", "net_banking", "cash", "razorpay"),
-  transactionId: joi.string(),
-  razorpayPaymentId: joi.string(),
-  razorpayOrderId: joi.string(),
-  status: joi.string().valid("pending", "success", "failed", "refunded"),
-});
+export const validateCreateOrder = [
+  body("amount")
+    .isNumeric().withMessage("Amount must be a number")
+    .custom(v => v > 0).withMessage("Amount must be greater than 0"),
+  body("currency")
+    .optional()
+    .isIn(["INR", "USD"]).withMessage("Unsupported currency"),
+];
 
-export const validatePaymentInput = (req, res, next) => {
-  const { error, value } = paymentSchema.validate(req.body, {
-    abortEarly: false,
-    stripUnknown: true,
-  });
+export const validateCreatePayment = [
+  body("invoiceId").notEmpty().withMessage("invoiceId is required"),
+  body("patientId").notEmpty().withMessage("patientId is required"),
+  body("amount").isNumeric().withMessage("Amount must be numeric"),
+  body("paymentMethod")
+    .isIn(["cash", "insurance", "razorpay", "upi", "card", "netbanking", "other"])
+    .withMessage("Invalid payment method"),
+];
 
-  if (error) {
-    const errorMessages = error.details.map((detail) => ({
-      field: detail.path.join("."),
-      message: detail.message,
-    }));
-    return res.status(400).json({ error: "Validation failed", details: errorMessages });
-  }
+export const validateVerifyPayment = [
+  param("paymentId").notEmpty().withMessage("paymentId param is required"),
+  body("razorpayPaymentId").notEmpty().withMessage("razorpayPaymentId is required"),
+  body("razorpayOrderId").notEmpty().withMessage("razorpayOrderId is required"),
+  body("signature").notEmpty().withMessage("signature is required"),
+];
 
-  req.body = value;
-  next();
-};
+export const validateStatistics = [
+  query("startDate").notEmpty().isISO8601().withMessage("startDate must be a valid date"),
+  query("endDate").notEmpty().isISO8601().withMessage("endDate must be a valid date"),
+];

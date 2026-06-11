@@ -1,35 +1,50 @@
+// backend/models/Payment.js
 import mongoose from "mongoose";
 
-const PaymentSchema = new mongoose.Schema(
+const paymentSchema = new mongoose.Schema(
   {
-    paymentId: { type: String, unique: true, index: true },
-    invoiceId: { type: mongoose.Schema.Types.ObjectId, ref: "Invoice", required: true },
-    patientId: { type: mongoose.Schema.Types.ObjectId, ref: "Patient", required: true },
-    amount: { type: Number, required: true },
-    billingId: { type: mongoose.Schema.Types.ObjectId, ref: "Billing" },
-    paymentMethod: {
-      type: String,
-      enum: ["CASH", "UPI", "CARD", "NETBANKING", "INSURANCE", "credit_card", "debit_card", "razorpay"],
+    invoiceId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Invoice",
       required: true,
     },
-    transactionId: { type: String, unique: true },
-    razorpayPaymentId: String,
-    razorpayOrderId: String,
+    patientId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Patient",
+      required: true,
+    },
+    amount: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+    paymentMethod: {
+      type: String,
+      enum: ["cash", "insurance", "razorpay", "upi", "card", "netbanking", "other"],
+      default: "cash",
+    },
     status: {
       type: String,
       enum: ["pending", "success", "failed", "refunded"],
       default: "pending",
     },
-    paymentStatus: {
-      type: String,
-      enum: ["SUCCESS", "PENDING", "FAILED", "REFUNDED"],
-      default: "PENDING",
-    },
-    failureReason: String,
-    paidAt: { type: Date },
-    paymentDate: Date,
+    // Razorpay-specific fields
+    transactionId:      { type: String, default: "" },   // razorpay_payment_id
+    razorpayPaymentId:  { type: String, default: "" },
+    razorpayOrderId:    { type: String, default: "" },
+    razorpaySignature:  { type: String, default: "" },
+
+    paymentDate:  { type: Date },
+    failureReason:{ type: String, default: "" },
+    notes:        { type: String, default: "" },
   },
   { timestamps: true }
 );
 
-export default mongoose.model("Payment", PaymentSchema);
+// Index for fast lookups
+paymentSchema.index({ patientId: 1 });
+paymentSchema.index({ invoiceId: 1 });
+paymentSchema.index({ razorpayOrderId: 1 });
+paymentSchema.index({ status: 1 });
+
+export default mongoose.model("Payment", paymentSchema);

@@ -1,47 +1,216 @@
+// frontend/src/lib/api.js
+
+import axios from "axios";
 import { reportsStore } from "./reports-store.js";
 import { testsStore } from "./tests-store.js";
-// Backend API client. Configure VITE_API_URL in .env (default http://localhost:5000/api)
-const BASE = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+
+// ─────────────────────────────────────────────────────────────
+// Config
+// ─────────────────────────────────────────────────────────────
+
+const BASE_URL =
+  import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
 const TOKEN_KEY = "aarogya_token";
-export const getToken = () => localStorage.getItem(TOKEN_KEY);
-export const setToken = (t) => (t ? localStorage.setItem(TOKEN_KEY, t) : localStorage.removeItem(TOKEN_KEY));
 
-async function request(path, options = {}) {
-  const headers = { "Content-Type": "application/json", ...(options.headers || {}) };
-  const token = getToken();
-  if (token) headers.Authorization = `Bearer ${token}`;
-  const res = await fetch(`${BASE}${path}`, { ...options, headers });
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new Error(`API ${res.status}: ${text || res.statusText}`);
+export const getToken = () => localStorage.getItem(TOKEN_KEY);
+
+export const setToken = (token) => {
+  if (token) {
+    localStorage.setItem(TOKEN_KEY, token);
+  } else {
+    localStorage.removeItem(TOKEN_KEY);
   }
-  return res.json();
-}
+};
+
+// ─────────────────────────────────────────────────────────────
+// Axios Instance
+// ─────────────────────────────────────────────────────────────
+
+const axiosInstance = axios.create({
+  baseURL: BASE_URL,
+  timeout: 15000,
+  headers: {
+    "Content-Type": "application/json",
+  },
+});
+
+// ─────────────────────────────────────────────────────────────
+// Request Interceptor
+// ─────────────────────────────────────────────────────────────
+
+axiosInstance.interceptors.request.use(
+  (config) => {
+    const token = getToken();
+
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+// ─────────────────────────────────────────────────────────────
+// Response Interceptor
+// ─────────────────────────────────────────────────────────────
+
+axiosInstance.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const message =
+      error.response?.data?.message ||
+      error.response?.data?.error ||
+      error.message ||
+      "Network Error";
+
+    return Promise.reject(new Error(message));
+  }
+);
 
 export const api = {
-  // Auth
-  register: (data) => request("/auth/register", { method: "POST", body: JSON.stringify(data) }),
-  login: (data) => request("/auth/login", { method: "POST", body: JSON.stringify(data) }),
-  me: () => request("/auth/me"),
+  // AUTH
+  login: (data) => axiosInstance.post("/auth/login", data),
+  register: (data) => axiosInstance.post("/auth/register", data),
+  logout: () => axiosInstance.post("/auth/logout"),
+  me: () => axiosInstance.get("/auth/me"),
 
-  // Patients
-  listPatients: () => request("/patients"),
-  // Appointments
-  listAppointments: (patientId) =>
-    request(`/appointments${patientId ? `?patient=${patientId}` : ""}`),
-  // Services
-  listServices: () => request("/services"),
-  // Bills
-  listBills: () => request("/bills"),
-  getBill: (id) => request(`/bills/${id}`),
-  createBill: (data) => request("/bills", { method: "POST", body: JSON.stringify(data) }),
-  deleteBill: (id) => request(`/bills/${id}`, { method: "DELETE" }),
-  payBill: (id, data) => request(`/bills/${id}/payments`, { method: "POST", body: JSON.stringify(data) }),
+  // PATIENTS
+  getPatients: (params) => axiosInstance.get("/patients", { params }),
+  getPatientById: (id) => axiosInstance.get(`/patients/${id}`),
+  createPatient: (data) => axiosInstance.post("/patients", data),
+  updatePatient: (id, data) => axiosInstance.put(`/patients/${id}`, data),
+  deletePatient: (id) => axiosInstance.delete(`/patients/${id}`),
 
-  // Reports
+  // APPOINTMENTS
+  getAppointments: (params) =>
+    axiosInstance.get("/appointments", { params }),
+  getAppointmentById: (id) =>
+    axiosInstance.get(`/appointments/${id}`),
+  createAppointment: (data) =>
+    axiosInstance.post("/appointments", data),
+  updateAppointment: (id, data) =>
+    axiosInstance.put(`/appointments/${id}`, data),
+  deleteAppointment: (id) =>
+    axiosInstance.delete(`/appointments/${id}`),
+
+  // SERVICES
+  listServices: () => axiosInstance.get("/services"),
+
+  // BILLS
+  listBills: () => axiosInstance.get("/bills"),
+  getBill: (id) => axiosInstance.get(`/bills/${id}`),
+  createBill: (data) => axiosInstance.post("/bills", data),
+  deleteBill: (id) => axiosInstance.delete(`/bills/${id}`),
+  payBill: (id, data) =>
+    axiosInstance.post(`/bills/${id}/payments`, data),
+
+  // BILLING
+  createBilling: (data) =>
+    axiosInstance.post("/billings", data),
+
+  getBillingById: (id) =>
+    axiosInstance.get(`/billings/${id}`),
+
+  updateBilling: (id, data) =>
+    axiosInstance.put(`/billings/${id}`, data),
+
+  getBillingByPatient: (id) =>
+    axiosInstance.get(`/billings/patient/${id}`),
+
+  generateInvoice: (billingId) =>
+    axiosInstance.post(`/billings/${billingId}/invoice`),
+
+  // INVOICES
+  getInvoiceById: (id) =>
+    axiosInstance.get(`/invoices/${id}`),
+
+  // PAYMENTS
+  createRazorpayOrder: (data) =>
+    axiosInstance.post("/payments/order", data),
+
+  createPayment: (data) =>
+    axiosInstance.post("/payments", data),
+
+  verifyPayment: (paymentId, data) =>
+    axiosInstance.post(
+      `/payments/${paymentId}/verify`,
+      data
+    ),
+
+  getPaymentById: (id) =>
+    axiosInstance.get(`/payments/${id}`),
+
+  getPatientPayments: (patientId) =>
+    axiosInstance.get(`/payments/patient/${patientId}`),
+
+  refundPayment: (id, data) =>
+    axiosInstance.post(`/payments/${id}/refund`, data),
+
+  getPaymentStatistics: (start, end) =>
+    axiosInstance.get(
+      `/payments/statistics?startDate=${start}&endDate=${end}`
+    ),
+
+  // DOCTORS
+  getDoctors: (params) =>
+    axiosInstance.get("/doctors", { params }),
+
+  getDoctorById: (id) =>
+    axiosInstance.get(`/doctors/${id}`),
+
+  createDoctor: (data) =>
+    axiosInstance.post("/doctors", data),
+
+  updateDoctor: (id, data) =>
+    axiosInstance.put(`/doctors/${id}`, data),
+
+  // LABORATORY
+  getLabTests: (params) =>
+    axiosInstance.get("/laboratory/tests", { params }),
+
+  createLabTest: (data) =>
+    axiosInstance.post("/laboratory/tests", data),
+
+  getLabReports: (params) =>
+    axiosInstance.get("/laboratory/reports", { params }),
+
+  uploadLabReport: (data) =>
+    axiosInstance.post("/laboratory/reports", data),
+
+  // PHARMACY
+  getMedicines: (params) =>
+    axiosInstance.get("/pharmacy/medicines", { params }),
+
+  addMedicine: (data) =>
+    axiosInstance.post("/pharmacy/medicines", data),
+
+  dispenseMedicine: (data) =>
+    axiosInstance.post("/pharmacy/dispense", data),
+
+  // NOTIFICATIONS
+  getNotifications: () =>
+    axiosInstance.get("/notifications"),
+
+  markRead: (id) =>
+    axiosInstance.put(`/notifications/${id}/read`),
+
+  markAllRead: () =>
+    axiosInstance.put("/notifications/read-all"),
+
+  // ANALYTICS
+  getDashboardStats: (params) =>
+    axiosInstance.get("/analytics/dashboard", { params }),
+
+  getRevenueStats: (params) =>
+    axiosInstance.get("/analytics/revenue", { params }),
+
+  // REPORTS
   reportSummary: (from, to) =>
-    request(`/reports/summary${from || to ? `?from=${from || ""}&to=${to || ""}` : ""}`),
+    axiosInstance.get("/reports/summary", {
+      params: { from, to },
+    }),
 };
 // Simulate API delays for realistic UX
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
