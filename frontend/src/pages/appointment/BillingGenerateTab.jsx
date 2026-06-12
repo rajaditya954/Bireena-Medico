@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import toast from "react-hot-toast";
 import { Search, Trash2, Plus, Loader2 } from "lucide-react";
 import { cn } from "../../lib/utils";
-import { getTodayAppointments } from "../../services/appointmentApi";
+import * as api from "../../services/appointmentApi";
 import { api as backendApi } from "../../lib/api";
 
 // ─── Constants ──────────────────────────────────────────────────────────────
@@ -20,7 +20,7 @@ const LAB_TESTS = [
 ];
 const PAY_METHODS = ["Cash", "Insurance", "Razorpay"];
 
-// ─── Print Bill ──────────────────────────────────────────────────────────────
+// ─── Print Bill (HTML + auto‑print) ─────────────────────────────────────────
 function openPrintBill({
   apt, consultations, labTests, followupCharges, labDiscount,
   serviceMode, subtotal, discount, tax, totalAmount, notes,
@@ -34,28 +34,34 @@ function openPrintBill({
 
   const doctorRows = (serviceMode === "both" || serviceMode === "doctor")
     ? consultations.map(c => `<tr>
-        <td>${c.name}</td><td>${c.doctor} · ${c.type}</td>
+        <td>${c.name}</td>
+        <td>${c.doctor} · ${c.type}</td>
         <td class="num">1</td>
         <td class="num">₹${(c.amount || 0).toFixed(2)}</td>
         <td class="num">₹${(c.amount || 0).toFixed(2)}</td>
       </tr>`).join("") : "";
 
   const followupRow = followupCharges > 0
-    ? `<tr><td>Follow-up Charges</td><td>Additional consultation</td>
+    ? `<tr>
+        <td>Follow-up Charges</td>
+        <td>Additional consultation</td>
         <td class="num">1</td>
         <td class="num">₹${followupCharges.toFixed(2)}</td>
-        <td class="num">₹${followupCharges.toFixed(2)}</td></tr>` : "";
+        <td class="num">₹${followupCharges.toFixed(2)}</td>
+      </tr>` : "";
 
   const labRows = (serviceMode === "both" || serviceMode === "lab")
     ? labTests.map(t => `<tr>
-        <td>${t.name}</td><td>${t.category}</td>
+        <td>${t.name}</td>
+        <td>${t.category}</td>
         <td class="num">1</td>
         <td class="num">₹${(t.price || 0).toFixed(2)}</td>
         <td class="num">₹${(t.price || 0).toFixed(2)}</td>
       </tr>`).join("") : "";
 
   const labDiscountRow = labDiscount > 0
-    ? `<tr class="disc"><td colspan="4" class="num">Lab Discount</td><td class="num">−₹${labDiscount.toFixed(2)}</td></tr>` : "";
+    ? `<tr class="disc"><td colspan="4" class="num">Lab Discount</td><td class="num">−₹${labDiscount.toFixed(2)}</td></tr>`
+    : "";
 
   const paySection = (payMethod === "Razorpay" && razorpayPaymentId)
     ? `<div class="pay-box">
@@ -162,29 +168,29 @@ td{padding:7px 8px;border-bottom:1px solid #f0f0f0;font-size:12px}
 
 // ─── Component ───────────────────────────────────────────────────────────────
 export default function BillingGenerateTab({ onBillGenerated }) {
-  const [searchTerm,      setSearchTerm]      = useState("");
-  const [selectedApt,     setSelectedApt]     = useState(null);
-  const [appointments,    setAppointments]    = useState([]);
-  const [serviceMode,     setServiceMode]     = useState("both");
-  const [consultations,   setConsultations]   = useState([
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedApt, setSelectedApt] = useState(null);
+  const [appointments, setAppointments] = useState([]);
+  const [serviceMode, setServiceMode] = useState("both");
+  const [consultations, setConsultations] = useState([
     { name: "Consultation Fee", doctor: DOCTORS_LIST[0].name, type: DOCTORS_LIST[0].type, amount: DOCTORS_LIST[0].fee },
   ]);
-  const [labTests,        setLabTests]        = useState([]);
-  const [labDiscount,     setLabDiscount]     = useState(0);
-  const [notes,           setNotes]           = useState("");
-  const [payMethod,       setPayMethod]       = useState("Cash");
-  const [payReceived,     setPayReceived]     = useState("");
+  const [labTests, setLabTests] = useState([]);
+  const [labDiscount, setLabDiscount] = useState(0);
+  const [notes, setNotes] = useState("");
+  const [payMethod, setPayMethod] = useState("Cash");
+  const [payReceived, setPayReceived] = useState("");
   const [followupCharges, setFollowupCharges] = useState(0);
-  const [generating,      setGenerating]      = useState(false);
+  const [generating, setGenerating] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
-  const [paymentStatus,   setPaymentStatus]   = useState("pending");   // "pending" | "success" | "failed"
-  const [razorpayOrderId,   setRazorpayOrderId]   = useState("");
+  const [paymentStatus, setPaymentStatus] = useState("pending");
+  const [razorpayOrderId, setRazorpayOrderId] = useState("");
   const [razorpayPaymentId, setRazorpayPaymentId] = useState("");
   const [razorpaySignature, setRazorpaySignature] = useState("");
-  const [paymentMessage,    setPaymentMessage]    = useState("");
+  const [paymentMessage, setPaymentMessage] = useState("");
 
   useEffect(() => {
-    getTodayAppointments("all")
+    api.getTodayAppointments("all")
       .then(r => setAppointments(r.data?.data || []))
       .catch(() => setAppointments([]));
   }, []);
@@ -192,11 +198,7 @@ export default function BillingGenerateTab({ onBillGenerated }) {
   const filteredApts = (appointments || []).filter(a => {
     if (!searchTerm) return true;
     const q = searchTerm.toLowerCase();
-    return (
-      a.patientName?.toLowerCase().includes(q) ||
-      a._id?.includes(q) ||
-      a.patientPhone?.includes(q)
-    );
+    return a.patientName?.toLowerCase().includes(q) || a._id?.includes(q) || a.patientPhone?.includes(q);
   });
 
   const selectAppointment = (apt) => {
@@ -206,7 +208,7 @@ export default function BillingGenerateTab({ onBillGenerated }) {
       name: "Consultation Fee",
       doctor: apt.doctorName || DOCTORS_LIST[0].name,
       type: "General Checkup",
-      amount: 800,
+      amount: 800
     }]);
     setLabTests([]);
     setLabDiscount(0);
@@ -226,36 +228,34 @@ export default function BillingGenerateTab({ onBillGenerated }) {
     setLabTests(prev => [...prev, { ...test }]);
   };
 
-  const updateConsultation = (i, field, value) =>
-    setConsultations(prev => prev.map((c, j) => j === i ? { ...c, [field]: value } : c));
+  const updateConsultation = (index, field, value) => {
+    setConsultations(prev => prev.map((c, i) => i === index ? { ...c, [field]: value } : c));
+  };
 
-  const updateLabTest = (i, field, value) =>
-    setLabTests(prev => prev.map((t, j) => j === i ? { ...t, [field]: value } : t));
+  const updateLabTest = (index, field, value) => {
+    setLabTests(prev => prev.map((t, i) => i === index ? { ...t, [field]: value } : t));
+  };
 
-  // ── Totals ───────────────────────────────────────────────────────────────
   const doctorTotal = consultations.reduce((s, c) => s + (c.amount || 0), 0) + followupCharges;
-  const labTotal    = labTests.reduce((s, t) => s + (t.price || 0), 0) - labDiscount;
-  const subtotal    = doctorTotal + Math.max(0, labTotal);
-  const discount    = 0;
-  const tax         = Math.round(subtotal * 0.05 * 100) / 100;
+  const labTotal = labTests.reduce((s, t) => s + (t.price || 0), 0) - labDiscount;
+  const subtotal = doctorTotal + Math.max(0, labTotal);
+  const discount = 0;
+  const tax = Math.round(subtotal * 0.05 * 100) / 100;
   const totalAmount = subtotal - discount + tax;
-  const change      = payReceived ? Math.max(0, parseFloat(payReceived) - totalAmount) : 0;
+  const change = payReceived ? Math.max(0, parseFloat(payReceived) - totalAmount) : 0;
 
-  // ── Razorpay checkout ────────────────────────────────────────────────────
+  // ----- Razorpay Integration -----
   const loadRazorpayScript = () =>
     new Promise((resolve, reject) => {
       if (window.Razorpay) return resolve(true);
-      const s  = document.createElement("script");
-      s.src    = "https://checkout.razorpay.com/v1/checkout.js";
-      s.onload = () => resolve(true);
-      s.onerror= () => reject(new Error("Failed to load Razorpay script"));
-      document.body.appendChild(s);
+      const script = document.createElement("script");
+      script.src = "https://checkout.razorpay.com/v1/checkout.js";
+      script.onload = () => resolve(true);
+      script.onerror = () => reject(new Error("Failed to load Razorpay script"));
+      document.body.appendChild(script);
     });
 
   const handlePayOnline = async () => {
-    if (!selectedApt)     return toast.error("Select an appointment first");
-    if (totalAmount <= 0) return toast.error("Total amount must be greater than zero");
-
     setPayMethod("Razorpay");
     setPaymentStatus("pending");
     setCheckoutLoading(true);
@@ -263,47 +263,42 @@ export default function BillingGenerateTab({ onBillGenerated }) {
     try {
       await loadRazorpayScript();
 
-      // ── Step 1: create order on BACKEND (backend holds the secret key) ──
-      const orderRes = await backendApi.createRazorpayOrder({
-        amount:   Math.round(totalAmount * 100),   // paise
+      const { data } = await backendApi.createRazorpayOrder({
+        amount: Math.round(totalAmount * 100),
         currency: "INR",
-        receipt:  selectedApt._id || `rcpt_${Date.now()}`,
+        receipt: selectedApt?._id || `rcpt_${Date.now()}`,
       });
 
-      const { order, key } = orderRes.data;
-      // key = RAZORPAY_KEY_ID sent back from backend — never expose secret
+      const { order, key } = data;
 
       const options = {
-        key,                          // public key from backend response
-        amount:      order.amount,
-        currency:    order.currency,
-        name:        "Bireena Medico",
-        description: "Appointment Payment",
-        order_id:    order.id,
+        key,
+        amount: order.amount,
+        currency: order.currency,
+        name: "Bireena Medico",
+        description: "Payment",
+        order_id: order.id,
         prefill: {
-          name:    selectedApt.patientName  || "",
-          email:   selectedApt.patientEmail || "",
-          contact: selectedApt.patientPhone || "",
+          name: selectedApt?.patientName || "",
+          email: selectedApt?.patientEmail || "",
+          contact: selectedApt?.patientPhone || "",
         },
         theme: { color: "#0F5C3A" },
-
-        // ── Step 2: Razorpay calls this after successful payment ──────────
         handler: (response) => {
           setRazorpayPaymentId(response.razorpay_payment_id);
           setRazorpayOrderId(response.razorpay_order_id);
           setRazorpaySignature(response.razorpay_signature);
           setPaymentStatus("success");
-          setPaymentMessage("✅ Payment successful — click 'Generate Bill' to save and print.");
+          setPaymentMessage("✅ Payment successful — click 'Generate Bill' to save.");
           toast.success("Razorpay payment successful!");
         },
-
         modal: {
           ondismiss: () => {
-            setCheckoutLoading(false);
             if (paymentStatus !== "success") {
               setPaymentStatus("failed");
               setPaymentMessage("Payment window closed without completing payment.");
             }
+            setCheckoutLoading(false);
           },
         },
       };
@@ -316,6 +311,7 @@ export default function BillingGenerateTab({ onBillGenerated }) {
       });
       rzp.open();
     } catch (error) {
+      console.error("Razorpay error:", error);
       toast.error(error.message || "Unable to open Razorpay checkout");
       setPaymentStatus("failed");
       setPaymentMessage("Unable to initiate payment. Please try again.");
@@ -324,7 +320,7 @@ export default function BillingGenerateTab({ onBillGenerated }) {
     }
   };
 
-  // ── Generate & Save Bill ─────────────────────────────────────────────────
+  // ----- Generate & Save Bill -----
   const handleGenerate = async () => {
     if (!selectedApt) return toast.error("Select an appointment first");
     if (payMethod === "Razorpay" && paymentStatus !== "success")
@@ -335,60 +331,66 @@ export default function BillingGenerateTab({ onBillGenerated }) {
     setGenerating(true);
     try {
       const patientId = selectedApt.patientId || selectedApt.patient?._id;
-      if (!patientId) throw new Error("Patient ID not found on appointment");
+      if (!patientId) throw new Error("Patient ID not found");
 
-      // Build items array
       const items = [];
       if (serviceMode === "both" || serviceMode === "doctor") {
         consultations.forEach(c => items.push({
           serviceName: c.name,
           description: `${c.doctor} • ${c.type}`,
-          quantity: 1, unitPrice: c.amount || 0, amount: c.amount || 0,
+          quantity: 1,
+          unitPrice: c.amount || 0,
+          amount: c.amount || 0,
         }));
         if (followupCharges) items.push({
           serviceName: "Follow-up Charges",
-          description: "Additional consultation follow-up",
-          quantity: 1, unitPrice: followupCharges, amount: followupCharges,
+          description: "Additional consultation",
+          quantity: 1,
+          unitPrice: followupCharges,
+          amount: followupCharges,
         });
       }
       if (serviceMode === "both" || serviceMode === "lab") {
         labTests.forEach(t => items.push({
           serviceName: t.name,
           description: t.category,
-          quantity: 1, unitPrice: t.price || 0, amount: t.price || 0,
+          quantity: 1,
+          unitPrice: t.price || 0,
+          amount: t.price || 0,
         }));
       }
 
-      // ── 1. Create billing record ─────────────────────────────────────
       const billingRes = await backendApi.createBilling({
         patientId,
-        appointmentId:  selectedApt._id || selectedApt.id,
-        items, subtotal, discount, tax, total: totalAmount, notes,
-        paymentStatus:  payMethod === "Razorpay" ? "PAID"  : "PENDING",
-        status:         payMethod === "Razorpay" ? "paid"  : "pending",
+        appointmentId: selectedApt._id,
+        items,
+        subtotal,
+        discount,
+        tax,
+        total: totalAmount,
+        notes,
+        paymentStatus: payMethod === "Razorpay" ? "PAID" : "PENDING",
+        status: payMethod === "Razorpay" ? "paid" : "pending",
       });
       const billing = billingRes.data.billing;
 
-      // ── 2. Generate invoice ──────────────────────────────────────────
       const invoiceRes = await backendApi.generateInvoice(billing._id);
-      const invoice    = invoiceRes.data.invoice;
+      const invoice = invoiceRes.data.invoice;
 
-      // ── 3. Save + verify payment if Razorpay ────────────────────────
       if (payMethod === "Razorpay") {
         const paymentRes = await backendApi.createPayment({
-          invoiceId:        invoice._id,
+          invoiceId: invoice._id,
           patientId,
-          amount:           totalAmount,
-          paymentMethod:    "razorpay",
-          transactionId:    razorpayPaymentId,
+          amount: totalAmount,
+          paymentMethod: "razorpay",
+          transactionId: razorpayPaymentId,
           razorpayPaymentId,
           razorpayOrderId,
           razorpaySignature,
-          status:           "pending",
+          status: "pending",
         });
         const payment = paymentRes.data.payment;
 
-        // ── 4. Backend verifies HMAC signature ──────────────────────
         await backendApi.verifyPayment(payment._id, {
           razorpayPaymentId,
           razorpayOrderId,
@@ -400,16 +402,27 @@ export default function BillingGenerateTab({ onBillGenerated }) {
       toast.success("Bill generated and saved!");
       if (onBillGenerated) onBillGenerated();
 
-      // ── 5. Open print window ─────────────────────────────────────
       setTimeout(() => {
         openPrintBill({
-          apt: selectedApt, consultations, labTests,
-          followupCharges, labDiscount, serviceMode,
-          subtotal, discount, tax, totalAmount, notes,
-          payMethod, payReceived, razorpayPaymentId, razorpayOrderId,
+          apt: selectedApt,
+          consultations,
+          labTests,
+          followupCharges,
+          labDiscount,
+          serviceMode,
+          subtotal,
+          discount,
+          tax,
+          totalAmount,
+          notes,
+          payMethod,
+          payReceived,
+          razorpayPaymentId,
+          razorpayOrderId,
         });
       }, 400);
     } catch (error) {
+      console.error("Generate bill error:", error);
       toast.error(error.message || "Failed to generate bill");
     } finally {
       setGenerating(false);
@@ -419,8 +432,7 @@ export default function BillingGenerateTab({ onBillGenerated }) {
   // ─── Render ──────────────────────────────────────────────────────────────
   return (
     <div className="space-y-5">
-
-      {/* ── Search + Select ── */}
+      {/* Search + Select */}
       <div className="bg-white border border-gray-200 rounded-xl p-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
@@ -430,7 +442,7 @@ export default function BillingGenerateTab({ onBillGenerated }) {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <input
                   className="w-full h-10 pl-10 pr-3 text-sm border border-gray-200 rounded-lg outline-none focus:border-[#0F5C3A]"
-                  placeholder="Search by ID / Patient Name / Mobile"
+                  placeholder="Search by Appointment ID / Patient Name / Mobile"
                   value={searchTerm}
                   onChange={e => setSearchTerm(e.target.value)}
                 />
@@ -440,8 +452,7 @@ export default function BillingGenerateTab({ onBillGenerated }) {
             {searchTerm && filteredApts.length > 0 && !selectedApt && (
               <div className="mt-1 bg-white border rounded-lg shadow-lg max-h-40 overflow-y-auto z-20 relative">
                 {filteredApts.slice(0, 5).map(a => (
-                  <button key={a._id} onClick={() => selectAppointment(a)}
-                    className="w-full text-left px-3 py-2 hover:bg-gray-50 text-sm border-b last:border-0">
+                  <button key={a._id} onClick={() => selectAppointment(a)} className="w-full text-left px-3 py-2 hover:bg-gray-50 text-sm border-b last:border-0">
                     <span className="font-bold">{a.patientName}</span>
                     <span className="text-gray-400 ml-2 text-xs">{a._id?.slice(-6)}</span>
                   </button>
@@ -454,61 +465,42 @@ export default function BillingGenerateTab({ onBillGenerated }) {
             <select
               className="w-full h-10 px-3 text-sm border border-gray-200 rounded-lg"
               value={selectedApt?._id || ""}
-              onChange={e => {
-                const a = appointments.find(x => x._id === e.target.value);
-                if (a) selectAppointment(a);
-              }}
+              onChange={e => { const a = appointments.find(x => x._id === e.target.value); if (a) selectAppointment(a); }}
             >
               <option value="">Select Appointments</option>
-              {appointments.map(a => (
-                <option key={a._id} value={a._id}>{a.patientName} — {a._id?.slice(-6)}</option>
-              ))}
+              {appointments.map(a => <option key={a._id} value={a._id}>{a.patientName} - {a._id?.slice(-6)}</option>)}
             </select>
           </div>
         </div>
       </div>
 
-      {/* ── Appointment Details ── */}
+      {/* Appointment Details */}
       {selectedApt && (
         <div className="bg-white border border-gray-200 rounded-xl p-4">
           <div className="flex items-center gap-2 mb-3">
             <span className="text-sm font-bold text-[#0A3E2A]">Appointment Details</span>
-            <span className="px-2 py-0.5 bg-emerald-100 text-[#0F5C3A] text-xs font-bold rounded">
-              {selectedApt._id?.slice(-8)}
-            </span>
+            <span className="px-2 py-0.5 bg-emerald-100 text-[#0F5C3A] text-xs font-bold rounded">{selectedApt._id?.slice(-8)}</span>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
             <div><span className="text-xs text-gray-400 block">Patient</span><span className="font-bold">{selectedApt.patientName}</span></div>
             <div><span className="text-xs text-gray-400 block">Age / Gender</span><span className="font-bold">—</span></div>
             <div><span className="text-xs text-gray-400 block">Mobile</span><span className="font-bold">{selectedApt.patientPhone || "—"}</span></div>
-            <div><span className="text-xs text-gray-400 block">Date &amp; Time</span><span className="font-bold">{selectedApt.date}, {selectedApt.scheduledTime || "Walk-in"}</span></div>
-            <div>
-              <span className="text-xs text-gray-400 block">Status</span>
-              <span className={cn("font-bold capitalize", selectedApt.status === "completed" ? "text-emerald-600" : "text-amber-600")}>
-                {selectedApt.status}
-              </span>
-            </div>
+            <div><span className="text-xs text-gray-400 block">Date & Time</span><span className="font-bold">{selectedApt.date}, {selectedApt.scheduledTime || "Walk-in"}</span></div>
+            <div><span className="text-xs text-gray-400 block">Status</span><span className={cn("font-bold capitalize", selectedApt.status === "completed" ? "text-emerald-600" : "text-amber-600")}>{selectedApt.status}</span></div>
           </div>
         </div>
       )}
 
-      {/* ── Services + Summary ── */}
+      {/* Services + Summary */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
-
         {/* Left: Services */}
         <div className="lg:col-span-3 space-y-4">
           <div className="bg-white border border-gray-200 rounded-xl p-4 space-y-4">
-
-            {/* Service mode */}
-            <div className="flex items-center justify-between flex-wrap gap-2">
+            <div className="flex items-center justify-between">
               <span className="text-sm font-bold text-[#0A3E2A]">Services</span>
-              <div className="flex gap-2 flex-wrap">
+              <div className="flex gap-2">
                 {[{ id: "both", label: "Both (Doctor + Lab)" }, { id: "doctor", label: "Only Doctor" }, { id: "lab", label: "Only Lab" }].map(m => (
-                  <button key={m.id} onClick={() => setServiceMode(m.id)}
-                    className={cn("px-3 py-1.5 rounded-full text-xs font-bold border transition",
-                      serviceMode === m.id ? "bg-emerald-50 border-[#0F5C3A] text-[#0F5C3A]" : "border-gray-200 text-gray-500")}>
-                    {m.label}
-                  </button>
+                  <button key={m.id} onClick={() => setServiceMode(m.id)} className={cn("px-3 py-1.5 rounded-full text-xs font-bold border transition", serviceMode === m.id ? "bg-emerald-50 border-[#0F5C3A] text-[#0F5C3A]" : "border-gray-200 text-gray-500")}>{m.label}</button>
                 ))}
               </div>
             </div>
@@ -516,60 +508,37 @@ export default function BillingGenerateTab({ onBillGenerated }) {
             {/* Doctor Consultation */}
             {(serviceMode === "both" || serviceMode === "doctor") && (
               <div>
-                <h3 className="text-xs font-bold text-gray-500 mb-2">🩺 Doctor Consultation</h3>
+                <h3 className="text-xs font-bold text-gray-500 flex items-center gap-1 mb-2">🩺 Doctor Consultation</h3>
                 <table className="w-full text-sm">
-                  <thead>
-                    <tr className="text-xs text-gray-400 border-b">
-                      <th className="text-left py-2">Name</th>
-                      <th className="text-left py-2">Doctor</th>
-                      <th className="text-left py-2">Type</th>
-                      <th className="text-right py-2">Amount (₹)</th>
-                      <th className="w-8"></th>
-                    </tr>
-                  </thead>
+                  <thead><tr className="text-xs text-gray-400 border-b"><th className="text-left py-2">Name</th><th className="text-left py-2">Doctor</th><th className="text-left py-2">Consultation Type</th><th className="text-right py-2">Amount (₹)</th><th className="w-8"></th></tr></thead>
                   <tbody>
                     {consultations.map((c, i) => (
                       <tr key={i} className="border-b border-gray-50">
                         <td className="py-2">
-                          <input type="text" className="w-full text-sm font-medium outline-none bg-transparent"
-                            value={c.name} onChange={e => updateConsultation(i, "name", e.target.value)} />
+                          <input type="text" className="w-full text-sm font-medium outline-none bg-transparent" value={c.name} onChange={e => updateConsultation(i, 'name', e.target.value)} placeholder="Consultation Fee" />
                         </td>
                         <td className="py-2">
-                          <input type="text" className="w-full text-sm text-gray-600 outline-none bg-transparent"
-                            value={c.doctor} onChange={e => updateConsultation(i, "doctor", e.target.value)} />
+                          <input type="text" className="w-full text-sm text-gray-600 outline-none bg-transparent" value={c.doctor} onChange={e => updateConsultation(i, 'doctor', e.target.value)} placeholder="Doctor Name" />
                         </td>
                         <td className="py-2">
-                          <input type="text" className="w-full text-sm text-gray-600 outline-none bg-transparent"
-                            value={c.type} onChange={e => updateConsultation(i, "type", e.target.value)} />
+                          <input type="text" className="w-full text-sm text-gray-600 outline-none bg-transparent" value={c.type} onChange={e => updateConsultation(i, 'type', e.target.value)} placeholder="Type" />
                         </td>
                         <td className="py-2 text-right">
                           <div className="flex items-center justify-end font-bold">
-                            ₹<input type="number" className="w-16 text-right outline-none bg-transparent"
-                              value={c.amount} onChange={e => updateConsultation(i, "amount", Number(e.target.value) || 0)} />
+                            ₹ <input type="number" className="w-16 text-right outline-none bg-transparent" value={c.amount} onChange={e => updateConsultation(i, 'amount', Number(e.target.value) || 0)} />
                           </div>
                         </td>
-                        <td className="py-2 text-right">
-                          <button onClick={() => setConsultations(prev => prev.filter((_, j) => j !== i))}
-                            className="p-1 text-red-400 hover:text-red-600">
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </td>
+                        <td className="py-2 text-right"><button onClick={() => setConsultations(prev => prev.filter((_, j) => j !== i))} className="p-1 text-red-400 hover:text-red-600"><Trash2 className="w-3.5 h-3.5" /></button></td>
                       </tr>
                     ))}
-                    {consultations.length === 0 && (
-                      <tr><td colSpan={5} className="py-3 text-center text-gray-300 text-xs">No consultations added</td></tr>
-                    )}
+                    {consultations.length === 0 && <tr><td colSpan={5} className="py-3 text-center text-gray-300 text-xs">No consultations added</td></tr>}
                   </tbody>
                 </table>
                 <div className="flex items-center justify-between mt-3 text-xs">
-                  <button onClick={() => setConsultations(prev => [...prev, { name: "Consultation Fee", doctor: DOCTORS_LIST[0].name, type: "General Checkup", amount: 800 }])}
-                    className="px-2 py-1 bg-emerald-50 text-[#0F5C3A] rounded border border-[#0F5C3A]/20 font-bold hover:bg-emerald-100 transition">
-                    + Add Consultation
-                  </button>
+                  <button onClick={() => setConsultations(prev => [...prev, { name: "Consultation Fee", doctor: DOCTORS_LIST[0].name, type: "General Checkup", amount: 800 }])} className="px-2 py-1 bg-emerald-50 text-[#0F5C3A] rounded border border-[#0F5C3A]/20 font-bold hover:bg-emerald-100 transition">+ Add Consultation</button>
                   <div className="flex items-center gap-2">
                     <span className="text-gray-500 font-bold">Follow-up Charges (₹):</span>
-                    <input type="number" className="w-20 h-7 px-2 text-right border rounded outline-none focus:border-[#0F5C3A]"
-                      value={followupCharges} onChange={e => setFollowupCharges(Number(e.target.value) || 0)} />
+                    <input type="number" className="w-20 h-7 px-2 text-right border rounded outline-none focus:border-[#0F5C3A]" value={followupCharges} onChange={e => setFollowupCharges(Number(e.target.value) || 0)} />
                   </div>
                 </div>
               </div>
@@ -578,63 +547,42 @@ export default function BillingGenerateTab({ onBillGenerated }) {
             {/* Lab Services */}
             {(serviceMode === "both" || serviceMode === "lab") && (
               <div>
-                <h3 className="text-xs font-bold text-gray-500 mb-2">🧪 Lab Services / Tests</h3>
+                <h3 className="text-xs font-bold text-gray-500 flex items-center gap-1 mb-2">🧪 Lab Services / Tests</h3>
                 <table className="w-full text-sm">
-                  <thead>
-                    <tr className="text-xs text-gray-400 border-b">
-                      <th className="text-left py-2">Test / Package</th>
-                      <th className="text-left py-2">Category</th>
-                      <th className="text-right py-2">Price (₹)</th>
-                      <th className="w-8"></th>
-                    </tr>
-                  </thead>
+                  <thead><tr className="text-xs text-gray-400 border-b"><th className="text-left py-2">Test / Package</th><th className="text-left py-2">Category</th><th className="text-right py-2">Price (₹)</th><th className="w-8"></th></tr></thead>
                   <tbody>
                     {labTests.map((t, i) => (
                       <tr key={i} className="border-b border-gray-50">
                         <td className="py-2 flex items-center gap-1">
-                          <span className="text-gray-300">✓</span>
-                          <input type="text" className="w-full text-sm font-medium outline-none bg-transparent"
-                            value={t.name} onChange={e => updateLabTest(i, "name", e.target.value)} />
+                          <span className="text-gray-300">✓</span> <input type="text" className="w-full text-sm font-medium outline-none bg-transparent" value={t.name} onChange={e => updateLabTest(i, 'name', e.target.value)} placeholder="Test Name" />
                         </td>
                         <td className="py-2">
-                          <input type="text" className="w-full text-sm text-gray-500 outline-none bg-transparent"
-                            value={t.category} onChange={e => updateLabTest(i, "category", e.target.value)} />
+                          <input type="text" className="w-full text-sm text-gray-500 outline-none bg-transparent" value={t.category} onChange={e => updateLabTest(i, 'category', e.target.value)} placeholder="Category" />
                         </td>
                         <td className="py-2 text-right">
                           <div className="flex items-center justify-end font-bold">
-                            ₹<input type="number" className="w-16 text-right outline-none bg-transparent"
-                              value={t.price} onChange={e => updateLabTest(i, "price", Number(e.target.value) || 0)} />
+                            ₹ <input type="number" className="w-16 text-right outline-none bg-transparent" value={t.price} onChange={e => updateLabTest(i, 'price', Number(e.target.value) || 0)} />
                           </div>
                         </td>
-                        <td className="py-2 text-right">
-                          <button onClick={() => setLabTests(prev => prev.filter((_, j) => j !== i))}
-                            className="p-1 text-red-400 hover:text-red-600">
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </td>
+                        <td className="py-2 text-right"><button onClick={() => setLabTests(prev => prev.filter((_, j) => j !== i))} className="p-1 text-red-400 hover:text-red-600"><Trash2 className="w-3.5 h-3.5" /></button></td>
                       </tr>
                     ))}
-                    {labTests.length === 0 && (
-                      <tr><td colSpan={4} className="py-3 text-center text-gray-300 text-xs">No lab tests added</td></tr>
-                    )}
+                    {labTests.length === 0 && <tr><td colSpan={4} className="py-3 text-center text-gray-300 text-xs">No lab tests added</td></tr>}
                   </tbody>
                 </table>
                 <div className="flex gap-2 mt-3 flex-wrap">
                   {LAB_TESTS.filter(t => !labTests.find(x => x.name === t.name)).map(t => (
-                    <button key={t.name} onClick={() => addLabTest(t)}
-                      className="flex items-center gap-1 px-2 py-1 text-xs border border-dashed border-gray-300 rounded text-gray-500 hover:border-[#0F5C3A] hover:text-[#0F5C3A] transition">
+                    <button key={t.name} onClick={() => addLabTest(t)} className="flex items-center gap-1 px-2 py-1 text-xs border border-dashed border-gray-300 rounded text-gray-500 hover:border-[#0F5C3A] hover:text-[#0F5C3A] transition">
                       <Plus className="w-3 h-3" />{t.name}
                     </button>
                   ))}
-                  <button onClick={() => setLabTests(prev => [...prev, { name: "Custom Test", category: "Other", price: 0 }])}
-                    className="flex items-center gap-1 px-2 py-1 text-xs border border-dashed border-[#0F5C3A]/50 bg-emerald-50 rounded text-[#0F5C3A] font-bold hover:bg-emerald-100 transition">
+                  <button onClick={() => setLabTests(prev => [...prev, { name: "Custom Test", category: "Other", price: 0 }])} className="flex items-center gap-1 px-2 py-1 text-xs border border-dashed border-[#0F5C3A]/50 bg-emerald-50 rounded text-[#0F5C3A] font-bold hover:bg-emerald-100 transition">
                     <Plus className="w-3 h-3" /> Custom Test
                   </button>
                 </div>
                 <div className="flex items-center justify-between mt-3 text-xs text-gray-400">
                   <span>Lab Discount (₹)</span>
-                  <input type="number" className="w-20 h-7 px-2 text-right border rounded"
-                    value={labDiscount} onChange={e => setLabDiscount(Number(e.target.value) || 0)} />
+                  <input type="number" className="w-20 h-7 px-2 text-right text-xs border rounded" value={labDiscount} onChange={e => setLabDiscount(Number(e.target.value) || 0)} />
                 </div>
               </div>
             )}
@@ -643,8 +591,7 @@ export default function BillingGenerateTab({ onBillGenerated }) {
           {/* Notes */}
           <div className="bg-white border border-gray-200 rounded-xl p-4">
             <label className="text-xs font-bold text-gray-500 block mb-1">Notes (Optional)</label>
-            <textarea className="w-full h-16 px-3 py-2 text-sm border border-gray-200 rounded-lg resize-none outline-none focus:border-[#0F5C3A]"
-              placeholder="Add any notes here..." value={notes} onChange={e => setNotes(e.target.value)} />
+            <textarea className="w-full h-16 px-3 py-2 text-sm border border-gray-200 rounded-lg resize-none outline-none focus:border-[#0F5C3A]" placeholder="Add any notes here..." value={notes} onChange={e => setNotes(e.target.value)} />
           </div>
         </div>
 
@@ -652,41 +599,14 @@ export default function BillingGenerateTab({ onBillGenerated }) {
         <div className="lg:col-span-2">
           <div className="bg-white border border-gray-200 rounded-xl p-5 sticky top-4 space-y-4">
             <h3 className="text-sm font-bold text-[#0A3E2A]">Billing Summary</h3>
-
-            {/* Totals */}
             <div className="space-y-2 text-sm">
-              {(serviceMode === "both" || serviceMode === "doctor") && (
-                <div className="flex justify-between">
-                  <span className="text-gray-500">Doctor Consultation</span>
-                  <span className="font-bold">₹{doctorTotal.toFixed(2)}</span>
-                </div>
-              )}
-              {(serviceMode === "both" || serviceMode === "lab") && (
-                <div className="flex justify-between">
-                  <span className="text-gray-500">Lab Tests ({labTests.length})</span>
-                  <span className="font-bold">₹{Math.max(0, labTotal).toFixed(2)}</span>
-                </div>
-              )}
-              <div className="border-t pt-2 flex justify-between">
-                <span className="text-gray-500">Subtotal</span>
-                <span className="font-bold">₹{subtotal.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">Discount</span>
-                <span className="font-bold">₹{discount.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">Tax (GST 5%)</span>
-                <span className="font-bold">₹{tax.toFixed(2)}</span>
-              </div>
-              <div className="border-t pt-2 flex justify-between text-base">
-                <span className="font-bold text-[#0A3E2A]">Total Amount</span>
-                <span className="font-black text-[#0A3E2A]">₹ {totalAmount.toFixed(2)}</span>
-              </div>
-              <div className="bg-emerald-50 rounded-lg p-3 flex justify-between">
-                <span className="font-bold text-[#0F5C3A]">Amount Payable</span>
-                <span className="font-black text-[#0F5C3A] text-lg">₹ {totalAmount.toFixed(2)}</span>
-              </div>
+              {(serviceMode === "both" || serviceMode === "doctor") && <div className="flex justify-between"><span className="text-gray-500">Doctor Consultation</span><span className="font-bold">₹{doctorTotal.toFixed(2)}</span></div>}
+              {(serviceMode === "both" || serviceMode === "lab") && <div className="flex justify-between"><span className="text-gray-500">Lab Tests ({labTests.length})</span><span className="font-bold">₹{Math.max(0, labTotal).toFixed(2)}</span></div>}
+              <div className="border-t pt-2 flex justify-between"><span className="text-gray-500">Subtotal</span><span className="font-bold">₹{subtotal.toFixed(2)}</span></div>
+              <div className="flex justify-between"><span className="text-gray-500">Discount</span><span className="font-bold">₹{discount.toFixed(2)}</span></div>
+              <div className="flex justify-between"><span className="text-gray-500">Tax (GST 5%)</span><span className="font-bold">₹{tax.toFixed(2)}</span></div>
+              <div className="border-t pt-2 flex justify-between text-base"><span className="font-bold text-[#0A3E2A]">Total Amount</span><span className="font-black text-[#0A3E2A]">₹ {totalAmount.toFixed(2)}</span></div>
+              <div className="bg-emerald-50 rounded-lg p-3 flex justify-between"><span className="font-bold text-[#0F5C3A]">Amount Payable</span><span className="font-black text-[#0F5C3A] text-lg">₹ {totalAmount.toFixed(2)}</span></div>
             </div>
 
             {/* Payment Method */}
@@ -694,87 +614,46 @@ export default function BillingGenerateTab({ onBillGenerated }) {
               <label className="text-xs font-bold text-gray-500 block mb-2">Payment Method</label>
               <div className="flex gap-2 flex-wrap">
                 {PAY_METHODS.map(m => (
-                  <button key={m} onClick={() => setPayMethod(m)}
-                    className={cn("px-3 py-1.5 rounded-full text-xs font-bold border transition",
-                      payMethod === m ? "bg-[#0F5C3A] text-white border-[#0F5C3A]" : "border-gray-200 text-gray-500")}>
-                    ● {m}
-                  </button>
+                  <button key={m} onClick={() => setPayMethod(m)} className={cn("px-3 py-1.5 rounded-full text-xs font-bold border transition", payMethod === m ? "bg-[#0F5C3A] text-white border-[#0F5C3A]" : "border-gray-200 text-gray-500")}>● {m}</button>
                 ))}
               </div>
             </div>
 
-            {/* Payment Received */}
+            {/* Payment Received (for Cash/Insurance) */}
             <div>
               <label className="text-xs font-bold text-gray-500 block mb-1">Payment Received (₹)</label>
-              <input type="number"
-                className="w-full h-10 px-3 text-sm border border-gray-200 rounded-lg outline-none focus:border-[#0F5C3A]"
-                value={payReceived}
-                onChange={e => setPayReceived(e.target.value)}
-                placeholder={totalAmount.toFixed(2)}
-              />
+              <input type="number" className="w-full h-10 px-3 text-sm border border-gray-200 rounded-lg outline-none focus:border-[#0F5C3A]" value={payReceived} onChange={e => setPayReceived(e.target.value)} placeholder={totalAmount.toFixed(2)} />
             </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-500">Change (₹)</span>
-              <span className="font-bold">{change.toFixed(2)}</span>
-            </div>
+            <div className="flex justify-between text-sm"><span className="text-gray-500">Change (₹)</span><span className="font-bold">{change.toFixed(2)}</span></div>
 
-            {/* ── Razorpay Payment ID (auto-filled after payment) ── */}
-            <div>
-              <label className="text-xs font-bold text-gray-500 block mb-1">
-                Razorpay Payment ID
-                {paymentStatus === "success" && (
-                  <span className="ml-2 text-xs font-bold text-emerald-600">✔ Verified</span>
-                )}
-                {paymentStatus === "failed" && (
-                  <span className="ml-2 text-xs font-bold text-red-500">✗ Failed</span>
-                )}
-              </label>
-              <input
-                type="text"
-                readOnly={paymentStatus === "success"}
-                value={razorpayPaymentId}
-                onChange={e => setRazorpayPaymentId(e.target.value)}
-                placeholder="Auto-filled after Pay Online"
-                className={cn(
-                  "w-full h-10 px-3 text-sm border rounded-lg outline-none font-mono",
-                  paymentStatus === "success"
-                    ? "bg-emerald-50 border-emerald-300 text-emerald-800"
-                    : paymentStatus === "failed"
-                    ? "bg-red-50 border-red-200 text-red-700"
-                    : "border-gray-200 focus:border-[#0F5C3A]"
-                )}
-              />
-              {razorpayOrderId && (
-                <p className="mt-1 text-xs text-gray-400 font-mono truncate">Order: {razorpayOrderId}</p>
-              )}
-              {paymentMessage && (
-                <p className={cn("mt-1 text-xs font-medium",
-                  paymentStatus === "success" ? "text-emerald-600" : "text-red-500")}>
-                  {paymentMessage}
-                </p>
-              )}
-            </div>
+            {/* Razorpay Payment ID (only shown when method is Razorpay) */}
+            {payMethod === "Razorpay" && (
+              <div>
+                <label className="text-xs font-bold text-gray-500 block mb-1">
+                  Razorpay Payment ID
+                  {paymentStatus === "success" && <span className="ml-2 text-xs font-bold text-emerald-600">✔ Verified</span>}
+                  {paymentStatus === "failed" && <span className="ml-2 text-xs font-bold text-red-500">✗ Failed</span>}
+                </label>
+                <input type="text" readOnly value={razorpayPaymentId} placeholder="Auto-filled after Pay Online" className="w-full h-10 px-3 text-sm border rounded-lg outline-none font-mono bg-gray-50" />
+                {razorpayOrderId && <p className="mt-1 text-xs text-gray-400 font-mono truncate">Order: {razorpayOrderId}</p>}
+                {paymentMessage && <p className={cn("mt-1 text-xs font-medium", paymentStatus === "success" ? "text-emerald-600" : "text-red-500")}>{paymentMessage}</p>}
+              </div>
+            )}
 
             {/* Buttons */}
             <div className="grid gap-3">
               <button
                 onClick={handlePayOnline}
-                disabled={totalAmount <= 0 || checkoutLoading}
-                className="w-full h-12 bg-white border border-[#0F5C3A] text-[#0F5C3A] rounded-xl font-bold text-sm hover:bg-emerald-50 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="w-full h-12 bg-white border border-[#0F5C3A] text-[#0F5C3A] rounded-xl font-bold text-sm hover:bg-emerald-50 transition flex items-center justify-center gap-2"
               >
-                {checkoutLoading
-                  ? <><Loader2 className="w-4 h-4 animate-spin" /> Opening Razorpay...</>
-                  : "💳 Pay Online"}
+                {checkoutLoading ? <><Loader2 className="w-4 h-4 animate-spin" /> Opening Razorpay...</> : "💳 Pay Online"}
               </button>
-
               <button
                 onClick={handleGenerate}
-                disabled={generating}
+                disabled={generating || !selectedApt}
                 className="w-full h-12 bg-[#0F5C3A] text-white rounded-xl font-bold text-sm hover:bg-[#0A3E2A] transition disabled:opacity-50 flex items-center justify-center gap-2"
               >
-                {generating
-                  ? <><Loader2 className="w-4 h-4 animate-spin" /> Generating...</>
-                  : "🧾 Generate Bill"}
+                {generating ? <><Loader2 className="w-4 h-4 animate-spin" /> Generating...</> : "🧾 Generate Bill"}
               </button>
             </div>
           </div>

@@ -1,116 +1,109 @@
-// backend/controllers/payment.controller.js
 import paymentService from "../services/payment.service.js";
-import { config }     from "../config/env.js";
+import { generateResponse, generateError } from "../utils/response.js";
 
-// ── POST /api/payments/order ─────────────────────────────────────────────────
-// Creates a Razorpay order and returns the order object + public key_id.
-// Frontend uses the order.id and key_id to open the Razorpay checkout popup.
+export const createPayment = async (req, res) => {
+  try {
+    const payment = await paymentService.createPayment(req.body);
+    res.status(201).json(generateResponse({ payment }, "Payment created successfully"));
+  } catch (error) {
+    res.status(400).json(generateError(error.message));
+  }
+};
 export const createOrder = async (req, res) => {
   try {
     const { amount, currency = "INR", receipt } = req.body;
 
-    if (!amount || amount <= 0) {
-      return res.status(400).json({ success: false, message: "Invalid amount" });
-    }
+    // Import razorpay instance
+    import("../config/razorpay.js").then((module) => {
+      const razorpay = module.default;
+      
+      if (!razorpay) {
+        return res.status(500).json({ error: "Razorpay not configured" });
+      }
 
-    const order = await paymentService.createRazorpayOrder(
-      Math.round(amount),   // already in paise from frontend
-      currency,
-      receipt || `rcpt_${Date.now()}`
-    );
+      const options = {
+        amount: amount * 100, // Convert to paise (e.g., ₹500 → 50000 paise)
+        currency,
+        receipt: receipt || `receipt_${Date.now()}`,
+        payment_capture: 1, // Auto capture payment
+      };
 
-    return res.status(200).json({
-      success: true,
-      order,
-      // Send the public key to the frontend — never send the secret
-      key: config.razorpayKeyId,
+      razorpay.orders.create(options, (err, order) => {
+        if (err) {
+          console.error("Razorpay order creation error:", err);
+          return res.status(500).json({ error: err.message });
+        }
+        res.json({ success: true, order });
+      });
     });
   } catch (error) {
-    console.error("[createOrder]", error.message);
-    return res.status(500).json({ success: false, message: error.message });
+    console.error("Create order error:", error);
+    res.status(500).json({ error: error.message });
   }
 };
-
-// ── POST /api/payments ───────────────────────────────────────────────────────
-// Saves a new payment record to the DB (called after Razorpay handler fires).
-export const createPayment = async (req, res) => {
-  try {
-    const payment = await paymentService.createPayment(req.body);
-    return res.status(201).json({ success: true, payment });
-  } catch (error) {
-    console.error("[createPayment]", error.message);
-    return res.status(500).json({ success: false, message: error.message });
-  }
-};
-
-// ── GET /api/payments/:id ────────────────────────────────────────────────────
 export const getPaymentById = async (req, res) => {
   try {
     const payment = await paymentService.getPaymentById(req.params.id);
-    if (!payment) return res.status(404).json({ success: false, message: "Payment not found" });
-    return res.status(200).json({ success: true, payment });
+    if (!payment) {
+      return res.status(404).json(generateError("Payment not found"));
+    }
+    res.json(generateResponse({ payment }, "Payment fetched successfully"));
   } catch (error) {
-    return res.status(500).json({ success: false, message: error.message });
+    res.status(500).json(generateError(error.message));
   }
 };
 
-// ── GET /api/payments/patient/:patientId ─────────────────────────────────────
 export const getPatientPayments = async (req, res) => {
   try {
     const payments = await paymentService.getPaymentsByPatient(req.params.patientId);
-    return res.status(200).json({ success: true, payments });
+    res.json(generateResponse({ payments }, "Payments fetched successfully"));
   } catch (error) {
-    return res.status(500).json({ success: false, message: error.message });
+    res.status(500).json(generateError(error.message));
   }
 };
 
-// ── POST /api/payments/:paymentId/verify ─────────────────────────────────────
-// Verifies the HMAC signature from Razorpay and marks payment as success/failed.
 export const verifyPayment = async (req, res) => {
   try {
-    const { paymentId }                             = req.params;
-    const { razorpayPaymentId, razorpayOrderId, signature } = req.body;
+    const { razorpay_payment_id, razorpay_order_id, razorpay_signature } = req.body;
+    const paymentId = req.params.paymentId;       // ✅ Use URL param
 
-    const isValid = await paymentService.verifyRazorpayPayment(
-      razorpayPaymentId,
-      razorpayOrderId,
-      signature
-    );
-
-    if (!isValid) {
-      await paymentService.updatePaymentStatus(paymentId, "failed", "Signature mismatch");
-      return res.status(400).json({ success: false, message: "Payment verification failed: invalid signature" });
+    if (!razorpay_payment_id || !razorpay_order_id || !razorpay_signature) {
+      return res.status(400).json(generateError("Missing razorpay verification fields"));
     }
 
-    const updated = await paymentService.updatePaymentStatus(paymentId, "success");
-    return res.status(200).json({ success: true, payment: updated });
+    const isValid = await paymentService.verifyRazorpayPayment(
+      razorpay_payment_id,
+      razorpay_order_id,
+      razorpay_signature
+    );
+
+    if (isValid) {
+      const payment = await paymentService.updatePaymentStatus(paymentId, "success");
+      res.json(generateResponse({ payment }, "Payment verified successfully"));
+    } else {
+      res.status(400).json(generateError("Payment verification failed"));
+    }
   } catch (error) {
-    console.error("[verifyPayment]", error.message);
-    return res.status(500).json({ success: false, message: error.message });
+    res.status(500).json(generateError(error.message));
   }
 };
 
-// ── POST /api/payments/:paymentId/refund ─────────────────────────────────────
 export const refundPayment = async (req, res) => {
   try {
-    const { refundAmount } = req.body;
-    const refunded = await paymentService.processRefund(req.params.paymentId, refundAmount);
-    return res.status(200).json({ success: true, payment: refunded });
+    const { amount } = req.body;
+    const refund = await paymentService.processRefund(req.params.paymentId, amount);
+    res.json(generateResponse({ refund }, "Refund processed successfully"));
   } catch (error) {
-    return res.status(500).json({ success: false, message: error.message });
+    res.status(400).json(generateError(error.message));
   }
 };
 
-// ── GET /api/payments/statistics ─────────────────────────────────────────────
 export const getPaymentStatistics = async (req, res) => {
   try {
     const { startDate, endDate } = req.query;
-    if (!startDate || !endDate) {
-      return res.status(400).json({ success: false, message: "startDate and endDate are required" });
-    }
-    const stats = await paymentService.getPaymentStatistics(startDate, endDate);
-    return res.status(200).json({ success: true, stats });
+    const stats = await paymentService.getPaymentStatistics(new Date(startDate), new Date(endDate));
+    res.json(generateResponse({ stats }, "Payment statistics fetched"));
   } catch (error) {
-    return res.status(500).json({ success: false, message: error.message });
+    res.status(500).json(generateError(error.message));
   }
 };

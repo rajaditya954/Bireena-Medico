@@ -1,12 +1,8 @@
-// backend/services/payment.service.js
-import crypto   from "crypto";
+import Payment from "../models/Payment.js";
+import crypto from "crypto";
 import razorpay from "../config/razorpay.js";
-import { config } from "../config/env.js";
-import Payment  from "../models/Payment.js";
 
 class PaymentService {
-  // ── CRUD ────────────────────────────────────────────────────────────────
-
   async createPayment(paymentData) {
     const payment = new Payment(paymentData);
     await payment.save();
@@ -18,96 +14,79 @@ class PaymentService {
   }
 
   async getPaymentsByPatient(patientId) {
-    return await Payment.find({ patientId }).populate("invoiceId").sort({ createdAt: -1 });
+    return await Payment.find({ patientId }).populate("invoiceId");
   }
 
   async getPaymentsByInvoice(invoiceId) {
-    return await Payment.find({ invoiceId }).sort({ createdAt: -1 });
+    return await Payment.find({ invoiceId });
   }
 
   async updatePaymentStatus(id, status, failureReason = null) {
-    const updateData = { status };
-    if (failureReason)     updateData.failureReason = failureReason;
-    if (status === "success") updateData.paymentDate = new Date();
+    const updateData = { status, paymentStatus: status.toUpperCase() };  // keep both fields consistent
+    if (failureReason) updateData.failureReason = failureReason;
+    if (status === "success") {
+      updateData.paidAt = new Date();
+      updateData.paymentDate = new Date();
+    }
+
     return await Payment.findByIdAndUpdate(id, updateData, { new: true });
   }
 
-  // ── Razorpay ────────────────────────────────────────────────────────────
-
-  /**
-   * Create a Razorpay order on the backend.
-   * amount  – in PAISE (multiply rupees × 100 before calling)
-   * receipt – any unique string (we use appointment ID)
-   */
-  async createRazorpayOrder(amount, currency = "INR", receipt) {
-    if (!config.razorpayKeyId || !config.razorpaySecret) {
-      throw new Error(
-        "Razorpay credentials are not configured on the server. " +
-        "Set RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in backend/.env"
-      );
+  async verifyRazorpayPayment(paymentId, orderId, signature) {
+    if (!razorpay) {
+      throw new Error("Razorpay not configured. Check your API keys.");
     }
 
-    const order = await razorpay.orders.create({
-      amount,           // paise
-      currency,
-      receipt,
-      payment_capture: 1,
-    });
-
-    return order;
-  }
-
-  /**
-   * Verify HMAC signature returned by Razorpay after successful payment.
-   * Returns true if signature is valid, false otherwise.
-   */
-  async verifyRazorpayPayment(razorpayPaymentId, razorpayOrderId, signature) {
-    if (!razorpayPaymentId || !razorpayOrderId || !signature) return false;
-
-    const body              = `${razorpayOrderId}|${razorpayPaymentId}`;
-    const generatedSignature = crypto
-      .createHmac("sha256", config.razorpaySecret)
+    const secret = process.env.RAZORPAY_SECRET;
+    const body = orderId + "|" + paymentId;
+    const expectedSignature = crypto
+      .createHmac("sha256", secret)
       .update(body)
       .digest("hex");
 
-    return generatedSignature === signature;
+    return expectedSignature === signature;
   }
-
-  // ── Refund ──────────────────────────────────────────────────────────────
 
   async processRefund(paymentId, refundAmount) {
     const payment = await this.getPaymentById(paymentId);
     if (!payment || payment.status !== "success") {
-      throw new Error("Cannot refund: payment not found or not in success state.");
+      throw new Error("Cannot refund this payment");
     }
 
-    // Call Razorpay refund API
-    await razorpay.payments.refund(payment.transactionId, {
-      amount: Math.round(refundAmount * 100), // paise
-    });
+    // Optional: call Razorpay refund API if you have razorpay_payment_id stored
+    if (razorpay && payment.razorpayPaymentId) {
+      try {
+        const refund = await razorpay.payments.refund(payment.razorpayPaymentId, {
+          amount: refundAmount * 100, // convert to paise
+        });
+        // You may store refund details in a separate collection
+      } catch (err) {
+        console.error("Razorpay refund failed:", err);
+        throw new Error("Refund failed at payment gateway");
+      }
+    }
 
-    return await Payment.findByIdAndUpdate(
+    const updatedPayment = await Payment.findByIdAndUpdate(
       paymentId,
-      { status: "refunded" },
+      { status: "refunded", paymentStatus: "REFUNDED" },
       { new: true }
     );
+    return updatedPayment;
   }
-
-  // ── Statistics ──────────────────────────────────────────────────────────
 
   async getPaymentStatistics(startDate, endDate) {
     return await Payment.aggregate([
       {
         $match: {
-          createdAt: { $gte: new Date(startDate), $lte: new Date(endDate) },
+          createdAt: { $gte: startDate, $lte: endDate },
           status: "success",
         },
       },
       {
         $group: {
-          _id:         "$paymentMethod",
+          _id: "$paymentMethod",
           totalAmount: { $sum: "$amount" },
-          count:       { $sum: 1 },
+          count: { $sum: 1 },
         },
       },
     ]);
