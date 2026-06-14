@@ -38,6 +38,8 @@ export default function AddAppointment({ isEmbedded = false }) {
 
 
 
+
+
   const [booked, setBooked] = useState(false);
   const [bookedApt, setBookedApt] = useState(null);
 
@@ -135,6 +137,8 @@ export default function AddAppointment({ isEmbedded = false }) {
       setRegLoading(false);
     }
   };
+
+
 
 
 
@@ -247,8 +251,15 @@ export default function AddAppointment({ isEmbedded = false }) {
             <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Patient</label>
             {!isRegistering && !bookingPatient && (
               <button
-                onClick={() => { setIsRegistering(true); setRegForm({ name: patientSearch, phone: "" }); }}
-                className="text-xs font-bold text-[#0F5C3A] flex items-center gap-1 hover:underline"
+                onClick={() => {
+                  if (isEmbedded) {
+                    setIsRegistering(true);
+                    setRegForm({ name: patientSearch, phone: "" });
+                  } else {
+                    navigate("/appointment/add-patient");
+                  }
+                }}
+                className="text-xs font-bold text-[#0F5C3A] flex items-center gap-1 hover:underline cursor-pointer"
               >
                 <Plus className="w-3.5 h-3.5" /> Register New Patient
               </button>

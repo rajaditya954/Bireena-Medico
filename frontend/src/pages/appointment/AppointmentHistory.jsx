@@ -307,8 +307,8 @@ export default function AppointmentHistory() {
               <div className="col-span-1">Token</div>
               <div className="col-span-3">Patient</div>
               <div className="col-span-3">Doctor / Consultant</div>
-              <div className="col-span-2">Type</div>
-              <div className="col-span-1 text-right">Status</div>
+              <div className="col-span-1">Type</div>
+              <div className="col-span-2 text-right">Status</div>
             </div>
           )}
 
@@ -368,12 +368,12 @@ export default function AppointmentHistory() {
                     </div>
 
                     {/* Type */}
-                    <div className="col-span-2 text-sm text-gray-500 font-bold capitalize">
+                    <div className="col-span-1 text-sm text-gray-500 font-bold capitalize">
                       {a.type || a.appointmentType || "walk-in"}
                     </div>
 
                     {/* Status */}
-                    <div className="col-span-1 text-right">
+                    <div className="col-span-2 text-right">
                       {getStatusBadge(a.status)}
                     </div>
                   </div>
