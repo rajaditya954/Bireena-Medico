@@ -7,9 +7,6 @@ export const config = {
     .split(",")
     .map((s) => s.trim()),
   nodeEnv: process.env.NODE_ENV || "development",
-  razorpayKey: process.env.RAZORPAY_KEY_ID || process.env.RAZORPAY_KEY,
-  razorpaySecret: process.env.RAZORPAY_KEY_SECRET || process.env.RAZORPAY_SECRET,
-  razorpayOauthToken: process.env.RAZORPAY_OAUTH_TOKEN,
   cloudinaryName: process.env.CLOUDINARY_NAME,
   cloudinaryKey: process.env.CLOUDINARY_KEY,
   cloudinarySecret: process.env.CLOUDINARY_SECRET,

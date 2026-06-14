@@ -1,6 +1,4 @@
 import Payment from "../models/Payment.js";
-import crypto from "crypto";
-import razorpay from "../config/razorpay.js";
 
 class PaymentService {
   async createPayment(paymentData) {
@@ -32,38 +30,10 @@ class PaymentService {
     return await Payment.findByIdAndUpdate(id, updateData, { new: true });
   }
 
-  async verifyRazorpayPayment(paymentId, orderId, signature) {
-    if (!razorpay) {
-      throw new Error("Razorpay not configured. Check your API keys.");
-    }
-
-    const secret = process.env.RAZORPAY_SECRET;
-    const body = orderId + "|" + paymentId;
-    const expectedSignature = crypto
-      .createHmac("sha256", secret)
-      .update(body)
-      .digest("hex");
-
-    return expectedSignature === signature;
-  }
-
   async processRefund(paymentId, refundAmount) {
     const payment = await this.getPaymentById(paymentId);
     if (!payment || payment.status !== "success") {
       throw new Error("Cannot refund this payment");
-    }
-
-    // Optional: call Razorpay refund API if you have razorpay_payment_id stored
-    if (razorpay && payment.razorpayPaymentId) {
-      try {
-        const refund = await razorpay.payments.refund(payment.razorpayPaymentId, {
-          amount: refundAmount * 100, // convert to paise
-        });
-        // You may store refund details in a separate collection
-      } catch (err) {
-        console.error("Razorpay refund failed:", err);
-        throw new Error("Refund failed at payment gateway");
-      }
     }
 
     const updatedPayment = await Payment.findByIdAndUpdate(

@@ -4,40 +4,32 @@ const AppointmentSchema = new mongoose.Schema(
   {
     appointmentId: { type: String, unique: true, index: true },
     patientId: { type: mongoose.Schema.Types.ObjectId, ref: "Patient", required: true },
+    patientName: { type: String },
+    patientPhone: { type: String },
     doctorId: { type: mongoose.Schema.Types.ObjectId, ref: "Doctor", required: true },
+    doctorName: { type: String },
     appointmentDate: { type: Date, required: true },
+    date: { type: String }, // "yyyy-MM-dd" format
     appointmentType: {
       type: String,
-      enum: ["WALK_IN", "ONLINE", "VIDEO", "OPD"],
       default: "WALK_IN",
     },
+    type: { type: String }, // "walk-in" | "scheduled"
+    consultantType: { type: String }, // "doctor" | "lab" | "both"
     priority: {
       type: String,
-      enum: ["NORMAL", "HIGH", "URGENT"],
-      default: "NORMAL",
+      default: "normal",
     },
     tokenNumber: { type: Number },
-    slot: { type: String, required: true }, // HH:MM format
+    slot: { type: String }, // "HH:MM" format
+    slotId: { type: String },
     status: {
       type: String,
-      enum: [
-        "scheduled",
-        "waiting",
-        "WAITING",
-        "in_progress",
-        "IN_PROGRESS",
-        "in-progress",
-        "completed",
-        "CANCELLED",
-        "cancelled",
-        "no-show",
-        "NO_SHOW",
-      ],
       default: "scheduled",
     },
     notes: { type: String },
     reason: { type: String },
-    createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    createdBy: { type: String },
   },
   { timestamps: true }
 );

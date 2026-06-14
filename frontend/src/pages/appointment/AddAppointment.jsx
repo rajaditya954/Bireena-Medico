@@ -36,6 +36,8 @@ export default function AddAppointment({ isEmbedded = false }) {
   const [regForm, setRegForm] = useState({ name: "", phone: "" });
   const [regLoading, setRegLoading] = useState(false);
 
+
+
   const [booked, setBooked] = useState(false);
   const [bookedApt, setBookedApt] = useState(null);
 
@@ -134,6 +136,8 @@ export default function AddAppointment({ isEmbedded = false }) {
     }
   };
 
+
+
   const resetForm = () => {
     setBookingPatient(null);
     setPatientSearch("");
@@ -154,9 +158,9 @@ export default function AddAppointment({ isEmbedded = false }) {
   // ── Success screen ─────────────────────────────────────────
   if (booked && bookedApt) {
     return (
-      <div className="max-w-xl mx-auto mt-16 text-center space-y-6">
+      <div className={cn("mx-auto text-center space-y-6", isEmbedded ? "max-w-full mt-4" : "max-w-xl mt-16")}>
         <Toaster position="top-right" />
-        <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto">
+        <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto shrink-0">
           <CheckCircle2 className="w-10 h-10 text-[#0F5C3A]" />
         </div>
         <div>
@@ -246,7 +250,7 @@ export default function AddAppointment({ isEmbedded = false }) {
                 onClick={() => { setIsRegistering(true); setRegForm({ name: patientSearch, phone: "" }); }}
                 className="text-xs font-bold text-[#0F5C3A] flex items-center gap-1 hover:underline"
               >
-                <Plus className="w-3 h-3" /> Register New Patient
+                <Plus className="w-3.5 h-3.5" /> Register New Patient
               </button>
             )}
           </div>
@@ -265,22 +269,22 @@ export default function AddAppointment({ isEmbedded = false }) {
               </button>
             </div>
           ) : isRegistering ? (
-            <div className="bg-gray-50 p-4 rounded-xl border space-y-3">
+            <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 space-y-3">
               <div className="flex justify-between items-center">
-                <span className="text-sm font-bold text-gray-700">Quick Patient Registration</span>
+                <span className="text-xs font-bold text-gray-700">Quick Patient Registration</span>
                 <button onClick={() => setIsRegistering(false)}>
                   <X className="w-4 h-4 text-gray-400" />
                 </button>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <input
-                  className="apt-input py-2.5 text-sm"
+                  className="apt-input py-2 text-xs font-medium animate-fadeIn"
                   placeholder="Full Name *"
                   value={regForm.name}
                   onChange={(e) => setRegForm(p => ({ ...p, name: e.target.value }))}
                 />
                 <input
-                  className="apt-input py-2.5 text-sm"
+                  className="apt-input py-2 text-xs font-medium animate-fadeIn"
                   placeholder="Phone Number *"
                   value={regForm.phone}
                   onChange={(e) => setRegForm(p => ({ ...p, phone: e.target.value }))}
@@ -290,11 +294,11 @@ export default function AddAppointment({ isEmbedded = false }) {
                 <button
                   onClick={handleRegister}
                   disabled={regLoading}
-                  className="flex-1 apt-btn-primary py-2.5 text-sm font-bold flex items-center justify-center gap-2"
+                  className="flex-1 py-2 rounded-lg bg-[#0F5C3A] text-white hover:bg-[#0A3E2A] text-xs font-bold flex items-center justify-center gap-2 transition-all"
                 >
-                  {regLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Plus className="w-4 h-4" /> Register & Select</>}
+                  {regLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <><Plus className="w-3.5 h-3.5" /> Register & Select</>}
                 </button>
-                <button onClick={() => setIsRegistering(false)} className="px-4 py-2.5 border border-gray-200 rounded-lg text-sm font-medium text-gray-500 hover:bg-gray-50">
+                <button onClick={() => setIsRegistering(false)} className="px-3 py-2 border border-gray-200 rounded-lg text-xs font-bold text-gray-500 hover:bg-gray-100 transition-all">
                   Cancel
                 </button>
               </div>

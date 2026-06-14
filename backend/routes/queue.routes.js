@@ -3,7 +3,8 @@ import * as queueController from "../controllers/queue.controller.js";
 
 const router = express.Router();
 
-router.get("/doctor/:doctorId", queueController.getQueueByDoctor);
+router.get("/:doctorId", queueController.getQueueByDoctor);
+router.get("/:doctorId/stats", queueController.getQueueStats);
 router.post("/", queueController.addToQueue);
 router.put("/:queueId/checkin", queueController.checkInPatient);
 router.put("/:queueId/complete", queueController.completePatient);

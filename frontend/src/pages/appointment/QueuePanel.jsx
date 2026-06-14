@@ -22,7 +22,7 @@ export default function QueuePanel({ doctorId, date, onStatusChange }) {
   const [refreshing, setRefreshing] = useState(false);
 
   const fetchQueueData = useCallback(async (isAuto = false) => {
-    if (!doctorId) return;
+    if (!doctorId || doctorId === 'all') return;
     try {
       if (!isAuto) setRefreshing(true);
       const [queueRes, statsRes] = await Promise.all([
@@ -41,7 +41,10 @@ export default function QueuePanel({ doctorId, date, onStatusChange }) {
   }, [doctorId, date]);
 
   useEffect(() => {
-    if (!doctorId) return;
+    if (!doctorId || doctorId === 'all') {
+      setLoading(false);
+      return;
+    }
     fetchQueueData();
     connectSocket();
     joinDoctorQueue(doctorId);
@@ -143,22 +146,22 @@ export default function QueuePanel({ doctorId, date, onStatusChange }) {
               <span className="font-black text-sm uppercase tracking-widest flex items-center gap-2"><RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} /> Current Appointment</span>
               {currentPatient && <span className="text-[10px] font-black bg-white/20 px-2 py-1 rounded-full uppercase tracking-tighter">In Progress</span>}
             </div>
-            <div className="p-8">
+            <div className="p-6 md:p-8">
               {currentPatient ? (
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
-                  <div className="flex items-center gap-6">
-                    <div className="w-20 h-20 bg-[#0F5C3A] text-white rounded-3xl flex items-center justify-center text-3xl font-black shadow-xl shadow-emerald-600/20 transform -rotate-3 hover:rotate-0 transition-transform">{currentPatient.tokenNumber}</div>
-                    <div>
-                      <h3 className="text-2xl font-black text-gray-800 tracking-tight">{currentPatient.patientName}</h3>
-                      <p className="text-gray-500 font-medium flex items-center gap-2 mt-1">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 flex-wrap">
+                  <div className="flex items-center gap-4 sm:gap-6 min-w-0">
+                    <div className="w-16 h-16 sm:w-20 sm:h-20 bg-[#0F5C3A] text-white rounded-2xl sm:rounded-3xl flex items-center justify-center text-2xl sm:text-3xl font-black shadow-xl shadow-emerald-600/20 transform -rotate-3 hover:rotate-0 transition-transform shrink-0">{currentPatient.tokenNumber}</div>
+                    <div className="min-w-0">
+                      <h3 className="text-xl sm:text-2xl font-black text-gray-800 tracking-tight truncate">{currentPatient.patientName}</h3>
+                      <p className="text-gray-500 font-medium flex flex-wrap items-center gap-2 mt-1">
                         <span className="apt-badge apt-badge-in-progress uppercase">{currentPatient.type}</span>
-                        <span className="text-sm">at <span className="font-bold text-[#0F5C3A]">{currentPatient.scheduledTime || format(new Date(currentPatient.createdAt), 'HH:mm')}</span></span>
+                        <span className="text-sm whitespace-nowrap">at <span className="font-bold text-[#0F5C3A]">{currentPatient.scheduledTime || format(new Date(currentPatient.createdAt), 'HH:mm')}</span></span>
                       </p>
                     </div>
                   </div>
-                  <div className="flex gap-3">
-                    <button disabled={refreshing} onClick={() => handleStatusChange(currentPatient._id, 'complete')} className="apt-btn-primary h-14 px-8 shadow-lg shadow-emerald-600/20">
-                      <CheckCircle className="w-5 h-5" /> COMPLETE CASE
+                  <div className="flex gap-3 shrink-0">
+                    <button disabled={refreshing} onClick={() => handleStatusChange(currentPatient.appointmentId, 'complete')} className="apt-btn-primary h-12 px-6 shadow-lg shadow-emerald-600/20 whitespace-nowrap">
+                      <CheckCircle className="w-4 h-4" /> COMPLETE CASE
                     </button>
                   </div>
                 </div>
@@ -169,8 +172,8 @@ export default function QueuePanel({ doctorId, date, onStatusChange }) {
                     <h3 className="text-xl font-bold text-gray-800">No Active Patient</h3>
                     <p className="text-gray-400 max-w-xs mx-auto">The doctor is currently available. Call the next patient from the waiting list.</p>
                   </div>
-                  <button disabled={waitingPatients.length === 0 || refreshing} onClick={() => handleStatusChange(waitingPatients[0]._id, 'start')} className="apt-btn-accent h-14 px-10 shadow-lg shadow-emerald-800/20">
-                    <UserPlus className="w-6 h-6" /> CALL NEXT PATIENT
+                  <button disabled={waitingPatients.length === 0 || refreshing} onClick={() => handleStatusChange(waitingPatients[0].appointmentId, 'start')} className="apt-btn-accent h-12 px-8 shadow-lg shadow-emerald-800/20">
+                    <UserPlus className="w-5 h-5" /> CALL NEXT PATIENT
                   </button>
                 </div>
               )}
@@ -199,8 +202,8 @@ export default function QueuePanel({ doctorId, date, onStatusChange }) {
                     </div>
                   </div>
                   <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all transform translate-x-4 group-hover:translate-x-0">
-                    <button onClick={() => handleStatusChange(p._id, 'start')} disabled={refreshing} className="px-4 py-2.5 bg-[#0F5C3A] text-white rounded-xl hover:bg-[#0A3E2A] transition-colors shadow-md shadow-emerald-600/20 flex items-center gap-2 text-xs font-bold" title="Call Patient"><PlayCircle className="w-4 h-4" />Call</button>
-                    <button onClick={() => handleStatusChange(p._id, 'cancel')} disabled={refreshing} className="px-4 py-2.5 bg-red-100 text-red-700 rounded-xl hover:bg-red-200 transition-colors flex items-center gap-2 text-xs font-bold" title="Cancel Appointment"><XCircle className="w-4 h-4" />Cancel</button>
+                    <button onClick={() => handleStatusChange(p.appointmentId, 'start')} disabled={refreshing} className="px-4 py-2.5 bg-[#0F5C3A] text-white rounded-xl hover:bg-[#0A3E2A] transition-colors shadow-md shadow-emerald-600/20 flex items-center gap-2 text-xs font-bold" title="Call Patient"><PlayCircle className="w-4 h-4" />Call</button>
+                    <button onClick={() => handleStatusChange(p.appointmentId, 'cancel')} disabled={refreshing} className="px-4 py-2.5 bg-red-100 text-red-700 rounded-xl hover:bg-red-200 transition-colors flex items-center gap-2 text-xs font-bold" title="Cancel Appointment"><XCircle className="w-4 h-4" />Cancel</button>
                   </div>
                 </div>
               )) : (
@@ -217,10 +220,22 @@ export default function QueuePanel({ doctorId, date, onStatusChange }) {
           <div className="apt-summary-dark">
             <h3 className="font-black text-sm uppercase tracking-widest mb-6 text-white" style={{ opacity: 0.6 }}>Status Summary</h3>
             <div className="space-y-6">
-              <div className="flex items-center justify-between border-b border-white/10 pb-4"><span className="text-xs font-bold uppercase tracking-tighter text-white" style={{ opacity: 0.6 }}>Avg. Consultation</span><span className="font-black text-lg text-white">12 Mins</span></div>
-              <div className="flex items-center justify-between border-b border-white/10 pb-4"><span className="text-xs font-bold uppercase tracking-tighter text-white" style={{ opacity: 0.6 }}>Total Appointments</span><span className="font-black text-lg text-white">{stats.total || 0}</span></div>
-              <div className="flex items-center justify-between border-b border-white/10 pb-4"><span className="text-xs font-bold uppercase tracking-tighter text-white" style={{ opacity: 0.6 }}>Completed Cases</span><span className="font-black text-lg text-white">{stats.completed}</span></div>
-              <div className="flex items-center justify-between pt-2"><span className="text-xs font-bold uppercase tracking-tighter text-white" style={{ opacity: 0.6 }}>Sync Frequency</span><span className="text-[10px] font-black px-2 py-1 rounded-full text-white" style={{ backgroundColor: 'rgba(255,255,255,0.2)' }}>REAL-TIME</span></div>
+              <div className="flex items-center justify-between border-b border-white/10 pb-4 gap-4">
+                <span className="text-xs font-bold uppercase tracking-tighter text-white whitespace-nowrap" style={{ opacity: 0.6 }}>Avg. Consultation</span>
+                <span className="font-black text-lg text-white whitespace-nowrap">12 Mins</span>
+              </div>
+              <div className="flex items-center justify-between border-b border-white/10 pb-4 gap-4">
+                <span className="text-xs font-bold uppercase tracking-tighter text-white whitespace-nowrap" style={{ opacity: 0.6 }}>Total Appointments</span>
+                <span className="font-black text-lg text-white whitespace-nowrap">{stats.total || 0}</span>
+              </div>
+              <div className="flex items-center justify-between border-b border-white/10 pb-4 gap-4">
+                <span className="text-xs font-bold uppercase tracking-tighter text-white whitespace-nowrap" style={{ opacity: 0.6 }}>Completed Cases</span>
+                <span className="font-black text-lg text-white whitespace-nowrap">{stats.completed}</span>
+              </div>
+              <div className="flex items-center justify-between pt-2 gap-4">
+                <span className="text-xs font-bold uppercase tracking-tighter text-white whitespace-nowrap" style={{ opacity: 0.6 }}>Sync Frequency</span>
+                <span className="text-[10px] font-black px-2 py-1 rounded-full text-white whitespace-nowrap" style={{ backgroundColor: 'rgba(255,255,255,0.2)' }}>REAL-TIME</span>
+              </div>
             </div>
             <div className="pt-4"><p className="text-[10px] text-white/40 text-center font-medium uppercase tracking-widest">Data automatically syncs every 30s</p></div>
           </div>

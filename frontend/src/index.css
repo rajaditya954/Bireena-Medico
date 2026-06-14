@@ -48,3 +48,58 @@
     background: #10b981;
   }
 }
+
+@layer utilities {
+  .apt-card {
+    @apply border border-[#0F5C3A]/8 rounded-2xl shadow-sm transition-all duration-300;
+  }
+  :where(.apt-card) {
+    background-color: #ffffff;
+  }
+  .apt-card:hover {
+    @apply border-[#0F5C3A]/15 shadow-md;
+  }
+
+  .apt-input {
+    @apply w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-gray-800 outline-none transition-all duration-200 focus:border-[#0F5C3A] focus:ring-4 focus:ring-[#0F5C3A]/8 placeholder-gray-400;
+  }
+
+  .apt-btn-primary {
+    @apply inline-flex items-center justify-center gap-2 bg-[#0F5C3A] text-white font-bold rounded-xl border-none cursor-pointer transition-all duration-200 hover:bg-[#0A3E2A] hover:shadow-lg hover:shadow-[#0F5C3A]/20 active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none;
+  }
+
+  .apt-btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 bg-white border border-gray-200 text-gray-600 font-bold rounded-xl cursor-pointer transition-all duration-200 hover:border-[#0F5C3A] hover:text-[#0F5C3A] hover:bg-gray-50 active:scale-98;
+  }
+
+  .apt-btn-accent {
+    @apply inline-flex items-center justify-center gap-2 bg-[#166A45] text-white font-bold rounded-xl border-none cursor-pointer transition-all duration-200 hover:bg-[#0F5C3A] hover:shadow-lg hover:shadow-[#166A45]/20 active:scale-98;
+  }
+
+  .apt-badge {
+    @apply inline-flex items-center justify-center px-2.5 py-1 text-xs font-bold rounded-full uppercase tracking-wider;
+  }
+  .apt-badge-waiting {
+    @apply bg-amber-50 text-amber-700 border border-amber-100;
+  }
+  .apt-badge-in-progress {
+    @apply bg-blue-50 text-blue-700 border border-blue-100;
+  }
+  .apt-badge-completed {
+    @apply bg-emerald-50 text-emerald-700 border border-emerald-100;
+  }
+  .apt-badge-cancelled {
+    @apply bg-red-50 text-red-600 border border-red-100;
+  }
+  .apt-badge-upcoming {
+    @apply bg-gray-50 text-gray-600 border border-gray-100;
+  }
+  .apt-badge-emergency {
+    @apply bg-red-50 text-red-600 border border-red-200 animate-pulse;
+  }
+
+  .apt-summary-dark {
+    @apply bg-[#0A3E2A] text-white rounded-2xl p-6 shadow-xl shadow-[#0A3E2A]/20;
+  }
+}
+

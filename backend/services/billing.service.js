@@ -3,6 +3,10 @@ import Invoice from "../models/Invoice.js";
 
 class BillingService {
   async createBilling(billingData) {
+    if (!billingData.billingId) {
+      const count = await Billing.countDocuments();
+      billingData.billingId = `BILL-${Date.now()}-${count + 1}`;
+    }
     const billing = new Billing(billingData);
     await billing.save();
     return billing;
@@ -29,7 +33,8 @@ class BillingService {
       invoiceNumber,
       billingId,
       patientId: billing.patientId,
-      amount: billing.totalAmount,
+      amount: billing.total,
+      status: "paid",
     });
 
     await invoice.save();

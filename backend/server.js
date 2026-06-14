@@ -4,12 +4,14 @@ import app from "./app.js";
 import { connectDB } from "./config/database.js";
 import { config } from "./config/env.js";
 import { initializeSockets } from "./sockets/index.js";
+import { initSocket } from "./config/socket.js";
 import { logger } from "./utils/logger.js";
 
 const server = http.createServer(app);
 
 // Initialize Socket.io
-const io = initializeSockets(server);
+const io = initSocket(server);
+initializeSockets(io);
 global.io = io; // Make io globally available
 
 // Connect to MongoDB

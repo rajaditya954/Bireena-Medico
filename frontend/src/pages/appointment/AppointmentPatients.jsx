@@ -1,37 +1,684 @@
-import React from "react";
+import React, { useState, useEffect, useCallback } from "react";
+import {
+  Search,
+  Loader2,
+  Users,
+  Phone,
+  UserPlus,
+  RefreshCw,
+  Eye,
+  ChevronLeft,
+  ChevronRight,
+  Edit,
+  X,
+  User,
+  Activity,
+  Heart,
+  ShieldAlert,
+  FileText
+} from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
+import { createPortal } from "react-dom";
+import toast, { Toaster } from "react-hot-toast";
+import * as api from "../../services/appointmentApi";
+
+const ITEMS_PER_PAGE = 10;
+const BLOOD_GROUPS = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
+const MARITAL_STATUSES = ["Single", "Married", "Divorced", "Widowed"];
+const GENDERS = ["Male", "Female", "Other"];
 
 const AppointmentPatients = () => {
+  const navigate = useNavigate();
+  const [patients, setPatients] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [editingPatient, setEditingPatient] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [editForm, setEditForm] = useState({
+    fullName: "",
+    phone: "",
+    dob: "",
+    age: "",
+    gender: "",
+    bloodGroup: "",
+    maritalStatus: "",
+    email: "",
+    address: "",
+    city: "",
+    state: "",
+    pincode: "",
+    referredBy: "",
+    allergies: "",
+    chronicDiseases: "",
+    emergencyContactName: "",
+    emergencyContactRelation: "",
+    emergencyContactPhone: "",
+    insuranceProvider: "",
+    insurancePolicyNumber: "",
+  });
+
+  const handleEditClick = (patient) => {
+    setEditingPatient(patient);
+    setEditForm({
+      fullName: patient.fullName || patient.name || "",
+      phone: patient.phone || "",
+      dob: patient.dob ? patient.dob.split("T")[0] : "",
+      age: patient.age || "",
+      gender: patient.gender || "",
+      bloodGroup: patient.bloodGroup || "",
+      maritalStatus: patient.maritalStatus || "",
+      email: patient.email || "",
+      address: patient.address || "",
+      city: patient.city || "",
+      state: patient.state || "",
+      pincode: patient.pincode || "",
+      referredBy: patient.referredBy || "",
+      allergies: Array.isArray(patient.allergies) ? patient.allergies.join(", ") : "",
+      chronicDiseases: Array.isArray(patient.chronicDiseases) ? patient.chronicDiseases.join(", ") : "",
+      emergencyContactName: patient.emergencyContact?.name || "",
+      emergencyContactRelation: patient.emergencyContact?.relation || "",
+      emergencyContactPhone: patient.emergencyContact?.phone || "",
+      insuranceProvider: patient.insuranceInfo?.provider || "",
+      insurancePolicyNumber: patient.insuranceInfo?.policyNumber || "",
+    });
+  };
+
+  const handleEditSubmit = async (e) => {
+    e.preventDefault();
+    if (!editForm.fullName || !editForm.phone) {
+      return toast.error("Full Name and Phone are required");
+    }
+
+    try {
+      setSaving(true);
+      const payload = {
+        fullName: editForm.fullName,
+        phone: editForm.phone,
+        dob: editForm.dob ? new Date(editForm.dob) : undefined,
+        age: editForm.age ? Number(editForm.age) : undefined,
+        gender: editForm.gender || undefined,
+        bloodGroup: editForm.bloodGroup || undefined,
+        maritalStatus: editForm.maritalStatus || undefined,
+        email: editForm.email || undefined,
+        address: editForm.address || undefined,
+        city: editForm.city || undefined,
+        state: editForm.state || undefined,
+        pincode: editForm.pincode || undefined,
+        referredBy: editForm.referredBy || undefined,
+        allergies: editForm.allergies ? editForm.allergies.split(",").map(s => s.trim()).filter(Boolean) : [],
+        chronicDiseases: editForm.chronicDiseases ? editForm.chronicDiseases.split(",").map(s => s.trim()).filter(Boolean) : [],
+        emergencyContact: {
+          name: editForm.emergencyContactName,
+          relation: editForm.emergencyContactRelation,
+          phone: editForm.emergencyContactPhone,
+        },
+        insuranceInfo: {
+          provider: editForm.insuranceProvider,
+          policyNumber: editForm.insurancePolicyNumber,
+        }
+      };
+
+      await api.updatePatient(editingPatient.id || editingPatient._id, payload);
+      toast.success("Patient details updated successfully ✅");
+      setEditingPatient(null);
+      fetchPatients(searchTerm);
+    } catch (err) {
+      console.error("Failed to update patient:", err);
+      toast.error(err.response?.data?.message || err.message || "Failed to update patient details");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const fetchPatients = useCallback(async (search = "") => {
+    try {
+      setLoading(true);
+      const res = await api.searchPatients(search);
+      setPatients(res.data?.data || []);
+    } catch (err) {
+      console.error("Failed to fetch patients:", err);
+      setPatients([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Initial load
+  useEffect(() => {
+    fetchPatients();
+  }, [fetchPatients]);
+
+  // Debounced search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchPatients(searchTerm);
+      setCurrentPage(1);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [searchTerm, fetchPatients]);
+
+  // Pagination
+  const totalPages = Math.max(1, Math.ceil(patients.length / ITEMS_PER_PAGE));
+  const paginatedPatients = patients.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-bold text-gray-900">All Patients</h1>
-      
-      <div className="bg-white rounded-lg shadow-md overflow-hidden">
-        <table className="w-full">
-          <thead className="bg-gray-50 border-b border-gray-200">
-            <tr>
-              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
-                Patient ID
-              </th>
-              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
-                Name
-              </th>
-              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
-                Phone
-              </th>
-              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
-                Action
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr className="border-b border-gray-200 hover:bg-gray-50">
-              <td colSpan="4" className="px-6 py-8 text-center text-gray-600">
-                No patients found
-              </td>
-            </tr>
-          </tbody>
-        </table>
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-[#06402B] tracking-tight">
+            All Patients
+          </h1>
+          <p className="text-gray-500 text-sm mt-1">
+            View and manage all registered patients.
+          </p>
+        </div>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => fetchPatients(searchTerm)}
+            className="h-11 w-11 flex items-center justify-center rounded-xl border border-gray-200 text-gray-500 hover:bg-emerald-50 hover:text-emerald-600 hover:border-emerald-200 transition-all"
+            title="Refresh"
+          >
+            <RefreshCw className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => navigate("/appointment/add-patient")}
+            className="h-11 px-5 bg-[#0F5C3A] text-white rounded-xl font-bold text-sm hover:bg-[#0A3E2A] transition-all flex items-center gap-2 shadow-lg shadow-emerald-600/20"
+          >
+            <UserPlus className="w-4 h-4" />
+            Add Patient
+          </button>
+        </div>
       </div>
+
+      {/* Main Card */}
+      <div className="bg-white p-4 rounded-3xl border border-gray-100 shadow-sm space-y-4">
+        {/* Search Bar */}
+        <div className="relative group">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-emerald-500 transition-colors" />
+          <input
+            type="text"
+            placeholder="Search by Name, Patient ID or Phone..."
+            className="w-full h-12 pl-12 pr-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-emerald-500/20 transition-all outline-none"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+
+        {loading ? (
+          <div className="h-64 flex flex-col items-center justify-center gap-4">
+            <Loader2 className="w-8 h-8 text-emerald-600 animate-spin" />
+            <p className="text-sm font-bold text-gray-400 uppercase tracking-widest">
+              Loading patients...
+            </p>
+          </div>
+        ) : (
+          <>
+            {/* Patients Table */}
+            <div className="overflow-x-auto rounded-2xl border border-gray-100">
+              <table className="w-full text-left border-collapse min-w-[700px]">
+                <thead>
+                  <tr className="bg-gray-50/50 border-b border-gray-100">
+                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-gray-400">
+                      Patient ID
+                    </th>
+                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-gray-400">
+                      Patient Name
+                    </th>
+                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-gray-400">
+                      Phone
+                    </th>
+                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-gray-400 text-right">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {paginatedPatients.map((patient) => (
+                    <tr
+                      key={patient.id || patient._id}
+                      className="hover:bg-gray-50/30 transition-colors group"
+                    >
+                      <td className="px-6 py-4">
+                        <span className="font-mono text-xs font-bold text-gray-500">
+                          {patient.patientId || patient.id || patient._id}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-700 font-bold text-xs">
+                            {(patient.name || patient.fullName || "?")
+                              .split(" ")
+                              .map((n) => n[0])
+                              .join("")
+                              .slice(0, 2)
+                              .toUpperCase()}
+                          </div>
+                          <p className="font-bold text-gray-900 uppercase tracking-tight">
+                            {patient.name || patient.fullName || "—"}
+                          </p>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-sm font-medium text-gray-500">
+                        <div className="flex items-center gap-1">
+                          <Phone className="w-3 h-3" />
+                          {patient.phone || "—"}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-right whitespace-nowrap">
+                        <div className="flex items-center justify-end gap-1">
+                          <button
+                            onClick={() => handleEditClick(patient)}
+                            className="p-2 text-gray-400 hover:text-[#0F5C3A] hover:bg-emerald-50 rounded-xl transition-all cursor-pointer"
+                            title="Edit Details"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          <button
+                            className="p-2 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all cursor-pointer"
+                            title="View Patient"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {patients.length === 0 && (
+                <div className="p-12 text-center">
+                  <div className="w-20 h-20 bg-gray-50 rounded-3xl flex items-center justify-center mx-auto mb-4 border border-gray-100 shadow-inner">
+                    <Users className="w-10 h-10 text-gray-200" />
+                  </div>
+                  <h3 className="text-lg font-bold text-gray-900 mb-1">
+                    No patients found
+                  </h3>
+                  <p className="text-sm text-gray-400">
+                    {searchTerm
+                      ? "Try adjusting your search."
+                      : "Start by adding a new patient."}
+                  </p>
+                  {!searchTerm && (
+                    <button
+                      onClick={() => navigate("/appointment/add-patient")}
+                      className="mt-4 px-6 py-2.5 bg-[#0F5C3A] text-white rounded-xl font-bold text-sm hover:bg-[#0A3E2A] transition inline-flex items-center gap-2"
+                    >
+                      <UserPlus className="w-4 h-4" />
+                      Add First Patient
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Pagination */}
+            {patients.length > 0 && (
+              <div className="flex items-center justify-between p-2">
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">
+                  Showing {(currentPage - 1) * ITEMS_PER_PAGE + 1}–
+                  {Math.min(currentPage * ITEMS_PER_PAGE, patients.length)} of{" "}
+                  {patients.length} patients
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() =>
+                      setCurrentPage((p) => Math.max(1, p - 1))
+                    }
+                    disabled={currentPage === 1}
+                    className="w-10 h-10 rounded-xl border border-gray-100 text-gray-400 hover:text-emerald-600 flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  {Array.from({ length: totalPages }, (_, i) => i + 1)
+                    .filter(
+                      (p) =>
+                        p === 1 ||
+                        p === totalPages ||
+                        Math.abs(p - currentPage) <= 1
+                    )
+                    .map((page, idx, arr) => (
+                      <React.Fragment key={page}>
+                        {idx > 0 && arr[idx - 1] !== page - 1 && (
+                          <span className="w-10 h-10 flex items-center justify-center text-gray-300">
+                            …
+                          </span>
+                        )}
+                        <button
+                          onClick={() => setCurrentPage(page)}
+                          className={`w-10 h-10 rounded-xl border flex items-center justify-center font-bold transition-all ${
+                            currentPage === page
+                              ? "border-emerald-200 text-emerald-600 shadow-sm shadow-emerald-600/5"
+                              : "border-gray-100 text-gray-400 hover:text-emerald-600"
+                          }`}
+                        >
+                          {page}
+                        </button>
+                      </React.Fragment>
+                    ))}
+                  <button
+                    onClick={() =>
+                      setCurrentPage((p) => Math.min(totalPages, p + 1))
+                    }
+                    disabled={currentPage === totalPages}
+                    className="w-10 h-10 rounded-xl border border-gray-100 text-gray-400 hover:text-emerald-600 flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+
+      {/* Edit Modal */}
+      {createPortal(
+        <AnimatePresence>
+          {editingPatient && (
+            <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 backdrop-blur-xs text-left" style={{ zIndex: 9999 }}>
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="bg-white rounded-3xl w-full max-w-4xl shadow-xl overflow-hidden border border-gray-100 max-h-[90vh] flex flex-col"
+              >
+                {/* Modal Header */}
+                <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-emerald-50 text-left">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-lg bg-emerald-600 flex items-center justify-center text-white">
+                      <User className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h2 className="font-black text-[#0A3E2A] text-lg">Edit Patient Profile</h2>
+                      <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">UHID: {editingPatient.patientId || editingPatient.id || editingPatient._id}</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setEditingPatient(null)}
+                    className="p-1.5 hover:bg-emerald-100 rounded-lg text-gray-500 transition cursor-pointer"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                {/* Modal Body */}
+                <form onSubmit={handleEditSubmit} className="flex-1 overflow-y-auto p-6 space-y-6 text-left">
+                  
+                  {/* 1. Core Profile Details */}
+                  <div className="space-y-4">
+                    <h3 className="text-xs font-bold text-emerald-800 uppercase tracking-wider flex items-center gap-1.5 border-b border-gray-100 pb-1.5">
+                      <Activity className="w-3.5 h-3.5" /> Core Information
+                    </h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <div className="space-y-1">
+                        <label className="text-xs font-bold text-gray-600">Full Name *</label>
+                        <input
+                          type="text"
+                          required
+                          className="apt-input py-2 text-sm"
+                          value={editForm.fullName}
+                          onChange={(e) => setEditForm({ ...editForm, fullName: e.target.value })}
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-xs font-bold text-gray-600">Phone *</label>
+                        <input
+                          type="text"
+                          required
+                          className="apt-input py-2 text-sm"
+                          value={editForm.phone}
+                          onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-xs font-bold text-gray-600">Email Address</label>
+                        <input
+                          type="email"
+                          className="apt-input py-2 text-sm"
+                          value={editForm.email}
+                          onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+                      <div className="space-y-1">
+                        <label className="text-xs font-bold text-gray-600">Age</label>
+                        <input
+                          type="number"
+                          min="0"
+                          className="apt-input py-2 text-sm"
+                          value={editForm.age}
+                          onChange={(e) => setEditForm({ ...editForm, age: e.target.value })}
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-xs font-bold text-gray-600">Date of Birth</label>
+                        <input
+                          type="date"
+                          className="apt-input py-2 text-sm"
+                          value={editForm.dob}
+                          onChange={(e) => setEditForm({ ...editForm, dob: e.target.value })}
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-xs font-bold text-gray-600">Gender</label>
+                        <select
+                          className="apt-input py-2 text-sm"
+                          value={editForm.gender}
+                          onChange={(e) => setEditForm({ ...editForm, gender: e.target.value })}
+                        >
+                          <option value="">Select</option>
+                          {GENDERS.map(g => <option key={g} value={g}>{g}</option>)}
+                        </select>
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-xs font-bold text-gray-600">Blood Group</label>
+                        <select
+                          className="apt-input py-2 text-sm"
+                          value={editForm.bloodGroup}
+                          onChange={(e) => setEditForm({ ...editForm, bloodGroup: e.target.value })}
+                        >
+                          <option value="">Select</option>
+                          {BLOOD_GROUPS.map(bg => <option key={bg} value={bg}>{bg}</option>)}
+                        </select>
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-xs font-bold text-gray-600">Marital Status</label>
+                        <select
+                          className="apt-input py-2 text-sm"
+                          value={editForm.maritalStatus}
+                          onChange={(e) => setEditForm({ ...editForm, maritalStatus: e.target.value })}
+                        >
+                          <option value="">Select</option>
+                          {MARITAL_STATUSES.map(ms => <option key={ms} value={ms}>{ms}</option>)}
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 2. Address & Referred Doctor */}
+                  <div className="space-y-4">
+                    <h3 className="text-xs font-bold text-emerald-800 uppercase tracking-wider flex items-center gap-1.5 border-b border-gray-100 pb-1.5">
+                      <User className="w-3.5 h-3.5" /> Address & Referral
+                    </h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <div className="sm:col-span-2 space-y-1">
+                        <label className="text-xs font-bold text-gray-600">Street Address</label>
+                        <input
+                          type="text"
+                          className="apt-input py-2 text-sm"
+                          value={editForm.address}
+                          onChange={(e) => setEditForm({ ...editForm, address: e.target.value })}
+                        />
+                      </div>
+                      <div className="sm:col-span-1 space-y-1">
+                        <label className="text-xs font-bold text-gray-600">Referred Doctor / Channel</label>
+                        <input
+                          type="text"
+                          className="apt-input py-2 text-sm"
+                          value={editForm.referredBy}
+                          onChange={(e) => setEditForm({ ...editForm, referredBy: e.target.value })}
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <div className="space-y-1">
+                        <label className="text-xs font-bold text-gray-600">City</label>
+                        <input
+                          type="text"
+                          className="apt-input py-2 text-sm"
+                          value={editForm.city}
+                          onChange={(e) => setEditForm({ ...editForm, city: e.target.value })}
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-xs font-bold text-gray-600">State</label>
+                        <input
+                          type="text"
+                          className="apt-input py-2 text-sm"
+                          value={editForm.state}
+                          onChange={(e) => setEditForm({ ...editForm, state: e.target.value })}
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-xs font-bold text-gray-600">Pincode</label>
+                        <input
+                          type="text"
+                          className="apt-input py-2 text-sm"
+                          value={editForm.pincode}
+                          onChange={(e) => setEditForm({ ...editForm, pincode: e.target.value })}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 3. Medical Info */}
+                  <div className="space-y-4">
+                    <h3 className="text-xs font-bold text-emerald-800 uppercase tracking-wider flex items-center gap-1.5 border-b border-gray-100 pb-1.5">
+                      <Heart className="w-3.5 h-3.5" /> Medical Conditions & History
+                    </h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <label className="text-xs font-bold text-gray-600">Allergies (comma-separated)</label>
+                        <input
+                          type="text"
+                          placeholder="e.g. Penicillin, Peanuts"
+                          className="apt-input py-2 text-sm"
+                          value={editForm.allergies}
+                          onChange={(e) => setEditForm({ ...editForm, allergies: e.target.value })}
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-xs font-bold text-gray-600">Chronic Diseases (comma-separated)</label>
+                        <input
+                          type="text"
+                          placeholder="e.g. Asthma, Hypertension"
+                          className="apt-input py-2 text-sm"
+                          value={editForm.chronicDiseases}
+                          onChange={(e) => setEditForm({ ...editForm, chronicDiseases: e.target.value })}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 4. Emergency Contact & Insurance */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div className="space-y-4">
+                      <h3 className="text-xs font-bold text-emerald-800 uppercase tracking-wider flex items-center gap-1.5 border-b border-gray-100 pb-1.5">
+                        <ShieldAlert className="w-3.5 h-3.5" /> Emergency Contact
+                      </h3>
+                      <div className="space-y-3">
+                        <div className="space-y-1">
+                          <label className="text-xs font-bold text-gray-600">Contact Name</label>
+                          <input
+                            type="text"
+                            className="apt-input py-2 text-sm"
+                            value={editForm.emergencyContactName}
+                            onChange={(e) => setEditForm({ ...editForm, emergencyContactName: e.target.value })}
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-1">
+                            <label className="text-xs font-bold text-gray-600">Relation</label>
+                            <input
+                              type="text"
+                              className="apt-input py-2 text-sm"
+                              value={editForm.emergencyContactRelation}
+                              onChange={(e) => setEditForm({ ...editForm, emergencyContactRelation: e.target.value })}
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-xs font-bold text-gray-600">Phone</label>
+                            <input
+                              type="text"
+                              className="apt-input py-2 text-sm"
+                              value={editForm.emergencyContactPhone}
+                              onChange={(e) => setEditForm({ ...editForm, emergencyContactPhone: e.target.value })}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      <h3 className="text-xs font-bold text-emerald-800 uppercase tracking-wider flex items-center gap-1.5 border-b border-gray-100 pb-1.5">
+                        <FileText className="w-3.5 h-3.5" /> Insurance Details
+                      </h3>
+                      <div className="space-y-3">
+                        <div className="space-y-1">
+                          <label className="text-xs font-bold text-gray-600">Provider Name</label>
+                          <input
+                            type="text"
+                            className="apt-input py-2 text-sm"
+                            value={editForm.insuranceProvider}
+                            onChange={(e) => setEditForm({ ...editForm, insuranceProvider: e.target.value })}
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-xs font-bold text-gray-600">Policy Number</label>
+                          <input
+                            type="text"
+                            className="apt-input py-2 text-sm"
+                            value={editForm.insurancePolicyNumber}
+                            onChange={(e) => setEditForm({ ...editForm, insurancePolicyNumber: e.target.value })}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Submit Actions */}
+                  <div className="flex gap-3 justify-end pt-4 border-t border-gray-100">
+                    <button
+                      type="button"
+                      onClick={() => setEditingPatient(null)}
+                      className="px-5 py-2.5 border border-gray-200 rounded-xl text-sm font-bold text-gray-500 hover:bg-gray-50 transition cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={saving}
+                      className="px-6 py-2.5 bg-[#0F5C3A] text-white hover:bg-[#0A3E2A] text-sm font-bold rounded-xl flex items-center gap-2 shadow-sm transition cursor-pointer"
+                    >
+                      {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save Changes"}
+                    </button>
+                  </div>
+
+                </form>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
     </div>
   );
 };

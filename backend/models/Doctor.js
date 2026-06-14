@@ -6,6 +6,7 @@ const DoctorSchema = new mongoose.Schema(
     doctorCode: { type: String, unique: true, index: true },
     name: { type: String, required: true },
     specialization: { type: String, required: true },
+    consultantType: { type: String, enum: ["doctor", "lab"], default: "doctor" },
     qualification: { type: String },
     qualifications: [{ type: String }],
     registrationNumber: { type: String, unique: true },

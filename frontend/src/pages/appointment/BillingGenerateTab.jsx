@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import toast from "react-hot-toast";
-import { Search, Trash2, Plus, Loader2 } from "lucide-react";
+import { Search, Trash2, Plus, Loader2, X } from "lucide-react";
 import { cn } from "../../lib/utils";
 import * as api from "../../services/appointmentApi";
 import { api as backendApi } from "../../lib/api";
@@ -18,13 +18,13 @@ const LAB_TESTS = [
   { name: "Lipid Profile",                 category: "Biochemistry",  price: 400 },
   { name: "Kidney Function Test",          category: "Biochemistry",  price: 500 },
 ];
-const PAY_METHODS = ["Cash", "Insurance", "Razorpay"];
+const PAY_METHODS = ["Cash", "Insurance"];
 
 // ─── Print Bill (HTML + auto‑print) ─────────────────────────────────────────
 function openPrintBill({
   apt, consultations, labTests, followupCharges, labDiscount,
   serviceMode, subtotal, discount, tax, totalAmount, notes,
-  payMethod, payReceived, razorpayPaymentId, razorpayOrderId,
+  payMethod, payReceived,
 }) {
   const now       = new Date();
   const dateStr   = now.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
@@ -63,14 +63,7 @@ function openPrintBill({
     ? `<tr class="disc"><td colspan="4" class="num">Lab Discount</td><td class="num">−₹${labDiscount.toFixed(2)}</td></tr>`
     : "";
 
-  const paySection = (payMethod === "Razorpay" && razorpayPaymentId)
-    ? `<div class="pay-box">
-         <p><strong>Payment Mode:</strong> Razorpay (Online)</p>
-         <p><strong>Payment ID:</strong> <span class="mono">${razorpayPaymentId}</span></p>
-         ${razorpayOrderId ? `<p><strong>Order ID:</strong> <span class="mono">${razorpayOrderId}</span></p>` : ""}
-         <span class="badge">✔ PAID</span>
-       </div>`
-    : `<div class="pay-box">
+  const paySection = `<div class="pay-box">
          <p><strong>Payment Mode:</strong> ${payMethod}</p>
          ${payReceived ? `<p><strong>Amount Received:</strong> ₹${parseFloat(payReceived).toFixed(2)}</p>
            <p><strong>Change:</strong> ₹${change.toFixed(2)}</p>` : ""}
@@ -169,6 +162,11 @@ td{padding:7px 8px;border-bottom:1px solid #f0f0f0;font-size:12px}
 // ─── Component ───────────────────────────────────────────────────────────────
 export default function BillingGenerateTab({ onBillGenerated }) {
   const [searchTerm, setSearchTerm] = useState("");
+  const [patientSearch, setPatientSearch] = useState("");
+  const [patients, setPatients] = useState([]);
+  const [loadingPatients, setLoadingPatients] = useState(false);
+  const [selectedPatient, setSelectedPatient] = useState(null);
+
   const [selectedApt, setSelectedApt] = useState(null);
   const [appointments, setAppointments] = useState([]);
   const [serviceMode, setServiceMode] = useState("both");
@@ -182,11 +180,7 @@ export default function BillingGenerateTab({ onBillGenerated }) {
   const [payReceived, setPayReceived] = useState("");
   const [followupCharges, setFollowupCharges] = useState(0);
   const [generating, setGenerating] = useState(false);
-  const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState("pending");
-  const [razorpayOrderId, setRazorpayOrderId] = useState("");
-  const [razorpayPaymentId, setRazorpayPaymentId] = useState("");
-  const [razorpaySignature, setRazorpaySignature] = useState("");
   const [paymentMessage, setPaymentMessage] = useState("");
 
   useEffect(() => {
@@ -194,6 +188,49 @@ export default function BillingGenerateTab({ onBillGenerated }) {
       .then(r => setAppointments(r.data?.data || []))
       .catch(() => setAppointments([]));
   }, []);
+
+  // ── Patient search ─────────────────────────────────────────
+  useEffect(() => {
+    const delay = setTimeout(async () => {
+      if (patientSearch.trim().length < 2 || selectedPatient) {
+        setPatients([]);
+        return;
+      }
+      setLoadingPatients(true);
+      try {
+        const res = await api.searchPatients(patientSearch);
+        setPatients(res.data?.data || []);
+      } catch (err) {
+        console.error("Search patients error:", err);
+      } finally {
+        setLoadingPatients(false);
+      }
+    }, 300);
+    return () => clearTimeout(delay);
+  }, [patientSearch, selectedPatient]);
+
+  const selectPatient = (patient) => {
+    setSelectedPatient(patient);
+    setPatientSearch("");
+    setPatients([]);
+    
+    // Find today's appointments for this patient
+    const patientApts = appointments.filter(a => {
+      const pId = a.patientId?._id || a.patientId;
+      return pId === patient._id || pId === patient.id;
+    });
+
+    if (patientApts.length === 1) {
+      selectAppointment(patientApts[0]);
+      toast.success(`Automatically selected appointment for ${patient.name || patient.fullName}`);
+    } else if (patientApts.length > 1) {
+      toast.success(`${patientApts.length} appointments found today. Please select one.`);
+      setSelectedApt(null);
+    } else {
+      toast.error("No appointments found for this patient today");
+      setSelectedApt(null);
+    }
+  };
 
   const filteredApts = (appointments || []).filter(a => {
     if (!searchTerm) return true;
@@ -204,6 +241,14 @@ export default function BillingGenerateTab({ onBillGenerated }) {
   const selectAppointment = (apt) => {
     setSelectedApt(apt);
     setSearchTerm("");
+    if (apt) {
+      setSelectedPatient({
+        id: apt.patientId?._id || apt.patientId,
+        _id: apt.patientId?._id || apt.patientId,
+        name: apt.patientName,
+        phone: apt.patientPhone
+      });
+    }
     setConsultations([{
       name: "Consultation Fee",
       doctor: apt.doctorName || DOCTORS_LIST[0].name,
@@ -217,9 +262,6 @@ export default function BillingGenerateTab({ onBillGenerated }) {
     setPayReceived("");
     setPayMethod("Cash");
     setPaymentStatus("pending");
-    setRazorpayPaymentId("");
-    setRazorpayOrderId("");
-    setRazorpaySignature("");
     setPaymentMessage("");
   };
 
@@ -244,89 +286,9 @@ export default function BillingGenerateTab({ onBillGenerated }) {
   const totalAmount = subtotal - discount + tax;
   const change = payReceived ? Math.max(0, parseFloat(payReceived) - totalAmount) : 0;
 
-  // ----- Razorpay Integration -----
-  const loadRazorpayScript = () =>
-    new Promise((resolve, reject) => {
-      if (window.Razorpay) return resolve(true);
-      const script = document.createElement("script");
-      script.src = "https://checkout.razorpay.com/v1/checkout.js";
-      script.onload = () => resolve(true);
-      script.onerror = () => reject(new Error("Failed to load Razorpay script"));
-      document.body.appendChild(script);
-    });
-
-  const handlePayOnline = async () => {
-    setPayMethod("Razorpay");
-    setPaymentStatus("pending");
-    setCheckoutLoading(true);
-
-    try {
-      await loadRazorpayScript();
-
-      const { data } = await backendApi.createRazorpayOrder({
-        amount: Math.round(totalAmount * 100),
-        currency: "INR",
-        receipt: selectedApt?._id || `rcpt_${Date.now()}`,
-      });
-
-      const { order, key } = data;
-
-      const options = {
-        key,
-        amount: order.amount,
-        currency: order.currency,
-        name: "Bireena Medico",
-        description: "Payment",
-        order_id: order.id,
-        prefill: {
-          name: selectedApt?.patientName || "",
-          email: selectedApt?.patientEmail || "",
-          contact: selectedApt?.patientPhone || "",
-        },
-        theme: { color: "#0F5C3A" },
-        handler: (response) => {
-          setRazorpayPaymentId(response.razorpay_payment_id);
-          setRazorpayOrderId(response.razorpay_order_id);
-          setRazorpaySignature(response.razorpay_signature);
-          setPaymentStatus("success");
-          setPaymentMessage("✅ Payment successful — click 'Generate Bill' to save.");
-          toast.success("Razorpay payment successful!");
-        },
-        modal: {
-          ondismiss: () => {
-            if (paymentStatus !== "success") {
-              setPaymentStatus("failed");
-              setPaymentMessage("Payment window closed without completing payment.");
-            }
-            setCheckoutLoading(false);
-          },
-        },
-      };
-
-      const rzp = new window.Razorpay(options);
-      rzp.on("payment.failed", (resp) => {
-        setPaymentStatus("failed");
-        setPaymentMessage(`Payment failed: ${resp.error.description}`);
-        toast.error("Payment failed. Please try again.");
-      });
-      rzp.open();
-    } catch (error) {
-      console.error("Razorpay error:", error);
-      toast.error(error.message || "Unable to open Razorpay checkout");
-      setPaymentStatus("failed");
-      setPaymentMessage("Unable to initiate payment. Please try again.");
-    } finally {
-      setCheckoutLoading(false);
-    }
-  };
-
   // ----- Generate & Save Bill -----
   const handleGenerate = async () => {
     if (!selectedApt) return toast.error("Select an appointment first");
-    if (payMethod === "Razorpay" && paymentStatus !== "success")
-      return toast.error("Complete the Razorpay payment before generating the bill");
-    if (payMethod === "Razorpay" && !razorpayPaymentId)
-      return toast.error("Razorpay Payment ID is missing");
 
     setGenerating(true);
     try {
@@ -369,35 +331,13 @@ export default function BillingGenerateTab({ onBillGenerated }) {
         tax,
         total: totalAmount,
         notes,
-        paymentStatus: payMethod === "Razorpay" ? "PAID" : "PENDING",
-        status: payMethod === "Razorpay" ? "paid" : "pending",
+        paymentStatus: payMethod === "Cash" ? "PAID" : "PENDING",
+        status: payMethod === "Cash" ? "paid" : "pending",
       });
       const billing = billingRes.data.billing;
 
       const invoiceRes = await backendApi.generateInvoice(billing._id);
       const invoice = invoiceRes.data.invoice;
-
-      if (payMethod === "Razorpay") {
-        const paymentRes = await backendApi.createPayment({
-          invoiceId: invoice._id,
-          patientId,
-          amount: totalAmount,
-          paymentMethod: "razorpay",
-          transactionId: razorpayPaymentId,
-          razorpayPaymentId,
-          razorpayOrderId,
-          razorpaySignature,
-          status: "pending",
-        });
-        const payment = paymentRes.data.payment;
-
-        await backendApi.verifyPayment(payment._id, {
-          razorpayPaymentId,
-          razorpayOrderId,
-          signature: razorpaySignature,
-          paymentId: payment._id,
-        });
-      }
 
       toast.success("Bill generated and saved!");
       if (onBillGenerated) onBillGenerated();
@@ -417,8 +357,6 @@ export default function BillingGenerateTab({ onBillGenerated }) {
           notes,
           payMethod,
           payReceived,
-          razorpayPaymentId,
-          razorpayOrderId,
         });
       }, 400);
     } catch (error) {
@@ -436,27 +374,56 @@ export default function BillingGenerateTab({ onBillGenerated }) {
       <div className="bg-white border border-gray-200 rounded-xl p-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="text-xs font-bold text-gray-500 mb-1 block">Search Appointment</label>
-            <div className="flex gap-2">
-              <div className="relative flex-1">
+            <label className="text-xs font-bold text-gray-500 mb-1 block">Search Patient</label>
+            {selectedPatient ? (
+              <div className="flex items-center justify-between bg-emerald-50/60 border border-emerald-100 h-10 px-3 rounded-lg">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="font-bold text-[#0F5C3A] text-sm truncate">{selectedPatient.name || selectedPatient.fullName}</span>
+                  <span className="text-xs text-gray-400 shrink-0">({selectedPatient.phone})</span>
+                </div>
+                <button
+                  onClick={() => {
+                    setSelectedPatient(null);
+                    setPatientSearch("");
+                    setSelectedApt(null);
+                  }}
+                  className="p-1 hover:bg-red-50 text-red-500 rounded-md transition-all cursor-pointer"
+                  title="Clear Selected Patient"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            ) : (
+              <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <input
                   className="w-full h-10 pl-10 pr-3 text-sm border border-gray-200 rounded-lg outline-none focus:border-[#0F5C3A]"
-                  placeholder="Search by Appointment ID / Patient Name / Mobile"
-                  value={searchTerm}
-                  onChange={e => setSearchTerm(e.target.value)}
+                  placeholder="Search patient by name or phone..."
+                  value={patientSearch}
+                  onChange={e => setPatientSearch(e.target.value)}
                 />
-              </div>
-              <button className="px-4 h-10 bg-[#0F5C3A] text-white text-sm font-bold rounded-lg">Search</button>
-            </div>
-            {searchTerm && filteredApts.length > 0 && !selectedApt && (
-              <div className="mt-1 bg-white border rounded-lg shadow-lg max-h-40 overflow-y-auto z-20 relative">
-                {filteredApts.slice(0, 5).map(a => (
-                  <button key={a._id} onClick={() => selectAppointment(a)} className="w-full text-left px-3 py-2 hover:bg-gray-50 text-sm border-b last:border-0">
-                    <span className="font-bold">{a.patientName}</span>
-                    <span className="text-gray-400 ml-2 text-xs">{a._id?.slice(-6)}</span>
-                  </button>
-                ))}
+                {patientSearch.trim().length >= 2 && (
+                  <div className="absolute left-0 right-0 mt-1 bg-white border rounded-lg shadow-lg max-h-52 overflow-y-auto z-30">
+                    {loadingPatients ? (
+                      <div className="flex items-center justify-center p-3 gap-2 text-gray-500 text-xs">
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" /> Searching...
+                       </div>
+                    ) : patients.length > 0 ? (
+                      patients.map((p) => (
+                        <button
+                          key={p.id || p._id}
+                          onClick={() => selectPatient(p)}
+                          className="w-full text-left px-3 py-2.5 hover:bg-gray-50 text-sm border-b last:border-0 flex justify-between items-center cursor-pointer"
+                        >
+                          <span className="font-medium text-gray-800">{p.name || p.fullName}</span>
+                          <span className="text-xs text-gray-400">{p.phone}</span>
+                        </button>
+                      ))
+                    ) : (
+                      <div className="p-3 text-center text-xs text-gray-400">No patients found</div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -468,7 +435,19 @@ export default function BillingGenerateTab({ onBillGenerated }) {
               onChange={e => { const a = appointments.find(x => x._id === e.target.value); if (a) selectAppointment(a); }}
             >
               <option value="">Select Appointments</option>
-              {appointments.map(a => <option key={a._id} value={a._id}>{a.patientName} - {a._id?.slice(-6)}</option>)}
+              {(() => {
+                const dropdownAppointments = selectedPatient
+                  ? appointments.filter(a => {
+                      const pId = a.patientId?._id || a.patientId;
+                      return pId === selectedPatient._id || pId === selectedPatient.id;
+                    })
+                  : appointments;
+                return dropdownAppointments.map(a => (
+                  <option key={a._id} value={a._id}>
+                    {a.patientName} - {a.doctorName} ({a.scheduledTime || "Walk-in"}) - {a._id?.slice(-6)}
+                  </option>
+                ));
+              })()}
             </select>
           </div>
         </div>
@@ -626,28 +605,8 @@ export default function BillingGenerateTab({ onBillGenerated }) {
             </div>
             <div className="flex justify-between text-sm"><span className="text-gray-500">Change (₹)</span><span className="font-bold">{change.toFixed(2)}</span></div>
 
-            {/* Razorpay Payment ID (only shown when method is Razorpay) */}
-            {payMethod === "Razorpay" && (
-              <div>
-                <label className="text-xs font-bold text-gray-500 block mb-1">
-                  Razorpay Payment ID
-                  {paymentStatus === "success" && <span className="ml-2 text-xs font-bold text-emerald-600">✔ Verified</span>}
-                  {paymentStatus === "failed" && <span className="ml-2 text-xs font-bold text-red-500">✗ Failed</span>}
-                </label>
-                <input type="text" readOnly value={razorpayPaymentId} placeholder="Auto-filled after Pay Online" className="w-full h-10 px-3 text-sm border rounded-lg outline-none font-mono bg-gray-50" />
-                {razorpayOrderId && <p className="mt-1 text-xs text-gray-400 font-mono truncate">Order: {razorpayOrderId}</p>}
-                {paymentMessage && <p className={cn("mt-1 text-xs font-medium", paymentStatus === "success" ? "text-emerald-600" : "text-red-500")}>{paymentMessage}</p>}
-              </div>
-            )}
-
             {/* Buttons */}
             <div className="grid gap-3">
-              <button
-                onClick={handlePayOnline}
-                className="w-full h-12 bg-white border border-[#0F5C3A] text-[#0F5C3A] rounded-xl font-bold text-sm hover:bg-emerald-50 transition flex items-center justify-center gap-2"
-              >
-                {checkoutLoading ? <><Loader2 className="w-4 h-4 animate-spin" /> Opening Razorpay...</> : "💳 Pay Online"}
-              </button>
               <button
                 onClick={handleGenerate}
                 disabled={generating || !selectedApt}

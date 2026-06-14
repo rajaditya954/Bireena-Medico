@@ -1,14 +1,13 @@
 import express from "express";
-import * as appointmentController from "../controllers/appointment.controller.js";
+import * as doctorController from "../controllers/doctor.controller.js";
 
 const router = express.Router();
 
-router.get("/", appointmentController.getAllAppointments);
-router.get("/:id", appointmentController.getAppointmentById);
-router.post("/", appointmentController.createAppointment);
-router.put("/:id", appointmentController.updateAppointment);
-router.delete("/:id", appointmentController.deleteAppointment);
-router.get("/patient/:patientId", appointmentController.getPatientAppointments);
-router.get("/doctor/:doctorId", appointmentController.getDoctorAppointments);
+router.get("/", doctorController.getAllDoctors);
+router.get("/:id", doctorController.getDoctorById);
+router.post("/", doctorController.createDoctor);
+router.put("/:id", doctorController.updateDoctor);
+router.delete("/:id", doctorController.deletDoctor);
+router.get("/specialization/:specialization", doctorController.getDoctorsBySpecialization);
 
 export default router;

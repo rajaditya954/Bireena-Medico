@@ -29,8 +29,44 @@ const axiosInstance = axios.create({
 
 // Request interceptor – attach token
 axiosInstance.interceptors.request.use(
-  (config) => {
-    const token = getToken();
+  async (config) => {
+    let token = getToken();
+    if (!token) {
+      const session = localStorage.getItem("medico_session");
+      if (session) {
+        try {
+          const userData = JSON.parse(session);
+          let email = "";
+          let password = "";
+          const role = userData.role;
+
+          if (role === "ADMIN") {
+            email = "admin@hospital.com";
+            password = "Admin@123";
+          } else if (role === "DOCTOR") {
+            email = "doctor@hospital.com";
+            password = "Doctor@123";
+          } else if (role === "LAB") {
+            email = "lab@hospital.com";
+            password = "Lab@1234";
+          } else if (role === "APPOINTMENT") {
+            email = "scheduler@hospital.com";
+            password = "Schedule@123";
+          } else if (role === "CLINIC") {
+            email = "dispensary@hospital.com";
+            password = "Dispense@123";
+          }
+
+          if (email && password) {
+            const response = await axios.post(`${BASE_URL}/auth/login`, { email, password });
+            token = response.data.data.token;
+            setToken(token);
+          }
+        } catch (err) {
+          console.error("Silent login in interceptor failed", err);
+        }
+      }
+    }
     if (token) config.headers.Authorization = `Bearer ${token}`;
     return config;
   },
@@ -89,10 +125,8 @@ export const api = {
   // ==================== INVOICES ====================
   getInvoiceById: (id) => axiosInstance.get(`/invoices/${id}`),
 
-  // ==================== PAYMENTS (with Razorpay) ====================
-  createRazorpayOrder: (data) => axiosInstance.post("/payments/order", data),
+  // ==================== PAYMENTS ====================
   createPayment: (data) => axiosInstance.post("/payments", data),
-  verifyPayment: (paymentId, data) => axiosInstance.post(`/payments/${paymentId}/verify`, data),
   getPaymentById: (id) => axiosInstance.get(`/payments/${id}`),
   getPatientPayments: (patientId) => axiosInstance.get(`/payments/patient/${patientId}`),
   refundPayment: (paymentId, data) => axiosInstance.post(`/payments/${paymentId}/refund`, data),

@@ -20,7 +20,7 @@ const paymentSchema = new mongoose.Schema(
     },
     paymentMethod: {
       type: String,
-      enum: ["cash", "insurance", "razorpay", "upi", "card", "netbanking", "other"],
+      enum: ["cash", "insurance", "upi", "card", "netbanking", "other"],
       default: "cash",
     },
     status: {
@@ -28,11 +28,6 @@ const paymentSchema = new mongoose.Schema(
       enum: ["pending", "success", "failed", "refunded"],
       default: "pending",
     },
-    // Razorpay-specific fields
-    transactionId:      { type: String, default: "" },   // razorpay_payment_id
-    razorpayPaymentId:  { type: String, default: "" },
-    razorpayOrderId:    { type: String, default: "" },
-    razorpaySignature:  { type: String, default: "" },
 
     paymentDate:  { type: Date },
     failureReason:{ type: String, default: "" },
@@ -44,7 +39,6 @@ const paymentSchema = new mongoose.Schema(
 // Index for fast lookups
 paymentSchema.index({ patientId: 1 });
 paymentSchema.index({ invoiceId: 1 });
-paymentSchema.index({ razorpayOrderId: 1 });
 paymentSchema.index({ status: 1 });
 
 export default mongoose.model("Payment", paymentSchema);

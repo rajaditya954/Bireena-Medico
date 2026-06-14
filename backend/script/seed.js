@@ -155,6 +155,7 @@ const seed = async () => {
     doctorCode: "DOC001",
     name: "Dr. Raj Sharma",
     specialization: "Cardiology",
+    consultantType: "doctor",
     qualification: "MBBS, MD",
     qualifications: ["MBBS", "MD"],
     registrationNumber: "MP123456",
@@ -167,6 +168,45 @@ const seed = async () => {
     ],
     clinic: {
       name: "Bireena Hospital",
+      address: "15 Medical Lane",
+      phone: "9876501234",
+    },
+    isVerified: true,
+  });
+
+  const labDoctorUser = new User({
+    employeeId: "EMP006",
+    name: "Dr. Kavya Sen",
+    email: "kavya@hospital.com",
+    phone: "9999999991",
+    role: "doctor",
+    isActive: true,
+  });
+  await labDoctorUser.setPassword("Doctor@123");
+  await labDoctorUser.save();
+
+  const labDoctor = await Doctor.create({
+    userId: labDoctorUser._id,
+    doctorCode: "DOC002",
+    name: "Dr. Kavya Sen",
+    specialization: "Pathology",
+    consultantType: "lab",
+    qualification: "MBBS, MD Pathology",
+    qualifications: ["MBBS", "MD"],
+    registrationNumber: "MP123457",
+    experience: 8,
+    consultationFee: 300,
+    roomNumber: "102",
+    schedule: [
+      { day: "Monday", startTime: "09:00", endTime: "17:00", isAvailable: true },
+      { day: "Tuesday", startTime: "09:00", endTime: "17:00", isAvailable: true },
+      { day: "Wednesday", startTime: "09:00", endTime: "17:00", isAvailable: true },
+      { day: "Thursday", startTime: "09:00", endTime: "17:00", isAvailable: true },
+      { day: "Friday", startTime: "09:00", endTime: "17:00", isAvailable: true },
+      { day: "Saturday", startTime: "09:00", endTime: "17:00", isAvailable: true },
+    ],
+    clinic: {
+      name: "Bireena Lab",
       address: "15 Medical Lane",
       phone: "9876501234",
     },
@@ -326,7 +366,7 @@ const seed = async () => {
     billingId: billing._id,
     patientId: patient._id,
     amount: 590,
-    paymentMethod: "UPI",
+    paymentMethod: "upi",
     transactionId: "TXN123",
     status: "success",
     paymentStatus: "SUCCESS",

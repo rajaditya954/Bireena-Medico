@@ -4,18 +4,18 @@ const QueueSchema = new mongoose.Schema(
   {
     appointmentId: { type: mongoose.Schema.Types.ObjectId, ref: "Appointment", required: true },
     patientId: { type: mongoose.Schema.Types.ObjectId, ref: "Patient", required: true },
+    patientName: { type: String },
     doctorId: { type: mongoose.Schema.Types.ObjectId, ref: "Doctor", required: true },
-    queueNumber: { type: Number, required: true },
+    doctorName: { type: String },
+    queueNumber: { type: Number },
     tokenNumber: { type: Number },
+    type: { type: String }, // "walk-in" | "scheduled"
+    scheduledTime: { type: String },
+    priority: { type: String },
     currentPosition: { type: Number, default: 0 },
-    queueStatus: {
-      type: String,
-      enum: ["ACTIVE", "WAITING", "IN_PROGRESS", "COMPLETED", "CANCELLED"],
-      default: "ACTIVE",
-    },
     status: {
       type: String,
-      enum: ["waiting", "in-progress", "completed", "cancelled"],
+      enum: ["waiting", "in-progress", "completed", "cancelled", "scheduled"],
       default: "waiting",
     },
     estimatedWaitTime: { type: Number }, // minutes

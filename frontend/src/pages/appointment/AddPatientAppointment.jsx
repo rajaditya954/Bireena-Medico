@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import toast, { Toaster } from "react-hot-toast";
 import {
   User, MapPin, Phone, Heart, FileText, Loader2,
@@ -101,6 +101,16 @@ export default function AddPatientAppointment() {
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
   const [savedPatient, setSavedPatient] = useState(null);
+  const [doctors, setDoctors] = useState([]);
+
+  // Fetch doctors on mount
+  useEffect(() => {
+    api.getDoctors()
+      .then(res => {
+        setDoctors(res.data?.data || []);
+      })
+      .catch(() => { });
+  }, []);
 
   const set = (field, value) => setForm(p => ({ ...p, [field]: value }));
 
@@ -122,11 +132,40 @@ export default function AddPatientAppointment() {
 
     try {
       setLoading(true);
-      // Use the appointment API to create patient
-      const res = await api.createPatient({
+
+      const patientPayload = {
         name: form.fullName,
+        fullName: form.fullName,
         phone: form.phoneNumber,
-      });
+        dob: form.dateOfBirth ? form.dateOfBirth : undefined,
+        age: form.age ? Number(form.age) : undefined,
+        gender: form.gender,
+        maritalStatus: form.maritalStatus || undefined,
+        bloodGroup: form.bloodGroup || undefined,
+        alternatePhone: form.alternatePhone || undefined,
+        email: form.email || undefined,
+        address: [form.addressLine1, form.addressLine2].filter(Boolean).join(", ") || undefined,
+        city: form.city || undefined,
+        state: form.state || undefined,
+        pincode: form.pinCode || undefined,
+        occupation: form.occupation || undefined,
+        allergies: form.knownAllergies ? form.knownAllergies.split(",").map(s => s.trim()).filter(Boolean) : [],
+        chronicDiseases: form.chronicConditions ? form.chronicConditions.split(",").map(s => s.trim()).filter(Boolean) : [],
+        medicalHistory: [form.pastSurgeries, form.familyMedicalHistory, form.currentMedications].filter(Boolean),
+        emergencyContact: {
+          name: form.emergencyContactName || "",
+          relation: form.emergencyRelationship || "",
+          phone: form.emergencyPhone || "",
+        },
+        insuranceInfo: {
+          provider: form.insuranceProvider || "",
+          policyNumber: form.insuranceNumber || "",
+        },
+        referredBy: form.referredBy || undefined,
+      };
+
+      // Use the appointment API to create patient
+      const res = await api.createPatient(patientPayload);
       setSavedPatient(res.data?.data || null);
       setSaved(true);
       toast.success("Patient registered successfully!");
@@ -447,9 +486,11 @@ export default function AddPatientAppointment() {
               <Field label="Referred By (Doctor)">
                 <select className={selectCls} value={form.referredBy} onChange={e => set("referredBy", e.target.value)}>
                   <option value="">Select doctor (optional)</option>
-                  <option>Dr. Rajesh Kumar</option>
-                  <option>Dr. Priya Sharma</option>
-                  <option>Dr. Anil Verma</option>
+                  {doctors.filter(d => d.consultantType !== "lab").map(d => (
+                    <option key={d.id} value={d.name}>
+                      {d.name}
+                    </option>
+                  ))}
                 </select>
               </Field>
               <Field label="Notes">

@@ -4,7 +4,16 @@ import { generateResponse, generateError } from "../utils/response.js";
 export const getAllDoctors = async (req, res) => {
   try {
     const doctors = await doctorService.getAllDoctors();
-    res.json(generateResponse({ doctors }, "Doctors fetched successfully"));
+    const mapped = doctors.map(d => ({
+      id: d._id,
+      _id: d._id,
+      name: d.name,
+      specialization: d.specialization,
+      consultantType: d.consultantType || "doctor",
+      roomNumber: d.roomNumber,
+      consultationFee: d.consultationFee,
+    }));
+    res.json(generateResponse(mapped, "Doctors fetched successfully"));
   } catch (error) {
     res.status(500).json(generateError(error.message));
   }
@@ -53,7 +62,16 @@ export const getDoctorsBySpecialization = async (req, res) => {
   try {
     const { specialization } = req.params;
     const doctors = await doctorService.getDoctorsBySpecialization(specialization);
-    res.json(generateResponse({ doctors }, "Doctors fetched successfully"));
+    const mapped = doctors.map(d => ({
+      id: d._id,
+      _id: d._id,
+      name: d.name,
+      specialization: d.specialization,
+      consultantType: d.consultantType || "doctor",
+      roomNumber: d.roomNumber,
+      consultationFee: d.consultationFee,
+    }));
+    res.json(generateResponse(mapped, "Doctors fetched successfully"));
   } catch (error) {
     res.status(500).json(generateError(error.message));
   }

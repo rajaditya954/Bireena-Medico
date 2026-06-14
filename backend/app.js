@@ -14,6 +14,8 @@ import patientRoutes from "./routes/patient.routes.js";
 import doctorRoutes from "./routes/doctor.routes.js";
 import appointmentRoutes from "./routes/appointment.routes.js";
 import queueRoutes from "./routes/queue.routes.js";
+import slotRoutes from "./routes/slot.routes.js";
+import availabilityRoutes from "./routes/availability.routes.js";
 import prescriptionRoutes from "./routes/prescription.routes.js";
 import laboratoryRoutes from "./routes/laboratory.routes.js";
 import pharmacyRoutes from "./routes/pharmacy.routes.js";
@@ -49,64 +51,7 @@ app.get("/api/health", (req, res) => {
 // Auth routes (register/login)
 app.use("/api/auth", authRoutes);
 
-// =================== SECURE PUBLIC PAYMENT ORDER ENDPOINT ===================
-import rateLimit from "express-rate-limit";
-import Joi from "joi";
 
-// Specific rate limiter for order creation (10 requests per minute per IP)
-const orderLimiter = rateLimit({
-  windowMs: 60 * 1000,  // 1 minute
-  max: 10,
-  message: { error: "Too many order requests, please try again later." },
-});
-
-// Input validation schema
-const orderSchema = Joi.object({
-  amount: Joi.number().integer().min(100).max(10000000).required(), // amount in paise (min ₹1, max ₹100k)
-  currency: Joi.string().valid("INR").default("INR"),
-  receipt: Joi.string().max(40).optional(),
-});
-
-app.post("/api/payments/order", orderLimiter, async (req, res, next) => {
-  try {
-    // Validate input
-    const { error, value } = orderSchema.validate(req.body);
-    if (error) {
-      return res.status(400).json({ error: error.details[0].message });
-    }
-
-    const { amount, currency, receipt } = value;
-
-    // Ensure Razorpay is configured
-    const razorpay = (await import("./config/razorpay.js")).default;
-    if (!razorpay) {
-      return res.status(500).json({ error: "Payment gateway not configured" });
-    }
-
-    const options = {
-      amount,
-      currency,
-      receipt: receipt || `receipt_${Date.now()}`,
-      payment_capture: 1,
-    };
-
-    const order = await razorpay.orders.create(options);
-
-    // Send back order + public key (never send secret)
-    res.json({
-      success: true,
-      order: {
-        id: order.id,
-        amount: order.amount,
-        currency: order.currency,
-      },
-      key: process.env.RAZORPAY_KEY_ID,
-    });
-  } catch (error) {
-    logger.error("Order creation failed", error);
-    res.status(500).json({ error: "Failed to create order" });
-  }
-});
 
 // =================== PROTECTED ROUTES (JWT required) ===================
 app.use(authenticateToken);   // apply JWT auth to all routes below
@@ -116,6 +61,8 @@ app.use("/api/patients", patientRoutes);
 app.use("/api/doctors", doctorRoutes);
 app.use("/api/appointments", appointmentRoutes);
 app.use("/api/queue", queueRoutes);
+app.use("/api/slots", slotRoutes);
+app.use("/api/availability", availabilityRoutes);
 app.use("/api/prescriptions", prescriptionRoutes);
 app.use("/api/laboratory", laboratoryRoutes);
 app.use("/api/pharmacy", pharmacyRoutes);

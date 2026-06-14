@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 
 const PatientSchema = new mongoose.Schema(
   {
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, unique: true },
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     patientId: { type: String, unique: true, index: true },
     fullName: { type: String, required: true },
     dob: { type: Date },
@@ -18,6 +18,7 @@ const PatientSchema = new mongoose.Schema(
     state: { type: String },
     pincode: { type: String },
     occupation: { type: String },
+    referredBy: { type: String },
     allergies: [{ type: String }],
     chronicDiseases: [{ type: String }],
     medicalHistory: [{ type: String }],
