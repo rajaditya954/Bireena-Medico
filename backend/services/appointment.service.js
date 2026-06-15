@@ -70,6 +70,7 @@ class AppointmentService {
       scheduledTime: appointment.slot,
       priority: appointment.priority,
       status: appointment.status,
+      date: appointment.date,
     });
 
     return await appointment.populate(["patientId", "doctorId"]);

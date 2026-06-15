@@ -9,7 +9,13 @@ class QueueService {
 
     return await Queue.find({
       doctorId,
-      createdAt: { $gte: startOfDay, $lte: endOfDay },
+      $or: [
+        { date },
+        {
+          date: { $exists: false },
+          createdAt: { $gte: startOfDay, $lte: endOfDay }
+        }
+      ]
     }).sort({ queueNumber: 1 });
   }
 
@@ -21,7 +27,13 @@ class QueueService {
 
     const todayQueue = await Queue.find({
       doctorId,
-      createdAt: { $gte: startOfDay, $lte: endOfDay },
+      $or: [
+        { date },
+        {
+          date: { $exists: false },
+          createdAt: { $gte: startOfDay, $lte: endOfDay }
+        }
+      ]
     });
 
     const waiting = todayQueue.filter(p => p.status === "waiting" || p.status === "scheduled").length;
@@ -38,7 +50,8 @@ class QueueService {
   }
 
   async addToQueue(queueData) {
-    const date = new Date().toISOString().split("T")[0];
+    const date = queueData.date || new Date().toISOString().split("T")[0];
+    queueData.date = date;
     const startOfDay = new Date(date);
     startOfDay.setHours(0, 0, 0, 0);
     const endOfDay = new Date(date);
@@ -47,7 +60,13 @@ class QueueService {
     // Get last queue number today
     const lastQueue = await Queue.findOne({
       doctorId: queueData.doctorId,
-      createdAt: { $gte: startOfDay, $lte: endOfDay },
+      $or: [
+        { date },
+        {
+          date: { $exists: false },
+          createdAt: { $gte: startOfDay, $lte: endOfDay }
+        }
+      ]
     }).sort({ queueNumber: -1 });
 
     queueData.queueNumber = (lastQueue?.queueNumber || 0) + 1;
@@ -97,14 +116,21 @@ class QueueService {
     const queue = await Queue.findById(queueId);
     if (!queue) return null;
 
-    const startOfDay = new Date(queue.createdAt);
+    const date = queue.date || (queue.createdAt ? queue.createdAt.toISOString().split("T")[0] : new Date().toISOString().split("T")[0]);
+    const startOfDay = new Date(date);
     startOfDay.setHours(0, 0, 0, 0);
-    const endOfDay = new Date(queue.createdAt);
+    const endOfDay = new Date(date);
     endOfDay.setHours(23, 59, 59, 999);
 
     const position = await Queue.countDocuments({
       doctorId: queue.doctorId,
-      createdAt: { $gte: startOfDay, $lte: endOfDay },
+      $or: [
+        { date },
+        {
+          date: { $exists: false },
+          createdAt: { $gte: startOfDay, $lte: endOfDay }
+        }
+      ],
       queueNumber: { $lt: queue.queueNumber },
       status: { $in: ["waiting", "scheduled"] },
     });

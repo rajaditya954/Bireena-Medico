@@ -265,6 +265,7 @@ const seed = async () => {
     patientId: patient._id,
     doctorId: doctor._id,
     appointmentDate: new Date(),
+    date: new Date().toISOString().split("T")[0],
     appointmentType: "WALK_IN",
     priority: "NORMAL",
     tokenNumber: 12,
@@ -284,6 +285,7 @@ const seed = async () => {
     currentPosition: 3,
     queueStatus: "ACTIVE",
     status: "waiting",
+    date: new Date().toISOString().split("T")[0],
     estimatedWaitTime: 20,
     calledAt: null,
   });

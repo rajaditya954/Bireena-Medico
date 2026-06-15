@@ -74,14 +74,14 @@ export default function AppointmentListNew() {
     try {
       if (!silent) setLoading(true);
       else setRefreshing(true);
-      const res = await api.getTodayAppointments(selectedDoctor.id);
+      const res = await api.getTodayAppointments(selectedDoctor.id, date);
       setAppointments(res.data?.data || []);
     } catch (err) { console.error("Fetch error:", err); setAppointments([]); }
     finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [selectedDoctor?.id]);
+  }, [selectedDoctor?.id, date]);
 
   // Initial load
   useEffect(() => { fetchAppointments(); }, [fetchAppointments]);
@@ -201,15 +201,6 @@ export default function AppointmentListNew() {
                 <option value="all">All Doctors</option>
                 {(doctors || []).map(d => <option key={d.id} value={d.id}>{d.name} ({d.specialization})</option>)}
               </select>
-            </div>
-            <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-600 shadow-sm">
-              <Calendar className="w-4 h-4 text-[#0F5C3A]" />
-              <input
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                className="bg-transparent border-none outline-none text-sm font-medium"
-              />
             </div>
           </div>
         </div>

@@ -74,7 +74,7 @@ export default function Analytics() {
         <div className="bg-white p-10 rounded-[3.5rem] border border-gray-100 shadow-sm">
            <h3 className="text-xl font-bold text-[#06402B] mb-8 tracking-tight">Revenue Trends</h3>
            <div className="h-[400px]">
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                  <AreaChart data={DATA}>
                     <defs>
                       <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
@@ -94,26 +94,28 @@ export default function Analytics() {
 
         <div className="bg-white p-10 rounded-[3.5rem] border border-gray-100 shadow-sm">
            <h3 className="text-xl font-bold text-[#06402B] mb-8 tracking-tight">Department Traffic</h3>
-           <div className="h-[400px] flex items-center">
-              <ResponsiveContainer width="100%" height="100%">
-                 <PieChart>
-                    <Pie
-                       data={PIE_DATA}
-                       cx="50%"
-                       cy="50%"
-                       innerRadius={80}
-                       outerRadius={140}
-                       paddingAngle={8}
-                       dataKey="value"
-                    >
-                       {PIE_DATA.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                       ))}
-                    </Pie>
-                    <Tooltip contentStyle={{ borderRadius: '24px', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)' }} />
-                 </PieChart>
-              </ResponsiveContainer>
-              <div className="space-y-4 pr-10">
+           <div className="h-[400px] flex items-center justify-between gap-4">
+              <div className="flex-1 h-full min-w-0">
+                 <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                    <PieChart>
+                       <Pie
+                          data={PIE_DATA}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={80}
+                          outerRadius={140}
+                          paddingAngle={8}
+                          dataKey="value"
+                       >
+                          {PIE_DATA.map((entry, index) => (
+                             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                          ))}
+                       </Pie>
+                       <Tooltip contentStyle={{ borderRadius: '24px', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)' }} />
+                    </PieChart>
+                 </ResponsiveContainer>
+              </div>
+              <div className="space-y-4 pr-10 flex-shrink-0">
                  {PIE_DATA.map((item, i) => (
                     <div key={i} className="flex items-center gap-3">
                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[i] }} />

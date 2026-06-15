@@ -56,7 +56,7 @@ API.interceptors.request.use(
 
 // ─── Appointments ──────────────────────────────────────────
 export const createAppointment = (data) => API.post('/appointments', data);
-export const getTodayAppointments = (doctorId) => API.get('/appointments', { params: { doctorId } });
+export const getTodayAppointments = (doctorId, date) => API.get('/appointments', { params: { doctorId, date } });
 export const cancelAppointment = (id) => API.put(`/appointments/${id}/cancel`);
 export const startAppointment = (id) => API.put(`/appointments/${id}/start`);
 export const completeAppointment = (id) => API.put(`/appointments/${id}/complete`);

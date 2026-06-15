@@ -18,6 +18,7 @@ const QueueSchema = new mongoose.Schema(
       enum: ["waiting", "in-progress", "completed", "cancelled", "scheduled"],
       default: "waiting",
     },
+    date: { type: String }, // "yyyy-MM-dd" format
     estimatedWaitTime: { type: Number }, // minutes
     calledAt: { type: Date },
     completedAt: { type: Date },

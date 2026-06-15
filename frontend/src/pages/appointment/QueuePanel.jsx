@@ -99,145 +99,306 @@ export default function QueuePanel({ doctorId, date, onStatusChange }) {
 
   return (
     <div className="flex flex-col gap-6">
+      {/* Top Bar / Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-[#0A3E2A] flex items-center gap-2">
+          <h2 className="text-2xl font-black text-[#0A3E2A] flex items-center gap-2.5">
             Live Queue Dashboard
             {refreshing && <Loader2 className="w-5 h-5 text-[#0F5C3A] animate-spin" />}
           </h2>
           <div className="flex items-center gap-2 mt-1">
-            <span className="text-gray-500 text-sm">Real-time patient flow management</span>
+            <span className="text-gray-500 text-sm font-medium">Real-time patient flow management</span>
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <button onClick={() => fetchQueueData()} disabled={refreshing} className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-all shadow-sm text-sm font-bold text-gray-600" title="Force Refresh">
-            <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} /> REFRESH
+          <button 
+            onClick={() => fetchQueueData()} 
+            disabled={refreshing} 
+            className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 rounded-xl hover:border-[#0F5C3A] hover:bg-gray-50 transition-all shadow-sm text-xs font-black text-gray-600 tracking-wider" 
+            title="Force Sync"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} /> REFRESH
           </button>
-          <div className="flex items-center gap-2 bg-emerald-50 text-emerald-700 px-4 py-2 rounded-full border border-emerald-100">
-            <span className="w-2 h-2 bg-emerald-500 rounded-full animate-ping"></span>
-            <span className="font-bold text-xs tracking-tight uppercase">Live</span>
+          <div className="flex items-center gap-2 bg-emerald-50 text-[#0F5C3A] px-4 py-2.5 rounded-full border border-emerald-100">
+            <span className="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-ping"></span>
+            <span className="font-extrabold text-[10px] tracking-wider uppercase">Live Sync</span>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="apt-card p-5 border-l-4 border-l-amber-400">
-          <div className="flex items-center justify-between"><span className="text-gray-500 text-sm font-bold uppercase tracking-wider">Waiting</span><Users className="w-5 h-5 text-amber-400" /></div>
-          <div className="mt-2 flex items-baseline gap-2"><span className="text-3xl font-black text-gray-800">{stats.waiting}</span><span className="text-gray-400 text-xs font-medium">Patients</span></div>
+      {/* Top 4 Stats Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5">
+        {/* Waiting Card */}
+        <div className="apt-card p-6 border border-amber-100 bg-gradient-to-br from-amber-50/40 to-white relative overflow-hidden group">
+          <div className="absolute right-0 top-0 w-24 h-24 bg-amber-100/30 rounded-full blur-2xl -mr-5 -mt-5 transition-transform duration-500 group-hover:scale-125"></div>
+          <div className="flex items-center justify-between relative z-10">
+            <span className="text-amber-800 text-xs font-extrabold uppercase tracking-wider">Waiting</span>
+            <div className="p-2 bg-amber-100/60 rounded-xl text-amber-600">
+              <Users className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="mt-4 flex items-baseline gap-1.5 relative z-10">
+            <span className="text-4xl font-extrabold text-amber-950 tracking-tight">{stats.waiting}</span>
+            <span className="text-amber-700/60 text-xs font-bold uppercase tracking-widest">Patients</span>
+          </div>
         </div>
-        <div className="apt-card p-5 border-l-4 border-l-[#0F5C3A]">
-          <div className="flex items-center justify-between"><span className="text-gray-500 text-sm font-bold uppercase tracking-wider">Active</span><PlayCircle className="w-5 h-5 text-[#0F5C3A]" /></div>
-          <div className="mt-2 flex items-baseline gap-2"><span className="text-3xl font-black text-gray-800">{stats.inProgress}</span><span className="text-gray-400 text-xs font-medium">Serving</span></div>
+
+        {/* Active Card */}
+        <div className="apt-card p-6 border border-[#0F5C3A]/10 bg-gradient-to-br from-[#0F5C3A]/5 to-white relative overflow-hidden group">
+          <div className="absolute right-0 top-0 w-24 h-24 bg-[#0F5C3A]/10 rounded-full blur-2xl -mr-5 -mt-5 transition-transform duration-500 group-hover:scale-125"></div>
+          <div className="flex items-center justify-between relative z-10">
+            <span className="text-[#0F5C3A] text-xs font-extrabold uppercase tracking-wider">Active</span>
+            <div className="p-2 bg-[#0F5C3A]/10 rounded-xl text-[#0F5C3A]">
+              <PlayCircle className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="mt-4 flex items-baseline gap-1.5 relative z-10">
+            <span className="text-4xl font-extrabold text-gray-900 tracking-tight">{stats.inProgress}</span>
+            <span className="text-[#0F5C3A]/60 text-xs font-bold uppercase tracking-widest">Serving</span>
+          </div>
         </div>
-        <div className="apt-card p-5 border-l-4 border-l-emerald-500">
-          <div className="flex items-center justify-between"><span className="text-gray-500 text-sm font-bold uppercase tracking-wider">Finished</span><CheckCircle className="w-5 h-5 text-emerald-500" /></div>
-          <div className="mt-2 flex items-baseline gap-2"><span className="text-3xl font-black text-gray-800">{stats.completed}</span><span className="text-gray-400 text-xs font-medium">Today</span></div>
+
+        {/* Finished Card */}
+        <div className="apt-card p-6 border border-emerald-100 bg-gradient-to-br from-emerald-50/40 to-white relative overflow-hidden group">
+          <div className="absolute right-0 top-0 w-24 h-24 bg-emerald-100/30 rounded-full blur-2xl -mr-5 -mt-5 transition-transform duration-500 group-hover:scale-125"></div>
+          <div className="flex items-center justify-between relative z-10">
+            <span className="text-emerald-800 text-xs font-extrabold uppercase tracking-wider">Finished</span>
+            <div className="p-2 bg-emerald-100/60 rounded-xl text-emerald-600">
+              <CheckCircle className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="mt-4 flex items-baseline gap-1.5 relative z-10">
+            <span className="text-4xl font-extrabold text-emerald-950 tracking-tight">{stats.completed}</span>
+            <span className="text-emerald-700/60 text-xs font-bold uppercase tracking-widest">Today</span>
+          </div>
         </div>
-        <div className="apt-card p-5 border-l-4 border-l-[#06402B]">
-          <div className="flex items-center justify-between"><span className="text-gray-500 text-sm font-bold uppercase tracking-wider">Est. Wait</span><Timer className="w-5 h-5 text-[#06402B]" /></div>
-          <div className="mt-2 flex items-baseline gap-2"><span className="text-3xl font-black text-gray-800">{stats.estimatedWaitMinutes}</span><span className="text-gray-400 text-xs font-medium">Mins Left</span></div>
+
+        {/* Est. Wait Card */}
+        <div className="apt-card p-6 border border-emerald-100 bg-gradient-to-br from-[#06402B]/5 to-white relative overflow-hidden group">
+          <div className="absolute right-0 top-0 w-24 h-24 bg-[#06402B]/10 rounded-full blur-2xl -mr-5 -mt-5 transition-transform duration-500 group-hover:scale-125"></div>
+          <div className="flex items-center justify-between relative z-10">
+            <span className="text-[#06402B] text-xs font-extrabold uppercase tracking-wider">Est. Wait</span>
+            <div className="p-2 bg-[#06402B]/10 rounded-xl text-[#06402B]">
+              <Timer className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="mt-4 flex items-baseline gap-1.5 relative z-10">
+            <span className="text-4xl font-extrabold text-gray-900 tracking-tight">{stats.estimatedWaitMinutes}</span>
+            <span className="text-[#06402B]/60 text-xs font-bold uppercase tracking-widest">Mins Left</span>
+          </div>
         </div>
       </div>
 
+      {/* Main Grid: Active Panel + Waiting List on Left (col-span-8), Status Summary on Right (col-span-4) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         <div className="lg:col-span-8 space-y-6">
-          <div style={{ background: 'rgba(236, 253, 245, 0.3)', border: '1px solid #0F5C3A', borderRadius: '0.75rem', overflow: 'visible' }}>
-            <div style={{ backgroundColor: '#0F5C3A' }} className="px-6 py-3 text-white flex items-center justify-between rounded-t-xl">
-              <span className="font-black text-sm uppercase tracking-widest flex items-center gap-2"><RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} /> Current Appointment</span>
-              {currentPatient && <span className="text-[10px] font-black bg-white/20 px-2 py-1 rounded-full uppercase tracking-tighter">In Progress</span>}
+          {/* Current Active Appointment Card */}
+          <div className="border border-[#0F5C3A]/15 bg-gradient-to-b from-[#ECFDF5]/50 to-white rounded-2xl shadow-xs overflow-hidden">
+            <div className="bg-[#0F5C3A] px-6 py-4 text-white flex items-center justify-between">
+              <span className="font-extrabold text-xs tracking-wider uppercase flex items-center gap-2">
+                <Clock className="w-4 h-4 opacity-80" /> Current Appointment
+              </span>
+              {currentPatient && (
+                <span className="text-[9px] font-black bg-white/20 px-2.5 py-1 rounded-full uppercase tracking-wider">
+                  In Progress
+                </span>
+              )}
             </div>
+            
             <div className="p-6 md:p-8">
               {currentPatient ? (
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 flex-wrap">
-                  <div className="flex items-center gap-4 sm:gap-6 min-w-0">
-                    <div className="w-16 h-16 sm:w-20 sm:h-20 bg-[#0F5C3A] text-white rounded-2xl sm:rounded-3xl flex items-center justify-center text-2xl sm:text-3xl font-black shadow-xl shadow-emerald-600/20 transform -rotate-3 hover:rotate-0 transition-transform shrink-0">{currentPatient.tokenNumber}</div>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+                  <div className="flex items-center gap-5 min-w-0">
+                    <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-tr from-[#0A3E2A] to-[#0F5C3A] text-white rounded-2xl flex items-center justify-center text-2xl sm:text-3xl font-black shadow-lg shadow-emerald-900/10 shrink-0 select-none">
+                      {currentPatient.tokenNumber}
+                    </div>
                     <div className="min-w-0">
-                      <h3 className="text-xl sm:text-2xl font-black text-gray-800 tracking-tight truncate">{currentPatient.patientName}</h3>
-                      <p className="text-gray-500 font-medium flex flex-wrap items-center gap-2 mt-1">
-                        <span className="apt-badge apt-badge-in-progress uppercase">{currentPatient.type}</span>
-                        <span className="text-sm whitespace-nowrap">at <span className="font-bold text-[#0F5C3A]">{currentPatient.scheduledTime || format(new Date(currentPatient.createdAt), 'HH:mm')}</span></span>
-                      </p>
+                      <h3 className="text-xl sm:text-2xl font-black text-gray-800 tracking-tight truncate">
+                        {currentPatient.patientName}
+                      </h3>
+                      <div className="flex flex-wrap items-center gap-2.5 mt-1.5">
+                        <span className="apt-badge apt-badge-in-progress text-[10px] tracking-wider py-0.5 px-2">
+                          {currentPatient.type}
+                        </span>
+                        <span className="text-gray-500 text-xs font-medium">
+                          Serving since <span className="font-black text-[#0F5C3A]">{currentPatient.scheduledTime || format(new Date(currentPatient.createdAt), 'HH:mm')}</span>
+                        </span>
+                      </div>
                     </div>
                   </div>
-                  <div className="flex gap-3 shrink-0">
-                    <button disabled={refreshing} onClick={() => handleStatusChange(currentPatient.appointmentId, 'complete')} className="apt-btn-primary h-12 px-6 shadow-lg shadow-emerald-600/20 whitespace-nowrap">
-                      <CheckCircle className="w-4 h-4" /> COMPLETE CASE
+                  <div className="shrink-0">
+                    <button 
+                      disabled={refreshing} 
+                      onClick={() => handleStatusChange(currentPatient.appointmentId, 'complete')} 
+                      className="apt-btn-primary h-12 px-6 shadow-md shadow-emerald-950/15 whitespace-nowrap uppercase tracking-wider text-xs font-extrabold"
+                    >
+                      <CheckCircle className="w-4 h-4" /> Complete Case
                     </button>
                   </div>
                 </div>
               ) : (
                 <div className="text-center py-10 flex flex-col items-center gap-4">
-                  <div className="w-20 h-20 rounded-full bg-white shadow-inner flex items-center justify-center"><Users className="w-10 h-10 text-gray-200" /></div>
-                  <div className="space-y-1">
-                    <h3 className="text-xl font-bold text-gray-800">No Active Patient</h3>
-                    <p className="text-gray-400 max-w-xs mx-auto">The doctor is currently available. Call the next patient from the waiting list.</p>
+                  <div className="w-16 h-16 rounded-full bg-emerald-50 text-[#0F5C3A] flex items-center justify-center">
+                    <Users className="w-7 h-7 opacity-80" />
                   </div>
-                  <button disabled={waitingPatients.length === 0 || refreshing} onClick={() => handleStatusChange(waitingPatients[0].appointmentId, 'start')} className="apt-btn-accent h-12 px-8 shadow-lg shadow-emerald-800/20">
-                    <UserPlus className="w-5 h-5" /> CALL NEXT PATIENT
+                  <div className="space-y-1">
+                    <h3 className="text-lg font-black text-gray-800 tracking-tight">No Active Patient</h3>
+                    <p className="text-gray-400 text-xs max-w-xs mx-auto font-medium">
+                      The doctor is currently available. Call the next patient from the waiting list.
+                    </p>
+                  </div>
+                  <button 
+                    disabled={waitingPatients.length === 0 || refreshing} 
+                    onClick={() => handleStatusChange(waitingPatients[0].appointmentId, 'start')} 
+                    className="apt-btn-accent h-12 px-8 shadow-md shadow-emerald-800/15 uppercase tracking-wider text-xs font-extrabold"
+                  >
+                    <UserPlus className="w-4.5 h-4.5" /> Call Next Patient
                   </button>
                 </div>
               )}
             </div>
           </div>
 
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-black text-gray-800 uppercase tracking-widest flex items-center gap-2">Waiting List <span className="bg-[#0F5C3A] text-white text-[10px] px-2 py-0.5 rounded-full">{waitingPatients.length}</span></h3>
-              <span className="text-[10px] font-bold text-gray-400 uppercase">Sorted by Priority & Time</span>
+          {/* Waiting List Section */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+              <h3 className="text-base font-black text-gray-800 uppercase tracking-wider flex items-center gap-2.5">
+                Waiting Queue 
+                <span className="bg-[#0F5C3A] text-white text-[10px] font-black px-2 py-0.5 rounded-full">
+                  {waitingPatients.length}
+                </span>
+              </h3>
+              <span className="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest">
+                Sorted by Priority & Time
+              </span>
             </div>
+            
             <div className="space-y-3">
-              {waitingPatients.length > 0 ? waitingPatients.map((p) => (
-                <div key={p._id} className={`apt-card p-5 flex items-center justify-between transition-all hover:border-[#0F5C3A]/50 group ${p.priority === 'emergency' ? 'border-red-300 bg-red-50/50' : 'bg-white'}`}>
-                  <div className="flex items-center gap-5">
-                    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center font-black text-xl ${p.priority === 'emergency' ? 'bg-red-600 text-white shadow-lg shadow-red-200' : 'bg-gray-100 text-gray-800'}`}>{p.tokenNumber}</div>
-                    <div>
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="font-black text-gray-800 tracking-tight">{p.patientName}</span>
-                        {p.priority === 'emergency' && <span className="apt-badge apt-badge-emergency">EMERGENCY</span>}
+              {waitingPatients.length > 0 ? (
+                waitingPatients.map((p) => {
+                  const isEmergency = p.priority === 'emergency';
+                  return (
+                    <div 
+                      key={p._id} 
+                      className={`apt-card p-4.5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all duration-200 group ${
+                        isEmergency 
+                          ? 'border-red-200 bg-gradient-to-r from-red-50/60 to-white hover:border-red-400' 
+                          : 'bg-white hover:border-[#0F5C3A]/30'
+                      }`}
+                    >
+                      <div className="flex items-center gap-4.5">
+                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-black text-lg select-none shrink-0 ${
+                          isEmergency 
+                            ? 'bg-red-600 text-white shadow-md shadow-red-200' 
+                            : 'bg-gray-50 text-gray-700 border border-gray-100'
+                        }`}>
+                          {p.tokenNumber}
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                            <span className="font-extrabold text-gray-850 tracking-tight text-sm">
+                              {p.patientName}
+                            </span>
+                            {isEmergency && (
+                              <span className="apt-badge apt-badge-emergency text-[8px] py-0 px-2 tracking-wider">
+                                EMERGENCY
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex flex-wrap items-center gap-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                            <span className="flex items-center gap-1.5 font-extrabold text-gray-500">
+                              <Clock className="w-3.5 h-3.5 text-gray-400" />
+                              {p.type === 'walk-in' ? 'Walk-in' : `Slot: ${p.scheduledTime}`}
+                            </span>
+                            <span className="text-[#0F5C3A]/70 font-extrabold">
+                              • {p.doctorName}
+                            </span>
+                          </div>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-4 text-[10px] font-bold text-gray-400">
-                        <span className="flex items-center gap-1.5 uppercase tracking-tighter"><Clock className="w-3 h-3" />{p.type === 'walk-in' ? 'Walk-in' : `Scheduled ${p.scheduledTime}`}</span>
-                        <span className="text-[#0F5C3A] uppercase tracking-tighter">• {p.doctorName}</span>
+                      
+                      {/* Action Buttons: Visible always on mobile/tablet, fade-in on desktop hover */}
+                      <div className="flex items-center gap-2 md:opacity-0 md:group-hover:opacity-100 transition-all duration-200 md:translate-x-2 md:group-hover:translate-x-0">
+                        <button 
+                          onClick={() => handleStatusChange(p.appointmentId, 'start')} 
+                          disabled={refreshing} 
+                          className="flex-1 sm:flex-initial px-4 py-2 bg-[#0F5C3A] text-white rounded-lg hover:bg-[#0A3E2A] transition-all shadow-xs flex items-center justify-center gap-1.5 text-[10px] font-black uppercase tracking-wider" 
+                          title="Call Patient"
+                        >
+                          <PlayCircle className="w-3.5 h-3.5" /> Call
+                        </button>
+                        <button 
+                          onClick={() => handleStatusChange(p.appointmentId, 'cancel')} 
+                          disabled={refreshing} 
+                          className="flex-1 sm:flex-initial px-4 py-2 bg-red-50 text-red-650 rounded-lg hover:bg-red-100 hover:text-red-700 transition-all flex items-center justify-center gap-1.5 text-[10px] font-black uppercase tracking-wider" 
+                          title="Cancel"
+                        >
+                          <XCircle className="w-3.5 h-3.5" /> Cancel
+                        </button>
                       </div>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all transform translate-x-4 group-hover:translate-x-0">
-                    <button onClick={() => handleStatusChange(p.appointmentId, 'start')} disabled={refreshing} className="px-4 py-2.5 bg-[#0F5C3A] text-white rounded-xl hover:bg-[#0A3E2A] transition-colors shadow-md shadow-emerald-600/20 flex items-center gap-2 text-xs font-bold" title="Call Patient"><PlayCircle className="w-4 h-4" />Call</button>
-                    <button onClick={() => handleStatusChange(p.appointmentId, 'cancel')} disabled={refreshing} className="px-4 py-2.5 bg-red-100 text-red-700 rounded-xl hover:bg-red-200 transition-colors flex items-center gap-2 text-xs font-bold" title="Cancel Appointment"><XCircle className="w-4 h-4" />Cancel</button>
-                  </div>
-                </div>
-              )) : (
-                <div className="apt-card p-16 text-center text-gray-400 border-dashed border-2 flex flex-col items-center gap-3 bg-gray-50/30">
-                  <Users className="w-12 h-12 opacity-10" />
-                  <p className="font-bold uppercase tracking-widest text-xs opacity-40">No patients waiting</p>
+                  );
+                })
+              ) : (
+                <div className="apt-card p-14 text-center text-gray-400 border-dashed border-2 flex flex-col items-center justify-center gap-3 bg-gray-50/20">
+                  <Users className="w-10 h-10 opacity-20" />
+                  <p className="font-extrabold uppercase tracking-widest text-[10px] opacity-60">No Patients in Waiting Queue</p>
                 </div>
               )}
             </div>
           </div>
         </div>
 
+        {/* Right Sidebar: Status Summary Panel */}
         <div className="lg:col-span-4 space-y-6">
-          <div className="apt-summary-dark">
-            <h3 className="font-black text-sm uppercase tracking-widest mb-6 text-white" style={{ opacity: 0.6 }}>Status Summary</h3>
-            <div className="space-y-6">
-              <div className="flex items-center justify-between border-b border-white/10 pb-4 gap-4">
-                <span className="text-xs font-bold uppercase tracking-tighter text-white whitespace-nowrap" style={{ opacity: 0.6 }}>Avg. Consultation</span>
-                <span className="font-black text-lg text-white whitespace-nowrap">12 Mins</span>
+          <div className="apt-summary-dark bg-gradient-to-b from-[#0A3E2A] to-[#06291C] border border-[#0F5C3A]/20 relative overflow-hidden">
+            {/* Absolute background decoration element */}
+            <div className="absolute right-0 bottom-0 w-36 h-36 bg-emerald-500/5 rounded-full blur-2xl -mr-10 -mb-10"></div>
+            
+            <h3 className="font-black text-xs uppercase tracking-widest mb-6 text-emerald-100 flex items-center gap-2 relative z-10">
+              <PlayCircle className="w-4 h-4 text-emerald-400" /> Status Summary
+            </h3>
+            
+            <div className="space-y-5 relative z-10">
+              <div className="flex items-center justify-between border-b border-white/5 pb-3.5 gap-4">
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-200/70 whitespace-nowrap">
+                  Avg. Consultation
+                </span>
+                <span className="font-black text-base text-white whitespace-nowrap">
+                  12 Mins
+                </span>
               </div>
-              <div className="flex items-center justify-between border-b border-white/10 pb-4 gap-4">
-                <span className="text-xs font-bold uppercase tracking-tighter text-white whitespace-nowrap" style={{ opacity: 0.6 }}>Total Appointments</span>
-                <span className="font-black text-lg text-white whitespace-nowrap">{stats.total || 0}</span>
+              <div className="flex items-center justify-between border-b border-white/5 pb-3.5 gap-4">
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-200/70 whitespace-nowrap">
+                  Total Appointments
+                </span>
+                <span className="font-black text-base text-white whitespace-nowrap">
+                  {stats.total || 0}
+                </span>
               </div>
-              <div className="flex items-center justify-between border-b border-white/10 pb-4 gap-4">
-                <span className="text-xs font-bold uppercase tracking-tighter text-white whitespace-nowrap" style={{ opacity: 0.6 }}>Completed Cases</span>
-                <span className="font-black text-lg text-white whitespace-nowrap">{stats.completed}</span>
+              <div className="flex items-center justify-between border-b border-white/5 pb-3.5 gap-4">
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-200/70 whitespace-nowrap">
+                  Completed Cases
+                </span>
+                <span className="font-black text-base text-white whitespace-nowrap">
+                  {stats.completed}
+                </span>
               </div>
-              <div className="flex items-center justify-between pt-2 gap-4">
-                <span className="text-xs font-bold uppercase tracking-tighter text-white whitespace-nowrap" style={{ opacity: 0.6 }}>Sync Frequency</span>
-                <span className="text-[10px] font-black px-2 py-1 rounded-full text-white whitespace-nowrap" style={{ backgroundColor: 'rgba(255,255,255,0.2)' }}>REAL-TIME</span>
+              <div className="flex items-center justify-between pt-1 gap-4">
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-200/70 whitespace-nowrap">
+                  Sync Frequency
+                </span>
+                <span className="text-[9px] font-extrabold px-2.5 py-1 rounded-full text-emerald-100 whitespace-nowrap bg-white/10 uppercase tracking-widest">
+                  REAL-TIME
+                </span>
               </div>
             </div>
-            <div className="pt-4"><p className="text-[10px] text-white/40 text-center font-medium uppercase tracking-widest">Data automatically syncs every 30s</p></div>
+            
+            <div className="pt-6 relative z-10">
+              <p className="text-[9px] text-emerald-300/40 text-center font-extrabold uppercase tracking-widest">
+                Data automatically syncs every 30s
+              </p>
+            </div>
           </div>
         </div>
       </div>
