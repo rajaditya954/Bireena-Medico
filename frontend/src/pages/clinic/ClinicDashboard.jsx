@@ -1,5 +1,4 @@
-import React, { useState } from "react";
-import {
+import React, { useState, useEffect } from "react"; import {
   Package,
   DollarSign,
   AlertTriangle,
@@ -16,20 +15,10 @@ import {
   Send,
 } from "lucide-react";
 
-// Mock data for medicines
-const mockMedicines = [
-  { id: 1, name: "Paracetamol 650mg", category: "Pain Relief", form: "Tablet", stock: 350, price: 2.5, status: "In Stock", expiry: "31 Dec 2025", reqId: "REQ-2025-0007", reqStatus: "Approved", reqDate: "10 May 2025", reqItems: 5 },
-  { id: 2, name: "Amoxicillin 500mg", category: "Antibiotic", form: "Capsule", stock: 120, price: 6.8, status: "In Stock", expiry: "15 Nov 2025", reqId: "REQ-2025-0006", reqStatus: "Fulfilled", reqDate: "08 May 2025", reqItems: 12 },
-  { id: 3, name: "Cetirizine 10mg", category: "Antihistamine", form: "Tablet", stock: 25, price: 1.2, status: "Low Stock", expiry: "20 Sep 2025", reqId: "REQ-2025-0005", reqStatus: "Rejected", reqDate: "06 May 2025", reqItems: 3 },
-  { id: 4, name: "Omeprazole 20mg", category: "Gastric", form: "Capsule", stock: 0, price: 3.4, status: "Out of Stock", expiry: "10 Oct 2024", reqId: "REQ-2025-0004", reqStatus: "Approved", reqDate: "04 May 2025", reqItems: 6 },
-  { id: 5, name: "Metformin 500mg", category: "Diabetes", form: "Tablet", stock: 80, price: 2.1, status: "In Stock", expiry: "05 Jan 2026", reqId: "REQ-2025-0003", reqStatus: "Pending", reqDate: "02 May 2025", reqItems: 8 },
-  { id: 6, name: "Salbutamol 100mcg", category: "Respiratory", form: "Inhaler", stock: 15, price: 8.9, status: "Low Stock", expiry: "18 Aug 2025", reqId: "REQ-2025-0002", reqStatus: "Approved", reqDate: "30 Apr 2025", reqItems: 4 },
-  { id: 7, name: "Ibuprofen 400mg", category: "Pain Relief", form: "Tablet", stock: 200, price: 1.8, status: "In Stock", expiry: "22 Dec 2025", reqId: "REQ-2025-0001", reqStatus: "Fulfilled", reqDate: "28 Apr 2025", reqItems: 7 },
-  { id: 8, name: "Amlodipine 5mg", category: "Blood Pressure", form: "Tablet", stock: 60, price: 2.7, status: "In Stock", expiry: "30 Oct 2025", reqId: "REQ-2025-0008", reqStatus: "Pending", reqDate: "12 May 2025", reqItems: 8 },
-];
-
+// Mock data for medicines //removed
 // Quick summary data
-const stockAlerts = [
+
+/*const stockAlerts = [
   { name: "Cetirizine 10mg", stock: 25, unit: "units" },
   { name: "Salbutamol 100mcg", stock: 15, unit: "units" },
   { name: "Amlodipine 5mg", stock: 60, unit: "units" },
@@ -43,12 +32,8 @@ const recentlyAdded = [
   { name: "Cetirizine 10mg", date: "10 May 2025" },
   { name: "Zinc Sulfate 220mg", date: "09 May 2025" },
   { name: "Doxycycline 100mg", date: "08 May 2025" },
-];
-const categories = [
-  { name: "Tablet", count: 12 },
-  { name: "Capsule", count: 18 },
-  { name: "Inhaler", count: 32 },
-];
+];*/
+
 const purchaseOrders = { total: 145, month: "May" };
 const salesThisMonth = { amount: 32450, month: "May" };
 
@@ -79,6 +64,8 @@ const getReqStatusBadge = (status) => {
   );
 };
 
+
+
 const StatCard = ({ label, value, icon: Icon, tone = "default", button }) => {
   const toneColors = {
     default: "bg-white border-l-4 border-emerald-600",
@@ -107,21 +94,126 @@ const StatCard = ({ label, value, icon: Icon, tone = "default", button }) => {
 };
 
 export default function DistributorDashboard() {
+  const [stats, setStats] = useState({
+    medicines: 0,
+    stockValue: 0,
+    lowStock: 0,
+    requirements: 0,
+  });
+
+  const [stockAlerts, setStockAlerts] = useState([]);
+  const [requirements, setRequirements] = useState([]);
+  const [expiryAlerts, setExpiryAlerts] = useState([]);
+  const [recentMedicines, setRecentMedicines] = useState([]);
+  const [categories, setCategories] = useState([]);
+
+
+  const fetchRequirements = async () => {
+    try {
+      const response = await fetch(
+        "http://localhost:5000/api/pharmacy/requirements"
+      );
+
+      const data = await response.json();
+
+      console.log("Requirements:", data);
+
+      setRequirements(data.data);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+  const fetchStockAlerts = async () => {
+    const res = await fetch(
+      "http://localhost:5000/api/pharmacy/stock-alerts"
+    );
+
+    const data = await res.json();
+
+    setStockAlerts(data.data);
+  };
+  const fetchExpiryAlerts = async () => {
+    try {
+      const response = await fetch(
+        "http://localhost:5000/api/pharmacy/expiry-alerts"
+      );
+
+      const data = await response.json();
+
+      setExpiryAlerts(data.data);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+  const fetchRecentMedicines = async () => {
+    const response = await fetch(
+      "http://localhost:5000/api/pharmacy/recent-medicines"
+    );
+
+    const data = await response.json();
+
+    setRecentMedicines(data.data);
+  };
+
+  const fetchCategories = async () => {
+    const response = await fetch(
+      "http://localhost:5000/api/pharmacy/categories"
+    );
+
+    const data = await response.json();
+
+    setCategories(data.data);
+  }
+
+  const fetchDashboardStats = async () => {
+    try {
+      const response = await fetch(
+        "http://localhost:5000/api/pharmacy/dashboard-stats"
+      );
+
+      const data = await response.json();
+
+      setStats(data);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+  const [mockMedicines, setMedicines] = useState([]);
+
+  useEffect(() => { //useEffect
+    fetchMedicines();
+    fetchDashboardStats();
+    fetchRequirements();
+    fetchStockAlerts();
+    fetchExpiryAlerts();
+    fetchRecentMedicines();
+    fetchCategories();
+  }, []);
+
+  const fetchMedicines = async () => {
+    try {
+      const response = await fetch(
+        "http://localhost:5000/api/pharmacy/inventory"
+      );
+
+      const result = await response.json();
+
+      console.log("Inventory:", result.data.inventory);
+
+      setMedicines(result.data.inventory);
+    }
+    catch (error) {
+      console.error(error);
+    }
+  };
+
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [showRequirementModal, setShowRequirementModal] = useState(false);
-  const [requirements, setRequirements] = useState(
-    // unique requirement list derived from medicines
-    mockMedicines.map(m => ({
-      id: m.reqId,
-      status: m.reqStatus,
-      items: m.reqItems,
-      date: m.reqDate,
-    })).filter((v, i, a) => a.findIndex(t => t.id === v.id) === i).slice(0, 5)
-  );
-  
+
+
   // Form state for new requirement
   const [newRequirement, setNewRequirement] = useState({
     medicineName: "",
@@ -130,14 +222,40 @@ export default function DistributorDashboard() {
     notes: "",
   });
 
-  const itemsPerPage = 8;
+  const itemsPerPage = 10;
 
   // Filter medicines
   const filteredMedicines = mockMedicines.filter((med) => {
-    const matchesSearch = med.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = categoryFilter === "all" || med.category === categoryFilter;
-    const matchesStatus = statusFilter === "all" || med.status === statusFilter;
-    return matchesSearch && matchesCategory && matchesStatus;
+    const medicineName =
+      med.medicineId?.medicineName || "";
+
+    const category =
+      med.medicineId?.category || "";
+
+    const status =
+      med.currentStock === 0
+        ? "Out of Stock"
+        : med.currentStock <= med.minimumStock
+          ? "Low Stock"
+          : "In Stock";
+
+    const matchesSearch = medicineName
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase());
+
+    const matchesCategory =
+      categoryFilter === "all" ||
+      category === categoryFilter;
+
+    const matchesStatus =
+      statusFilter === "all" ||
+      status === statusFilter;
+
+    return (
+      matchesSearch &&
+      matchesCategory &&
+      matchesStatus
+    );
   });
 
   const totalPages = Math.ceil(filteredMedicines.length / itemsPerPage);
@@ -146,8 +264,20 @@ export default function DistributorDashboard() {
     currentPage * itemsPerPage
   );
 
-  const categoriesList = ["all", ...new Set(mockMedicines.map((m) => m.category))];
-  const statusList = ["all", ...new Set(mockMedicines.map((m) => m.status))];
+  /*const categoryOptions = [
+    "all",
+    ...new Set(
+      mockMedicines.map(
+        item => item.medicineId?.category || item.category
+      )
+    )
+  ];*/
+  const statusList = [
+    "all",
+    "In Stock",
+    "Low Stock",
+    "Out of Stock",
+  ];
 
   // Handle form input changes
   const handleRequirementChange = (e) => {
@@ -162,7 +292,7 @@ export default function DistributorDashboard() {
       alert("Please fill in medicine name and quantity.");
       return;
     }
-    
+
     // Create new requirement object
     const newId = `REQ-${new Date().getFullYear()}-${String(requirements.length + 100).slice(-4)}`;
     const today = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
@@ -175,13 +305,13 @@ export default function DistributorDashboard() {
       priority: newRequirement.priority,
       notes: newRequirement.notes,
     };
-    
+
     // Add to requirements list (at the top)
     setRequirements([newReq, ...requirements]);
-    
+
     // Optionally, also add to mockMedicines? Not needed here; just alert success.
     alert(`Requirement ${newId} raised successfully for ${newRequirement.medicineName} (Qty: ${newRequirement.quantity})`);
-    
+
     // Reset form and close modal
     setNewRequirement({ medicineName: "", quantity: "", priority: "Normal", notes: "" });
     setShowRequirementModal(false);
@@ -198,13 +328,13 @@ export default function DistributorDashboard() {
 
         {/* Stats Cards Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-          <StatCard label="Total Medicines" value="245" icon={Package} tone="default" />
-          <StatCard label="Total Stock Value" value="$24,560.00" icon={DollarSign} tone="info" />
-          <StatCard label="Low Stock Items" value="18" icon={AlertTriangle} tone="warning" />
-          <StatCard label="Expired Items" value="5" icon={Calendar} tone="warning" />
+          <StatCard label="Total Medicines" value={stats.medicines} icon={Package} tone="default" />
+          <StatCard label="Total Stock Value" value={`₹${stats.stockValue}`} icon={DollarSign} tone="info" />
+          <StatCard label="Low Stock Items" value={stats.lowStock} icon={AlertTriangle} tone="warning" />
+          <StatCard label="Expired Items" value={0} icon={Calendar} tone="warning" />
           <StatCard
             label="Medicine Requirements"
-            value={requirements.length.toString()}
+            value={stats.requirements}
             icon={TrendingUp}
             tone="success"
             button={
@@ -251,9 +381,14 @@ export default function DistributorDashboard() {
                 onChange={(e) => setCategoryFilter(e.target.value)}
                 className="px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700"
               >
-                {categoriesList.map((cat) => (
-                  <option key={cat} value={cat}>
-                    {cat === "all" ? "All Categories" : cat}
+                <option value="all">All Categories</option>
+
+                {categories.map((cat) => (
+                  <option
+                    key={cat._id}
+                    value={cat._id}
+                  >
+                    {cat._id}
                   </option>
                 ))}
               </select>
@@ -290,13 +425,14 @@ export default function DistributorDashboard() {
                   </thead>
                   <tbody className="divide-y divide-gray-50">
                     {paginatedMedicines.map((med) => (
-                      <tr key={med.id} className="hover:bg-gray-50/30">
-                        <td className="px-5 py-3 font-medium text-gray-800">{med.name}</td>
-                        <td className="px-5 py-3 text-gray-500">{med.category}</td>
-                        <td className="px-5 py-3 text-gray-700">{med.stock} {med.form === "Tablet" ? "tablets" : med.form === "Capsule" ? "capsules" : "units"}</td>
-                        <td className="px-5 py-3 text-gray-700">${med.price.toFixed(2)}</td>
-                        <td className="px-5 py-3">{getStatusBadge(med.status)}</td>
-                        <td className="px-5 py-3 text-gray-500">{med.expiry}</td>
+                      <tr key={med._id} className="hover:bg-gray-50/30">
+                        <td className="px-5 py-3 font-medium text-gray-800">{med.medicineId?.medicineName}</td>
+                        <td className="px-5 py-3 text-gray-500">{med.medicineId?.category}</td>
+                        <td className="px-5 py-3 text-gray-700">{med.currentStock}</td>
+                        <td className="px-5 py-3 text-gray-700">${med.medicineId?.mrp}</td>
+                        <td className="px-5 py-3"><span className={`px-2 py-1 rounded-full text-xs font-medium ${med.currentStock === 0 ? "bg-red-100 text-red-700" : med.currentStock <= med.minimumStock ? "bg-yellow-100 text-yellow-700" : "bg-green-100 text-green-700"}`}>{med.currentStock === 0 ? "Out of Stock" : med.currentStock <= med.minimumStock ? "Low Stock" : "In Stock"}
+                        </span></td>
+                        <td className="px-5 py-3 text-gray-500">{med.medicineId?.expiryDate ? new Date(med.medicineId.expiryDate).toLocaleDateString() : "N/A"}</td>
                         <td className="px-5 py-3">
                           <button className="text-emerald-700 hover:text-emerald-800 font-semibold text-xs flex items-center gap-1">
                             View Details <Eye className="w-3.5 h-3.5" />
@@ -338,29 +474,42 @@ export default function DistributorDashboard() {
             {/* Inventory Overview (Requirement Requests) */}
             <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
               <div className="flex justify-between items-center mb-3">
-                <h3 className="font-bold text-gray-800">Inventory Overview</h3>
+                <h3 className="text-left px-5 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Inventory Overview</h3>
                 <button className="text-emerald-700 text-sm font-semibold hover:underline">View all requirements →</button>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-gray-100">
-                      <th className="text-left py-2 text-xs font-semibold text-gray-400">Requirement ID</th>
-                      <th className="text-left py-2 text-xs font-semibold text-gray-400">Date</th>
-                      <th className="text-left py-2 text-xs font-semibold text-gray-400">Items</th>
-                      <th className="text-left py-2 text-xs font-semibold text-gray-400">Status</th>
-                      <th className="text-left py-2 text-xs font-semibold text-gray-400"></th>
+                      <th className="text-left px-5 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Medicine name</th>
+                      <th className="text-left px-5 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Date</th>
+                      <th className="text-left px-5 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Items</th>
+                      <th className="text-left px-5 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Status</th>
+                      <th className="text-left px-5 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider"></th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-50">
                     {requirements.map((req) => (
-                      <tr key={req.id}>
-                        <td className="py-2 font-mono text-xs">{req.id}</td>
-                        <td className="py-2 text-gray-500 text-xs">{req.date}</td>
-                        <td className="py-2 text-gray-700">{req.items} Items</td>
-                        <td className="py-2">{getReqStatusBadge(req.status)}</td>
-                        <td className="py-2">
-                          <button className="text-emerald-700 text-xs font-semibold">View Details</button>
+                      <tr key={req._id}>
+                        <td className="px-5 py-3 font-medium text-gray-800">{req.medicineId?.medicineName}</td>
+
+                        <td className="text-gray-500">
+                          {req.medicineId?.createdAt
+                            ? new Date(req.medicineId.createdAt).toLocaleDateString("en-IN")
+                            : "-"}
+                        </td>
+
+                        <td className="text-gray-500">
+                          {req.requestedQty}
+                        </td>
+
+                        <td className="bg-100 text-green-700">
+                          {getReqStatusBadge(req.status)}
+                        </td>
+                        <td className="px-5 py-3">
+                          <button className="text-emerald-700 hover:text-emerald-800 font-semibold text-xs flex items-center gap-1">
+                            View Details <Eye className="w-3.5 h-3.5" />
+                          </button>
                         </td>
                       </tr>
                     ))}
@@ -379,10 +528,10 @@ export default function DistributorDashboard() {
                 <button className="text-emerald-700 text-xs font-semibold">View all</button>
               </div>
               <div className="space-y-3">
-                {stockAlerts.map((item, idx) => (
-                  <div key={idx} className="flex justify-between items-center border-b border-gray-50 pb-2">
-                    <span className="text-sm font-medium text-gray-700">{item.name}</span>
-                    <span className="text-xs text-amber-600 font-semibold">Only {item.stock} {item.unit} left</span>
+                {stockAlerts.slice(0, 3).map((alert) => (
+                  <div key={alert._id} className="flex justify-between items-center border-b border-gray-50 pb-2">
+                    <span className="text-sm font-medium text-gray-700">{alert.medicineId?.medicineName}</span>
+                    <span className="text-xs text-amber-600 font-semibold">Only {alert.currentStock} {alert.medicineId?.unit} left</span>
                   </div>
                 ))}
               </div>
@@ -395,14 +544,19 @@ export default function DistributorDashboard() {
                 <button className="text-emerald-700 text-xs font-semibold">View all</button>
               </div>
               <div className="space-y-3">
-                {expiryAlerts.map((item, idx) => (
-                  <div key={idx} className="flex justify-between items-center border-b border-gray-50 pb-2">
-                    <span className="text-sm font-medium text-gray-700">{item.name}</span>
-                    <span className="text-xs text-red-600 font-semibold">
-                      {item.status === "expired" ? `Expired on ${item.expiryDate}` : `Expires in ${item.daysLeft} days`}
-                    </span>
-                  </div>
-                ))}
+                {expiryAlerts.length === 0 ? (
+                  <p className="text-sm text-gray-500">No expiry alerts to display.</p>
+                ) : (
+
+                  expiryAlerts.map((item) => (
+                    <div key={item.id} className="flex justify-between items-center border-b border-gray-50 pb-2">
+                      <span className="text-sm font-medium text-gray-700">{item.medicineName}</span>
+                      <span className="text-xs text-red-600 font-semibold">
+                        {new Date(item.expiryDate).toLocaleDateString("en-IN")}
+                      </span>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
 
@@ -413,10 +567,11 @@ export default function DistributorDashboard() {
                 <button className="text-emerald-700 text-xs font-semibold">View all</button>
               </div>
               <div className="space-y-3">
-                {recentlyAdded.map((item, idx) => (
-                  <div key={idx} className="flex justify-between items-center border-b border-gray-50 pb-2">
-                    <span className="text-sm font-medium text-gray-700">{item.name}</span>
-                    <span className="text-xs text-gray-400">Added on {item.date}</span>
+                {recentMedicines.map((item, idx) => (
+                  <div key={item._id} className="flex justify-between items-center border-b border-gray-50 pb-2">
+                    <span className="text-sm font-medium text-gray-700">{item.medicineName}</span>
+                    <span className="text-xs text-gray-400">Added on {
+                      new Date(item.createdAt).toLocaleDateString("en-IN")}</span>
                   </div>
                 ))}
               </div>
@@ -426,9 +581,10 @@ export default function DistributorDashboard() {
             <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
               <h3 className="font-bold text-gray-800 mb-3">Categories</h3>
               <div className="space-y-2">
-                {categories.map((cat, idx) => (
-                  <div key={idx} className="flex justify-between items-center">
-                    <span className="text-sm text-gray-700">{cat.name}</span>
+                <option value="all">All Categories</option>
+                {categories.map((cat) => (
+                  <div key={cat._id} className="flex justify-between items-center">
+                    <span className="text-sm text-gray-700">{cat._id}</span>
                     <span className="text-xs font-semibold text-gray-500">{cat.count}</span>
                   </div>
                 ))}

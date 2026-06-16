@@ -1,6 +1,17 @@
 import patientService from "../services/patient.service.js";
 import { generateResponse, generateError } from "../utils/response.js";
 
+
+import Patient from "../models/patient.js";
+
+export const getPatients = async (req,res)=>{
+  const patients = await Patient.find().sort({createdAt:-1});
+
+  res.status(200).json({
+    success:true,
+    data:patients
+  });
+};
 export const getAllPatients = async (req, res) => {
   try {
     const patients = await patientService.getAllPatients();

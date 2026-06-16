@@ -19,8 +19,8 @@ import {
 import { cn } from "../../lib/utils";
 import { Button } from "../../components/common/Button";
 
-// ==================== Mock Data ====================
-const mockStockItems = [
+// ==================== Mock Data ====================*// 
+/*const mockStockItems = [
   {
     id: "STK-001",
     medicineName: "Paracetamol 650mg",
@@ -133,7 +133,7 @@ const mockStockItems = [
     status: "In Stock",
     notes: "",
   },
-];
+];*/
 
 // ==================== Main Component ====================
 export default function StockManagement() {
@@ -152,37 +152,61 @@ export default function StockManagement() {
 
   // Metrics calculations
   const totalStockItems = items.length;
-  const totalStockValue = items.reduce((sum, i) => sum + i.totalValue, 0);
-  const lowStockItems = items.filter(i => i.status === "Low Stock").length;
-  const outOfStockItems = items.filter(i => i.status === "Out of Stock").length;
+  const totalStockValue = items.reduce((sum, item) => sum + (item.stockValue || 0), 0);
+  const lowStockItems = items.filter(item => item.currentStock > 0 && item.currentStock <= item.reorderLevel).length;
+  const outOfStockItems = items.filter(item => item.currentStock === 0).length;
 
   useEffect(() => {
-    const stored = localStorage.getItem("medico_stock_items");
-    if (stored) {
-      setItems(JSON.parse(stored));
-    } else {
-      setItems(mockStockItems);
-      localStorage.setItem("medico_stock_items", JSON.stringify(mockStockItems));
-    }
+    fetchInventory();
   }, []);
+
+  const fetchInventory = async () => {
+    try {
+      const response = await fetch(
+        "http://localhost:5000/api/pharmacy/inventory"
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP Error: ${response.status}`);
+      }
+
+      const result = await response.json();
+
+      setItems(result.data.inventory);
+    } catch (error) {
+      console.error(error);
+    }
+  };
 
   useEffect(() => {
     let filtered = [...items];
 
     // Filter by tab
     if (activeTab === "inStock") {
-      filtered = filtered.filter(i => i.status === "In Stock");
+      filtered = filtered.filter(
+        i => i.currentStock > i.reorderLevel
+      );
     } else if (activeTab === "lowStock") {
-      filtered = filtered.filter(i => i.status === "Low Stock");
+      filtered = filtered.filter(
+        i =>
+          i.currentStock > 0 &&
+          i.currentStock <= i.reorderLevel
+      );
     } else if (activeTab === "outOfStock") {
-      filtered = filtered.filter(i => i.status === "Out of Stock");
+      filtered = filtered.filter(
+        i => i.currentStock === 0
+      );
     }
 
     // Filter by search
     if (searchTerm) {
       filtered = filtered.filter(i =>
-        i.medicineName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        i.batchNo.toLowerCase().includes(searchTerm.toLowerCase())
+        i.medicineId?.medicineName
+          ?.toLowerCase()
+          .includes(searchTerm.toLowerCase()) ||
+        i.batchNo
+          ?.toLowerCase()
+          .includes(searchTerm.toLowerCase())
       );
     }
 
@@ -204,7 +228,7 @@ export default function StockManagement() {
     const updatedReorderLevel = parseInt(editForm.reorderLevel);
     const updatedUnitPrice = parseFloat(editForm.unitPrice);
     const newTotalValue = updatedStock * updatedUnitPrice;
-    
+
     let newStatus = "In Stock";
     if (updatedStock <= 0) newStatus = "Out of Stock";
     else if (updatedStock <= updatedReorderLevel) newStatus = "Low Stock";
@@ -213,14 +237,14 @@ export default function StockManagement() {
     const updatedItems = items.map(item =>
       item.id === editingItem.id
         ? {
-            ...item,
-            stock: updatedStock,
-            reorderLevel: updatedReorderLevel,
-            unitPrice: updatedUnitPrice,
-            totalValue: newTotalValue,
-            status: newStatus,
-            notes: editForm.notes,
-          }
+          ...item,
+          stock: updatedStock,
+          reorderLevel: updatedReorderLevel,
+          unitPrice: updatedUnitPrice,
+          totalValue: newTotalValue,
+          status: newStatus,
+          notes: editForm.notes,
+        }
         : item
     );
 
@@ -240,11 +264,11 @@ export default function StockManagement() {
 
   const tabs = [
     { id: "all", label: "All Items", count: totalStockItems },
-    { id: "inStock", label: "In Stock", count: items.filter(i => i.status === "In Stock").length },
+    { id: "inStock", label: "In Stock", count: items.filter(i => i.currentStock > i.reorderLevel).length },
     { id: "lowStock", label: "Low Stock", count: lowStockItems },
     { id: "outOfStock", label: "Out of Stock", count: outOfStockItems },
   ];
-
+  console.log(filteredItems);
   return (
     <div className="space-y-8 pb-12">
       {/* Header */}
@@ -327,23 +351,23 @@ export default function StockManagement() {
             </thead>
             <tbody className="divide-y divide-gray-50">
               {filteredItems.map((item) => (
-                <tr key={item.id} className="hover:bg-gray-50/50 transition-colors">
-                  <td className="px-6 py-4 font-bold text-slate-800 text-sm">{item.medicineName}</td>
-                  <td className="px-6 py-4 text-sm text-slate-600">{item.category}</td>
-                  <td className="px-6 py-4 text-sm text-slate-600 font-mono">{item.batchNo}</td>
-                  <td className="px-6 py-4 text-sm text-slate-600">{item.warehouse}</td>
-                  <td className="px-6 py-4 text-sm text-slate-600">{item.stock}</td>
+                <tr key={item._id} className="hover:bg-gray-50/50 transition-colors">
+                  <td className="px-6 py-4 font-bold text-slate-800 text-sm">{item.medicineId?.medicineName}</td>
+                  <td className="px-6 py-4 text-sm text-slate-600">{item.medicineId?.category}</td>
+                  <td className="px-6 py-4 text-sm text-slate-600 font-mono">{item.medicineId?.batchNo}</td>
+                  <td className="px-6 py-4 text-sm text-slate-600">{item.location}</td>
+                  <td className="px-6 py-4 text-sm text-slate-600">{item.currentStock}</td>
                   <td className="px-6 py-4 text-sm text-slate-600">{item.reorderLevel}</td>
-                  <td className="px-6 py-4 text-sm text-slate-600">${item.unitPrice.toFixed(2)}</td>
-                  <td className="px-6 py-4 text-sm font-medium text-slate-700">${item.totalValue.toFixed(2)}</td>
+                  <td className="px-6 py-4 text-sm text-slate-600">${(item.medicineId?.mrp || 0).toFixed(2)}</td>
+                  <td className="px-6 py-4 text-sm font-medium text-slate-700">${(item.stockValue || 0).toFixed(2)}</td>
                   <td className="px-6 py-4">
                     <span className={cn(
                       "px-2 py-1 rounded-full text-[10px] font-bold",
-                      item.status === "In Stock" ? "bg-emerald-50 text-emerald-600" :
-                      item.status === "Low Stock" ? "bg-amber-50 text-amber-600" :
-                      "bg-red-50 text-red-600"
+                      item.currentStock === 0 ? "bg-red-50 text-red-600" : item.currentStock <= item.reorderLevel ? "bg-amber-50 text-amber-600" : "bg-emerald-50 text-emerald-600"
                     )}>
-                      {item.status}
+                      {item.currentStock === 0
+                        ? "Out of Stock"
+                        : item.currentStock <= item.reorderLevel ? "Low Stock" : "In Stock"}
                     </span>
                   </td>
                   <td className="px-6 py-4 text-right">
@@ -474,7 +498,7 @@ export default function StockManagement() {
                     <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Status</label>
                     <div className="px-4 py-2.5 bg-gray-50 rounded-xl text-sm font-medium">
                       {parseInt(editForm.stock || 0) <= 0 ? "Out of Stock" :
-                       parseInt(editForm.stock || 0) <= parseInt(editForm.reorderLevel || 0) ? "Low Stock" : "In Stock"}
+                        parseInt(editForm.stock || 0) <= parseInt(editForm.reorderLevel || 0) ? "Low Stock" : "In Stock"}
                     </div>
                   </div>
                 </div>

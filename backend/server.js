@@ -5,8 +5,15 @@ import { connectDB } from "./config/database.js";
 import { config } from "./config/env.js";
 import { initializeSockets } from "./sockets/index.js";
 import { logger } from "./utils/logger.js";
+import pharmacyroutes from "./routes/pharmacy.routes.js";
+import prescriptionRoutes from "./routes/prescription.routes.js";
+
 
 const server = http.createServer(app);
+app.use("/api/pharmacy", pharmacyroutes);
+app.use("/api/prescriptions", prescriptionRoutes);
+
+//app.use("/api/patients", patientroutes);
 
 // Initialize Socket.io
 const io = initializeSockets(server);
@@ -53,3 +60,4 @@ process.on("unhandledRejection", (reason, promise) => {
 });
 
 
+app.use("/models/Medicine", pharmacyroutes);

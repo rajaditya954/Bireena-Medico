@@ -57,3 +57,29 @@ export const getActivePrescriptions = async (req, res) => {
     res.status(500).json(generateError(error.message));
   }
 };
+
+export const getClinicHistory = async (req, res) => {
+  try {
+    const prescriptions = await Prescription.find()
+      .populate("patientId")
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      data: prescriptions
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+export const seedPrescriptions = async (req, res) => {
+  try {
+    // insertMany([...])
+  } catch (err) {
+    res.status(500).json(err);
+  }
+};

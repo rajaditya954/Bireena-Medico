@@ -67,13 +67,13 @@ app.use("/api/auth", authRoutes);
 
 // Protected Routes (Require authentication)
 app.use("/api/users", authenticateToken, userRoutes);
-app.use("/api/patients", authenticateToken, patientRoutes);
+app.use("/api/patients",patientRoutes);
 app.use("/api/doctors", authenticateToken, doctorRoutes);
 app.use("/api/appointments", authenticateToken, appointmentRoutes);
 app.use("/api/queue", authenticateToken, queueRoutes);
-app.use("/api/prescriptions", authenticateToken, prescriptionRoutes);
+app.use("/api/prescriptions",prescriptionRoutes);
 app.use("/api/laboratory", authenticateToken, laboratoryRoutes);
-app.use("/api/pharmacy", authenticateToken, pharmacyRoutes);
+app.use("/api/pharmacy", pharmacyRoutes);
 app.use("/api/billing", authenticateToken, billingRoutes);
 app.use("/api/payments", authenticateToken, paymentRoutes);
 app.use("/api/notifications", authenticateToken, notificationRoutes);

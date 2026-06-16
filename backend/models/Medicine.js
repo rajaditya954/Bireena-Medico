@@ -2,19 +2,56 @@ import mongoose from "mongoose";
 
 const MedicineSchema = new mongoose.Schema(
   {
-    name: { type: String, required: true, unique: true },
-    genericName: { type: String },
-    manufacturer: { type: String },
-    dosage: { type: String }, // e.g., "500mg", "10ml"
-    form: { type: String, enum: ["tablet", "capsule", "liquid", "injection", "cream"] },
-    description: { type: String },
-    price: { type: Number, default: 0 },
-    stock: { type: Number, default: 0 },
-    expiryDate: { type: Date },
-    sideEffects: [{ type: String }],
-    contraindications: [{ type: String }],
+    medicineCode: {
+      type: String,
+      required: true,
+      unique: true,
+    },
+
+    medicineName: {
+      type: String,
+      required: true,
+    },
+
+    category: {
+      type: String,
+      required: true,
+    },
+
+    manufacturer: {
+      type: String,
+      required: true,
+    },
+
+    mrp: {
+      type: Number,
+      required: true,
+    },
+
+    unit: {
+      type: String,
+      required: true,
+    },
+
+    expiryDate: {
+      type: Date,
+    },
+
+    batchNo: {
+      type: String,
+    },
+
+    createdAt: {
+      type: Date,
+      default: Date.now,
+    },
   },
-  { timestamps: true }
+  {
+    versionKey: false,
+  }
 );
 
-export default mongoose.model("Medicine", MedicineSchema);
+export default mongoose.model(
+  "Medicine",
+  MedicineSchema
+);

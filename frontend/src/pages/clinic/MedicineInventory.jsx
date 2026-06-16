@@ -18,20 +18,24 @@ const MedicineInventory = () => {
   }, []);
 
   const fetchMedicines = async () => {
-    try {
-      setLoading(true);
-      // TODO: Replace with actual API call
-      // const response = await clinicService.getMedicines();
-      // setMedicines(response.data);
-      setMedicines([]);
-      setError(null);
-    } catch (err) {
-      setError(err.message);
-      console.error("Error fetching medicines:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  try {
+    setLoading(true);
+
+    const response = await fetch(
+  "http://localhost:5000/api/pharmacy/inventory"
+);
+
+    const result = await response.json();
+  console.log("Medicines:", result.data.medicines);
+
+    setMedicines(result.data.inventory);
+    setError(null);
+  } catch (err) {
+    setError(err.message);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -78,6 +82,7 @@ const MedicineInventory = () => {
         // TODO: Replace with actual API call
         // await clinicService.deleteMedicine(medicineId);
         fetchMedicines();
+        setMedicines(result.data.inventory);
       } catch (err) {
         setError(err.message);
         console.error("Error deleting medicine:", err);
@@ -204,22 +209,25 @@ const MedicineInventory = () => {
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
+                    Code
+                  </th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
                     Medicine Name
                   </th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
-                    Quantity
+                    Category
                   </th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
-                    Unit Price
+                    Current Stock
                   </th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
-                    Batch Number
+                    status
                   </th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
-                    Expiry Date
+                    supplier
                   </th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
-                    Actions
+                    Location
                   </th>
                 </tr>
               </thead>
@@ -230,19 +238,28 @@ const MedicineInventory = () => {
                     className="border-b border-gray-200 hover:bg-gray-50"
                   >
                     <td className="px-6 py-4 text-sm text-gray-900">
-                      {medicine.name}
+                      {medicine.medicineCode}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-600">
-                      {medicine.quantity}
+                      {medicine.medicineName}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-600">
-                      ₹{medicine.unitPrice}
+                      {medicine.category}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-600">
-                      {medicine.batchNumber}
+                      {medicine.manufacturer}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-600">
-                      {new Date(medicine.expiryDate).toLocaleDateString()}
+                      ₹{medicine.mrp}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-600">
+                      {medicine.unit}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-600">
+                      {medicine.batchNo}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-600">
+                      {new Date(medicine.createdAt).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4 text-sm space-x-2">
                       <button

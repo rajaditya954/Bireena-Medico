@@ -1,9 +1,9 @@
 export const config = {
   port: process.env.PORT || 5000,
-  mongoUri: process.env.MONGO_URI,
+  mongoUri: process.env.MONGO_URI || "mongodb://127.0.0.1:27017/hospital-management",
   jwtSecret: process.env.JWT_SECRET,
   jwtExpire: process.env.JWT_EXPIRE || "7d",
-  corsOrigin: (process.env.CORS_ORIGIN || "http://localhost:5173,http://localhost:8080")
+  corsOrigin: (process.env.CORS_ORIGIN || "http://localhost:5173,http://localhost:5174")
     .split(",")
     .map((s) => s.trim()),
   nodeEnv: process.env.NODE_ENV || "development",
