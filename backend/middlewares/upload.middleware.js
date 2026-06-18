@@ -45,14 +45,26 @@ const invoiceStorage = multer.diskStorage({
 });
 
 const fileFilter = (req, file, cb) => {
-  const allowedMimeTypes = ["application/pdf", "image/png", "image/jpeg", "image/jpg"];
+  const allowedMimeTypes = [
+    "application/pdf",
+    "image/png",
+    "image/jpeg",
+    "image/jpg",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "text/plain",
+  ];
   if (allowedMimeTypes.includes(file.mimetype)) {
     cb(null, true);
   } else {
-    cb(new Error("Invalid file type. Only PDF and image files are allowed."), false);
+    cb(new Error("Invalid file type. Only PDF, DOCX, TXT, and image files are allowed."), false);
   }
 };
 
 export const uploadReport = multer({ storage: reportStorage, fileFilter });
 export const uploadPrescription = multer({ storage: prescriptionStorage, fileFilter });
 export const uploadInvoice = multer({ storage: invoiceStorage, fileFilter });
+export const uploadLabReport = multer({
+  storage: multer.memoryStorage(),
+  fileFilter,
+  limits: { fileSize: 20 * 1024 * 1024 },
+});

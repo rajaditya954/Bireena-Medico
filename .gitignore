@@ -15,6 +15,9 @@ yarn-error.log*
 dist/
 build/
 
+# Uploaded files
+uploads/
+
 # Logs
 logs/
 *.log

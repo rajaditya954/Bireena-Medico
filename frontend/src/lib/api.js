@@ -1,7 +1,7 @@
 import { reportsStore } from "./reports-store.js";
 import { testsStore } from "./tests-store.js";
-// Backend API client. Configure VITE_API_URL in .env (default http://localhost:5000/api)
-const BASE = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+// Backend API client. Configure VITE_API_URL in .env (default http://localhost:5001/api)
+const BASE = import.meta.env.VITE_API_URL || "http://localhost:5001/api";
 
 const TOKEN_KEY = "aarogya_token";
 export const getToken = () => localStorage.getItem(TOKEN_KEY);

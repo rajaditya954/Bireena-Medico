@@ -23,7 +23,11 @@ class AuthService {
   }
 
   async login(email, password) {
-    const user = await User.findOne({ email: email.toLowerCase() });
+    const isEmail = email.includes("@");
+    const query = isEmail
+      ? { email: email.toLowerCase() }
+      : { $or: [{ email: email.toLowerCase() }, { employeeId: email }, { username: email.toLowerCase() }] };
+    const user = await User.findOne(query);
     if (!user) {
       throw new Error("Invalid credentials");
     }

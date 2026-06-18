@@ -47,6 +47,12 @@ app.use(cors({
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ limit: "10mb", extended: true }));
 
+// Static files (uploaded reports)
+import path from "path";
+import { fileURLToPath } from "url";
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
 // Rate Limiting
 app.use("/api/auth/login", loginLimiter);
 app.use(generalLimiter);

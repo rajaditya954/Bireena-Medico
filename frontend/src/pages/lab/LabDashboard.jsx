@@ -6,13 +6,14 @@ import {
 } from "lucide-react";
 import { Button, Card, EmptyState, Field, inputCls, SectionHeader, selectCls, StatCard, StatusBadge } from "../../components/lab/ui";
 import { downloadBlob, toCsvValue } from "../../lib/utils";
-import { useReports } from "../../lib/reports-store";
+import { useReports, reportsStore } from "../../lib/reports-store";
 
 const PAGE_SIZE = 6;
 
 export default function LabReportsPage() {
   useEffect(() => {
     document.title = "Lab Reports - Lab Admin";
+    reportsStore.fetchAll();
   }, []);
 
   const allReports = useReports();
@@ -65,7 +66,7 @@ export default function LabReportsPage() {
   const selected = allReports.find((r) => r.id === selectedId) ?? null;
 
   const stats = useMemo(() => {
-    const today = "2026-05-16";
+    const today = new Date().toISOString().split('T')[0];
     return {
       total: allReports.length,
       today: allReports.filter((r) => r.sampleDate === today).length,
