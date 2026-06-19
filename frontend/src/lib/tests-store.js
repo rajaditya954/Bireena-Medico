@@ -1,7 +1,8 @@
-import { useSyncExternalStore } from "react";
-import { tests as initialTests } from "./mock-tests.js";
+import { useSyncExternalStore, useCallback } from "react";
+import { labApi } from "../services/labService.js";
 
-let state = JSON.parse(JSON.stringify(initialTests));
+let state = [];
+let loading = false;
 const listeners = new Set();
 
 function emit() {
@@ -14,21 +15,39 @@ export const testsStore = {
     listeners.add(l);
     return () => listeners.delete(l);
   },
-  add: (t) => {
-    const id = `T-${String(state.length + 1).padStart(3, "0")}`;
-    state = [{ id, ...t }, ...state];
-    emit();
+  async fetchAll() {
+    if (loading) return state;
+    loading = true;
+    try {
+      state = await labApi.getTests();
+    } catch (e) {
+      console.error("Failed to fetch tests:", e);
+    } finally {
+      loading = false;
+      emit();
+    }
+    return state;
   },
-  update: (id, t) => {
-    state = state.map((x) => (x.id === id ? { id, ...t } : x));
+  async add(testData) {
+    const test = await labApi.createTest(testData);
+    state = [test, ...state];
     emit();
+    return test;
   },
-  remove: (id) => {
-    state = state.filter((x) => x.id !== id);
+  async update(id, testData) {
+    const test = await labApi.updateTest(id, testData);
+    state = state.map((t) => (t.id === id ? test : t));
+    emit();
+    return test;
+  },
+  async remove(id) {
+    await labApi.deleteTest(id);
+    state = state.filter((t) => t.id !== id);
     emit();
   },
 };
 
 export function useTests() {
-  return useSyncExternalStore(testsStore.subscribe, testsStore.get, testsStore.get);
+  const subscribe = useCallback((l) => testsStore.subscribe(l), []);
+  return useSyncExternalStore(subscribe, testsStore.get, testsStore.get);
 }

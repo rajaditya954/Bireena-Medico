@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
 
 import RoleGuard from "../components/RoleGuard";
 import Layout from "../components/Layout";
@@ -122,6 +122,27 @@ const ComingSoon = ({ title }) => (
     </p>
   </div>
 );
+
+function UnauthorizedPage() {
+  const navigate = useNavigate();
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-white">
+      <h1 className="text-9xl font-black text-emerald-50 mb-4 select-none">403</h1>
+      <div className="text-center relative -top-16">
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Access Restricted</h2>
+        <p className="text-gray-500 mb-8 max-w-sm">
+          You do not have permission to access this module.
+        </p>
+        <button
+          onClick={() => navigate(-1)}
+          className="h-12 px-8 bg-emerald-600 text-white rounded-2xl font-bold shadow-xl shadow-emerald-600/20 hover:scale-105 transition-transform"
+        >
+          Go Back
+        </button>
+      </div>
+    </div>
+  );
+}
 
 /* ===================================================== */
 /* APP ROUTES */
@@ -540,23 +561,7 @@ export default function AppRoutes() {
       {/* ========== UNAUTHORIZED ========== */}
       <Route
         path="/unauthorized"
-        element={
-          <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-white">
-            <h1 className="text-9xl font-black text-emerald-50 mb-4 select-none">403</h1>
-            <div className="text-center relative -top-16">
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Access Restricted</h2>
-              <p className="text-gray-500 mb-8 max-w-sm">
-                You do not have permission to access this module.
-              </p>
-              <button
-                onClick={() => window.history.back()}
-                className="h-12 px-8 bg-emerald-600 text-white rounded-2xl font-bold shadow-xl shadow-emerald-600/20 hover:scale-105 transition-transform"
-              >
-                Go Back
-              </button>
-            </div>
-          </div>
-        }
+        element={<UnauthorizedPage />}
       />
 
       {/* ========== FALLBACK ========== */}

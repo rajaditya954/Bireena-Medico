@@ -3,14 +3,15 @@ import { jsPDF } from "jspdf";
 import { toast } from "sonner";
 import {
   FileText, Clock, CheckCircle2, AlertCircle, Download, Filter, ChevronLeft, ChevronRight, Search,
-  X, Copy, FileDown, Calendar, User, Stethoscope, Activity, Printer
+  X, Copy, FileDown, Calendar, User, Stethoscope, Activity, Printer, Pencil, Trash2
 } from "lucide-react";
-import { Button, Card, EmptyState, Field, inputCls, SectionHeader, selectCls, StatCard, StatusBadge } from "../../components/lab/ui";
+import { Button, Card, EmptyState, Field, inputCls, Modal, SectionHeader, selectCls, StatCard, StatusBadge, textareaCls } from "../../components/lab/ui";
 import { downloadBlob, toCsvValue } from "../../lib/utils";
+import { useReports, reportsStore } from "../../lib/reports-store";
 
 const PAGE_SIZE = 6;
 
-// ---------- MOCK DATA (based on the earlier example) ----------
+// ---------- MOCK DATA (fallback while loading) ----------
 const MOCK_REPORTS = [
   {
     id: "RPT-1001",
@@ -160,7 +161,24 @@ export default function LabReportsPage() {
     document.title = "Lab Reports - Lab Admin";
   }, []);
 
-  const allReports = MOCK_REPORTS; // use mock data instead of hook
+  const backendReports = useReports();
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    reportsStore.fetchAll().finally(() => setLoading(false));
+
+    const onFocus = () => {
+      reportsStore.fetchAll();
+    };
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onFocus);
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onFocus);
+    };
+  }, []);
+
+  const allReports = loading ? MOCK_REPORTS : (backendReports.length > 0 ? backendReports : []);
   const detailPanelRef = useRef(null);
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all"); // for dropdown
@@ -171,6 +189,9 @@ export default function LabReportsPage() {
   const [page, setPage] = useState(1);
   const [selectedId, setSelectedId] = useState(null);
   const [filtersOpen, setFiltersOpen] = useState(true);
+  const [editing, setEditing] = useState(null);
+  const [form, setForm] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Sync tabs with dropdown (optional: keep both in sync)
   const handleTabChange = (tab) => {
@@ -300,6 +321,59 @@ export default function LabReportsPage() {
 
     downloadBlob([csv], `lab-reports-${new Date().toISOString().split('T')[0]}.csv`, "text/csv;charset=utf-8");
     toast.success(`Exported ${filtered.length} report${filtered.length === 1 ? "" : "s"} to CSV.`);
+  }
+
+  function openEdit(report) {
+    setEditing(report);
+    setForm({
+      status: report.status === "In Progress" ? "IN_PROGRESS" : report.status === "Completed" ? "COMPLETED" : report.status === "Pending" ? "PENDING" : "COMPLETED",
+      notes: report.notes || "",
+    });
+  }
+
+  async function saveEdit() {
+    if (!editing || !form) return;
+    const mongoId = editing._raw?._id;
+    if (!mongoId) {
+      toast.error("Cannot identify report.");
+      return;
+    }
+    toast.info("Saving changes...");
+    try {
+      await reportsStore.updateStatus(mongoId, form.status, form.notes);
+      toast.success("✓ Report updated successfully!");
+      setEditing(null);
+      setForm(null);
+      reportsStore.fetchAll();
+    } catch (e) {
+      console.error("Failed to update report:", e);
+      toast.error("✗ " + (e.message || "Failed to update report"));
+    }
+  }
+
+  async function deleteReport(reportId) {
+    if (!window.confirm("Are you sure you want to delete this report? This cannot be undone.")) {
+      toast.info("Delete cancelled.");
+      return;
+    }
+    const report = backendReports.find(r => r.id === reportId);
+    const mongoId = report?._raw?._id;
+    if (!mongoId) {
+      toast.error("Cannot identify report.");
+      return;
+    }
+    setIsDeleting(true);
+    toast.info("Deleting report...");
+    try {
+      await reportsStore.remove(mongoId);
+      toast.success("✓ Report deleted successfully!");
+      if (selectedId === reportId) setSelectedId(null);
+    } catch (e) {
+      console.error("Failed to delete report:", e);
+      toast.error("✗ " + (e.message || "Failed to delete report"));
+    } finally {
+      setIsDeleting(false);
+    }
   }
 
   function focusReport(report) {
@@ -656,16 +730,39 @@ export default function LabReportsPage() {
                         <StatusBadge status={r.status} />
                       </td>
                       <td className="px-4 py-4 pr-6 text-right">
-                        <button
-                          type="button"
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            focusReport(r);
-                          }}
-                          className="text-primary hover:text-primary/80 text-[12px] font-medium transition-colors duration-150 hover:underline"
-                        >
-                          View Details →
-                        </button>
+                        <div className="flex gap-1 justify-end">
+                          <button
+                            type="button"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              focusReport(r);
+                            }}
+                            className="text-primary hover:text-primary/80 text-[12px] font-medium transition-colors duration-150 hover:underline"
+                          >
+                            View Details →
+                          </button>
+                          <button
+                            aria-label="Edit"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              openEdit(r);
+                            }}
+                            className="size-8 rounded-lg hover:bg-secondary grid place-items-center text-muted-foreground hover:text-primary transition"
+                          >
+                            <Pencil className="size-4" />
+                          </button>
+                          <button
+                            aria-label="Delete"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              deleteReport(r.id);
+                            }}
+                            disabled={isDeleting}
+                            className="size-8 rounded-lg hover:bg-destructive/10 grid place-items-center text-muted-foreground hover:text-destructive transition disabled:opacity-50"
+                          >
+                            <Trash2 className="size-4" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -729,7 +826,7 @@ export default function LabReportsPage() {
         </Card>
 
         {/* Detail Panel */}
-        <aside ref={detailPanelRef} className="xl:sticky xl:top-24 h-fit">
+        <aside ref={detailPanelRef} className="xl:sticky xl:top-24 h-fit print-area">
           <Card className="p-6 shadow-sm hover:shadow-md transition-shadow duration-200">
             {!selected ? (
               <div className="py-12">
@@ -780,11 +877,35 @@ export default function LabReportsPage() {
                     <Row k="Specialty" v={selected.doctorSpecialty} />
                   </DetailGroup>
 
+                  {selected.attachments?.length > 0 && (
+                    <DetailGroup title="Attached File" icon={<FileText className="size-3" />}>
+                      <div className="flex items-center gap-2 bg-secondary/30 rounded-lg p-2.5">
+                        <FileText className="size-4 text-primary shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <div className="text-[12px] font-medium text-foreground truncate">
+                            {selected.attachments[0].originalName}
+                          </div>
+                          <div className="text-[10px] text-muted-foreground">
+                            {selected.attachments[0].mimetype === "application/pdf" ? "PDF Document" : "Image"}
+                          </div>
+                        </div>
+                        <a
+                          href={selected.attachments[0].path}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[11px] text-primary font-medium hover:underline shrink-0"
+                        >
+                          Open
+                        </a>
+                      </div>
+                    </DetailGroup>
+                  )}
+
                   <div className="flex gap-3 pt-2">
                     <Button className="flex-1" onClick={() => downloadReport(selected)}>
                       <Download className="size-4 mr-2" /> Download PDF
                     </Button>
-                    <Button variant="outline" onClick={() => window.print()} className="flex-1">
+                    <Button type="button" variant="outline" onClick={() => window.print()} className="flex-1">
                       <Printer className="size-4 mr-2" /> Print
                     </Button>
                   </div>
@@ -817,6 +938,48 @@ export default function LabReportsPage() {
           </Card>
         </aside>
       </div>
+
+      <Modal
+        open={!!editing}
+        onClose={() => { setEditing(null); setForm(null); }}
+        title={editing ? `Edit Report ${editing.id}` : ""}
+        footer={
+          <>
+            <Button variant="outline" onClick={() => { setEditing(null); setForm(null); }}>
+              Cancel
+            </Button>
+            <Button onClick={saveEdit}>Save changes</Button>
+          </>
+        }
+      >
+        {form && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Field label="Status">
+              <select
+                className={selectCls}
+                value={form.status}
+                onChange={(event) => setForm({ ...form, status: event.target.value })}
+              >
+                <option value="PENDING">Pending</option>
+                <option value="IN_PROGRESS">In Progress</option>
+                <option value="COMPLETED">Completed</option>
+                <option value="CANCELLED">Cancelled</option>
+              </select>
+            </Field>
+            <div className="md:col-span-2">
+              <Field label="Clinical Notes">
+                <textarea
+                  rows={4}
+                  className={textareaCls}
+                  value={form.notes}
+                  onChange={(event) => setForm({ ...form, notes: event.target.value })}
+                  placeholder="Add clinical notes, findings, or remarks..."
+                />
+              </Field>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }

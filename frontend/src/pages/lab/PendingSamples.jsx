@@ -1,4 +1,7 @@
 import React, { useState, useEffect } from "react";
+import { toast } from "sonner";
+import { labApi } from "../../services/labService";
+import { StatusBadge } from "../../components/lab/ui";
 
 const PendingSamples = () => {
   const [samples, setSamples] = useState([]);
@@ -13,10 +16,16 @@ const PendingSamples = () => {
   const fetchPendingSamples = async () => {
     try {
       setLoading(true);
-      // TODO: Replace with actual API call
-      // const response = await labService.getPendingSamples();
-      // setSamples(response.data);
-      setSamples([]);
+      const reports = await labApi.getReports();
+      const pending = reports.filter(r => r.status === "Pending" || r.status === "In Progress");
+      setSamples(pending.map(r => ({
+        _id: r._raw?._id || r.id,
+        sampleId: r.id,
+        patientName: r.patientName,
+        testType: r.testType,
+        receivedDate: r.sampleDate,
+        status: r.status,
+      })));
       setError(null);
     } catch (err) {
       setError(err.message);
@@ -34,17 +43,30 @@ const PendingSamples = () => {
     );
   };
 
+  const handleSelectAll = () => {
+    if (selectedSamples.length === samples.length) {
+      setSelectedSamples([]);
+    } else {
+      setSelectedSamples(samples.map(s => s.sampleId));
+    }
+  };
+
   const handleMarkAsProcessed = async () => {
     if (selectedSamples.length === 0) {
-      alert("Please select at least one sample");
+      toast.info("Please select at least one sample");
       return;
     }
 
     try {
-      // TODO: Replace with actual API call
-      // await labService.markSamplesAsProcessed(selectedSamples);
+      for (const id of selectedSamples) {
+        const sample = samples.find(s => s.sampleId === id);
+        if (sample?._id) {
+          await labApi.updateReportStatus(sample._id, "Completed");
+        }
+      }
       setSelectedSamples([]);
       fetchPendingSamples();
+      toast.success("Samples marked as processed");
     } catch (err) {
       setError(err.message);
       console.error("Error marking samples as processed:", err);
@@ -90,7 +112,12 @@ const PendingSamples = () => {
               <thead className="border-b border-gray-100 bg-white">
                 <tr className="text-left text-xs font-semibold uppercase tracking-wider text-gray-400">
                   <th className="px-6 py-4">
-                    <input type="checkbox" className="rounded border-gray-300 text-[#0B4B34] focus:ring-[#0B4B34]" />
+                    <input
+                      type="checkbox"
+                      checked={selectedSamples.length === samples.length && samples.length > 0}
+                      onChange={handleSelectAll}
+                      className="rounded border-gray-300 text-[#0B4B34] focus:ring-[#0B4B34]"
+                    />
                   </th>
                   <th className="px-6 py-4">
                     Sample ID
@@ -118,8 +145,8 @@ const PendingSamples = () => {
                     <td className="px-6 py-4">
                       <input
                         type="checkbox"
-                        checked={selectedSamples.includes(sample._id)}
-                        onChange={() => handleSelectSample(sample._id)}
+                        checked={selectedSamples.includes(sample.sampleId)}
+                        onChange={() => handleSelectSample(sample.sampleId)}
                         className="rounded border-gray-300 text-[#0B4B34] focus:ring-[#0B4B34]"
                       />
                     </td>
@@ -133,12 +160,10 @@ const PendingSamples = () => {
                       {sample.testType}
                     </td>
                     <td className="px-6 py-4 text-sm text-slate-500 tabular-nums">
-                      {new Date(sample.receivedDate).toLocaleDateString()}
+                      {sample.receivedDate || "—"}
                     </td>
                     <td className="px-6 py-4 text-sm">
-                      <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-orange-100 text-orange-800">
-                        {sample.status}
-                      </span>
+                      <StatusBadge status={sample.status} />
                     </td>
                   </tr>
                 ))}

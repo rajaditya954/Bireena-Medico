@@ -14,11 +14,6 @@ const mapRole = (backendRole) => {
 };
 
 export const authService = {
-
-  // ======================================================
-  // LOGIN
-  // ======================================================
-
   login: async (credentials) => {
     let { email, password } = credentials;
 
@@ -95,37 +90,50 @@ export const authService = {
     }
   },
 
-  // ======================================================
-  // REGISTER
-  // ======================================================
-
   register: async (userData) => {
-    await new Promise((resolve) => setTimeout(resolve, 800));
+    try {
+      const response = await axios.post(`${BASE_URL}/auth/register`, userData);
+      const { token, user } = response.data.data;
+      localStorage.setItem("aarogya_token", token);
+      const mappedUser = {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: mapRole(user.role),
+        phone: user.phone,
+        specializations: user.specializations || [],
+        degrees: user.degrees || [],
+        medals: user.medals || [],
+        history: user.history || [],
+      };
+      localStorage.setItem("medico_session", JSON.stringify(mappedUser));
+      return { user: mappedUser };
+    } catch (error) {
+      console.error("Backend register failed, falling back to mock registration", error);
 
-    const registeredUsers = JSON.parse(
-      localStorage.getItem("medico_registered_users") || "[]"
-    );
+      await new Promise((resolve) => setTimeout(resolve, 800));
 
-    const newUser = {
-      ...userData,
-      id: `REG-${Date.now().toString().slice(-4)}`,
-    };
+      const registeredUsers = JSON.parse(
+        localStorage.getItem("medico_registered_users") || "[]"
+      );
 
-    registeredUsers.push(newUser);
+      const newUser = {
+        ...userData,
+        id: `REG-${Date.now().toString().slice(-4)}`,
+      };
 
-    localStorage.setItem(
-      "medico_registered_users",
-      JSON.stringify(registeredUsers)
-    );
+      registeredUsers.push(newUser);
 
-    return {
-      user: newUser,
-    };
+      localStorage.setItem(
+        "medico_registered_users",
+        JSON.stringify(registeredUsers)
+      );
+
+      return {
+        user: newUser,
+      };
+    }
   },
-
-  // ======================================================
-  // LOGOUT
-  // ======================================================
 
   logout: async () => {
     localStorage.removeItem("medico_session");
@@ -136,11 +144,32 @@ export const authService = {
     };
   },
 
-  // ======================================================
-  // GET CURRENT USER
-  // ======================================================
-
   getMe: async () => {
+    const token = localStorage.getItem("aarogya_token");
+    if (token) {
+      try {
+        const response = await axios.get(`${BASE_URL}/auth/me`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const { user } = response.data.data;
+        const userData = {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          role: mapRole(user.role),
+          phone: user.phone,
+          specializations: user.specializations || [],
+          degrees: user.degrees || [],
+          medals: user.medals || [],
+          history: user.history || [],
+        };
+        localStorage.setItem("medico_session", JSON.stringify(userData));
+        return { user: userData };
+      } catch (error) {
+        console.error("Fetch profile failed, falling back to local session", error);
+      }
+    }
+
     const session = localStorage.getItem("medico_session");
 
     if (!session) {

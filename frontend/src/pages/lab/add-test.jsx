@@ -1,19 +1,22 @@
 import { useState, useEffect } from "react";
+import { toast } from "sonner";
 import { ArrowLeft, Beaker, Save } from "lucide-react";
 import { Button, Field, inputCls, SectionHeader, selectCls, textareaCls } from "../../components/lab/ui";
 import { categories } from "../../lib/constants";
 import { Link, navigate } from "../../lib/navigation";
 import { testsStore } from "../../lib/tests-store";
+import { labApi } from "../../services/labService";
 
 const empty = {
   code: "",
   name: "",
   category: "Biochemistry",
-  sampleType: "Serum",
+  sampleType: "",
   price: 0,
   tat: "6 hrs",
   method: "",
   description: "",
+  normalRange: "",
   status: "Active",
 };
 
@@ -28,14 +31,34 @@ export default function AddTestPage() {
 
   async function save(event) {
     event.preventDefault();
-    if (!form.code || !form.name) return;
+    if (!form.code || !form.name) {
+      toast.warning("Please fill in test code and name.");
+      return;
+    }
 
     setIsSaving(true);
-    await new Promise(resolve => setTimeout(resolve, 400));
-    testsStore.add(form);
-    setSaved(true);
+    try {
+      toast.info("Checking if test code exists...");
+      const existingTests = await labApi.getTests();
+      const duplicate = existingTests.find(t => t.code === form.code);
+      
+      if (duplicate) {
+        toast.error(`✗ Test code "${form.code}" already exists! Use a different code.`);
+        setIsSaving(false);
+        return;
+      }
 
-    setTimeout(() => navigate("/tests"), 700);
+      toast.info("Creating new test...");
+      await testsStore.add(form);
+      toast.success("✓ Test created successfully!");
+      setSaved(true);
+      setTimeout(() => navigate("/lab/tests"), 700);
+    } catch (e) {
+      console.error("Failed to create test:", e);
+      toast.error("✗ " + (e.message || "Failed to create test"));
+    } finally {
+      setIsSaving(false);
+    }
   }
 
   return (
@@ -44,7 +67,7 @@ export default function AddTestPage() {
         title="Add New Lab Test"
         subtitle="Create a diagnostic test entry for your catalog."
         action={
-          <Link to="/tests">
+          <Link to="/lab/tests">
             <Button variant="outline">
               <ArrowLeft className="size-4" /> Back to catalog
             </Button>
@@ -111,6 +134,14 @@ export default function AddTestPage() {
               onChange={(event) => setForm({ ...form, price: Number(event.target.value) })}
             />
           </Field>
+          <Field label="Normal Range">
+            <input
+              className={inputCls}
+              value={form.normalRange}
+              onChange={(event) => setForm({ ...form, normalRange: event.target.value })}
+              placeholder="e.g. 4.5-11 x10^9/L"
+            />
+          </Field>
           <Field label="Turnaround Time (TAT)">
             <input
               className={inputCls}
@@ -158,7 +189,7 @@ export default function AddTestPage() {
               Test added successfully
             </span>
           )}
-          <Link to="/tests">
+          <Link to="/lab/tests">
             <Button variant="outline" type="button">
               Cancel
             </Button>

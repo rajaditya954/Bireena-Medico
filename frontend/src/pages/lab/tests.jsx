@@ -1,14 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 import { Activity, Beaker, Layers, Pencil, Plus, Search, Tag, Trash2 } from "lucide-react";
 import { Button, Card, EmptyState, Field, inputCls, Modal, SectionHeader, selectCls, StatCard, StatusBadge, textareaCls } from "../../components/lab/ui";
 import { categories } from "../../lib/constants";
 import { Link } from "../../lib/navigation";
-import { useTests } from "../../lib/tests-store";
-import { testsStore } from "../../lib/tests-store";
+import { useTests, testsStore } from "../../lib/tests-store";
 
 export default function TestManagementPage() {
   useEffect(() => {
     document.title = "Test Management - Lab Admin";
+    testsStore.fetchAll();
   }, []);
 
   const tests = useTests();
@@ -40,6 +41,26 @@ export default function TestManagementPage() {
     [tests]
   );
 
+  const categoryCounts = useMemo(() => {
+    const counts = {};
+    tests.forEach((t) => {
+      const cat = t.category || "Uncategorized";
+      counts[cat] = (counts[cat] || 0) + 1;
+    });
+    return counts;
+  }, [tests]);
+
+  const dynamicCategories = useMemo(() => {
+    const colorMap = {};
+    categories.forEach((c) => { colorMap[c.name] = c.color; });
+    const allCats = [...new Set([...Object.keys(categoryCounts), ...categories.map((c) => c.name)])];
+    return allCats.map((name) => ({
+      name,
+      count: categoryCounts[name] || 0,
+      color: colorMap[name] || "from-gray-500/15 to-gray-500/0",
+    })).filter((c) => c.count > 0);
+  }, [categoryCounts]);
+
   function openEdit(test) {
     setEditing(test);
     const { id, ...rest } = test;
@@ -47,19 +68,38 @@ export default function TestManagementPage() {
   }
 
   async function save() {
-    if (!editing || !form || !form.code || !form.name) return;
-    await new Promise(resolve => setTimeout(resolve, 400));
-    testsStore.update(editing.id, form);
-    setEditing(null);
-    setForm(null);
+    if (!editing || !form || !form.code || !form.name) {
+      toast.warning("Please fill in all required fields.");
+      return;
+    }
+    toast.info("Saving test...");
+    try {
+      await testsStore.update(editing.id, form);
+      toast.success("✓ Test updated successfully!");
+      setEditing(null);
+      setForm(null);
+    } catch (e) {
+      console.error("Failed to update test:", e);
+      toast.error("✗ " + (e.message || "Failed to update test"));
+    }
   }
 
-  function deleteTest(testId) {
+  async function deleteTest(testId) {
+    if (!window.confirm("Are you sure you want to delete this test?")) {
+      toast.info("Delete cancelled.");
+      return;
+    }
     setIsDeleting(true);
-    setTimeout(() => {
-      testsStore.remove(testId);
+    toast.info("Deleting test...");
+    try {
+      await testsStore.remove(testId);
+      toast.success("✓ Test deleted successfully!");
+    } catch (e) {
+      console.error("Failed to delete test:", e);
+      toast.error("✗ " + (e.message || "Failed to delete test"));
+    } finally {
       setIsDeleting(false);
-    }, 400);
+    }
   }
 
   return (
@@ -68,7 +108,7 @@ export default function TestManagementPage() {
         title="Test Management"
         subtitle="Maintain your diagnostic test catalog, pricing and turnaround times."
         action={
-          <Link to="/add-test">
+          <Link to="/lab/add-test">
             <Button>
               <Plus className="size-4" /> Add New Test
             </Button>
@@ -203,7 +243,7 @@ export default function TestManagementPage() {
           </div>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-          {categories.map((category) => (
+          {dynamicCategories.map((category) => (
             <div
               key={category.name}
               className="group relative overflow-hidden bg-card rounded-2xl border border-border shadow-soft p-4 hover:shadow-glass hover:-translate-y-0.5 transition-all duration-200"

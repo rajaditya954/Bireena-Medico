@@ -1,7 +1,8 @@
-import { useSyncExternalStore } from "react";
-import { reports as initialReports } from "./mock-reports.js";
+import { useSyncExternalStore, useCallback } from "react";
+import { labApi } from "../services/labService.js";
 
-let state = JSON.parse(JSON.stringify(initialReports));
+let state = [];
+let loading = false;
 const listeners = new Set();
 
 function emit() {
@@ -14,60 +15,54 @@ export const reportsStore = {
     listeners.add(l);
     return () => listeners.delete(l);
   },
-  update: (id, updatedData) => {
-    state = state.map((report) =>
-      report.id === id
-        ? {
-            ...report,
-            ...updatedData,
-            history: [
-              ...(report.history || []),
-              {
-                date: new Date().toLocaleString("en-US", {
-                  year: "numeric",
-                  month: "2-digit",
-                  day: "2-digit",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                  second: "2-digit",
-                  hour12: false,
-                }).replace(/,/, ""),
-                event: `Status changed to ${updatedData.status || report.status}`,
-              },
-            ],
-          }
-        : report
-    );
-    emit();
+  async fetchAll(filters = {}) {
+    if (loading) return state;
+    loading = true;
+    try {
+      state = await labApi.getReports(filters);
+    } catch (e) {
+      console.error("Failed to fetch reports:", e);
+    } finally {
+      loading = false;
+      emit();
+    }
+    return state;
   },
-  addAttachment: (id, attachment) => {
-    state = state.map((report) =>
-      report.id === id
-        ? {
-            ...report,
-            attachments: [...(report.attachments || []), attachment],
-            history: [
-              ...(report.history || []),
-              {
-                date: new Date().toLocaleString("en-US", {
-                  year: "numeric",
-                  month: "2-digit",
-                  day: "2-digit",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                  second: "2-digit",
-                  hour12: false,
-                }).replace(/,/, ""),
-                event: `File attached: ${attachment.originalName}`,
-              },
-            ],
-          }
-        : report
-    );
+  async fetchById(id) {
+    return await labApi.getReportById(id);
+  },
+  async create(formData) {
+    const report = await labApi.createReport(formData);
+    state = [report, ...state];
+    emit();
+    return report;
+  },
+  async updateStatus(id, status, notes) {
+    const report = await labApi.updateReportStatus(id, status, notes);
+    state = state.map((r) => (r._raw?._id === id ? report : r));
+    emit();
+    return report;
+  },
+  async approve(id) {
+    const report = await labApi.approveReport(id);
+    state = state.map((r) => (r._raw?._id === id ? report : r));
+    emit();
+    return report;
+  },
+  async update(id, formData) {
+    const report = await labApi.updateReport(id, formData);
+    state = state.map((r) => (r._raw?._id === id ? report : r));
+    emit();
+    return report;
+  },
+  async remove(id) {
+    await labApi.deleteReport(id);
+    state = state.filter((r) => r._raw?._id !== id);
     emit();
   },
 };
 
 export function useReports() {
-  return useSyncExternalStore(reportsStore.subscribe, reportsStore.get, reportsStore.get);
+  const subscribe = useCallback((l) => reportsStore.subscribe(l), []);
+  return useSyncExternalStore(subscribe, reportsStore.get, reportsStore.get);
 }
