@@ -92,7 +92,7 @@ const isPasswordValid = (errors) =>
 export default function AddNewUser() {
   const navigate = useNavigate();
 
-  const [formData, setFormData] = useState<FormData>({
+  const [formData, setFormData] = useState({
     fullName: "",
     email: "",
     mobile: "",
@@ -181,51 +181,29 @@ export default function AddNewUser() {
     setSubmitError("");
 
     try {
-      // Simulate API delay
-      await new Promise((resolve) => setTimeout(resolve, 800));
-
-      // Build new user object that matches the structure in UserManagement
-      const newUser = {
-        id: `USR-${Date.now()}`,
-        name: formData.fullName,
-        email: formData.email,
-        role: formData.role,
-        department: formData.department,
-        status: "Active",
-        lastLogin: "Never",
-        ip: "0.0.0.0",
-        isOnline: false,
-        personalInfo: {
-          email: formData.email,
-          mobile: formData.mobileCountryCode + formData.mobile,
-          gender: formData.gender || "Not specified",
-          dateOfBirth: formData.dateOfBirth || "Not provided",
-          address: formData.address || "Not provided",
-          username: formData.username,
-          lastLogin: "Never",
-          ipAddress: "0.0.0.0",
-          assignedClinics:
-            formData.labClinicAccess === "all"
-              ? "All Clinics/Labs"
-              : formData.selectedLabsClinics.join(", "),
-          assignedDepartments: formData.department,
-          permissions: formData.permissions.length
-            ? formData.permissions
-            : ["Default permissions"],
-        },
+      const { adminService } = await import("../../services/adminService");
+      const roleMap = (r) => {
+        const map = {
+          Doctor: "DOCTOR",
+          "Lab Assistant": "LAB",
+          "Clinic Staff": "DISPENSARY_STAFF",
+          "Appointment Staff": "APPOINTMENT_MANAGER",
+          "Billing Staff": "BILLING",
+          Admin: "ADMIN",
+        };
+        return map[r] || r.toUpperCase().replace(/\s+/g, "_");
       };
 
-      // Load existing users, append new one, save back
-      const existingUsers = JSON.parse(
-        localStorage.getItem("careplus_users") || "[]"
-      );
-      localStorage.setItem(
-        "careplus_users",
-        JSON.stringify([...existingUsers, newUser])
-      );
+      const payload = {
+        name: formData.fullName,
+        email: formData.email,
+        password: formData.password || "ChangeMe@123",
+        role: roleMap(formData.role),
+        phone: formData.mobileCountryCode + formData.mobile,
+      };
 
-      // Navigate back to user management list
-      navigate("/users");
+      await adminService.createUser(payload);
+      navigate("/admin/users");
     } catch (error) {
       setSubmitError("Failed to create user. Please try again.");
     } finally {

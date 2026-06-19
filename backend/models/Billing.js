@@ -2,8 +2,9 @@ import mongoose from "mongoose";
 
 const BillingSchema = new mongoose.Schema(
   {
+    invoiceNumber: { type: String, unique: true, index: true, sparse: true },
     billingId: { type: String, unique: true, index: true },
-    patientId: { type: mongoose.Schema.Types.ObjectId, ref: "Patient", required: true },
+    patientId: { type: mongoose.Schema.Types.ObjectId, ref: "Patient", required: true, index: true },
     appointmentId: { type: mongoose.Schema.Types.ObjectId, ref: "Appointment" },
     items: [
       {
@@ -19,20 +20,29 @@ const BillingSchema = new mongoose.Schema(
     discount: { type: Number, default: 0 },
     tax: { type: Number, default: 0 },
     total: { type: Number, required: true },
+    paymentSummary: {
+      paidAmount: { type: Number, default: 0 },
+      dueAmount: { type: Number, default: 0 },
+    },
     paymentStatus: {
       type: String,
-      enum: ["PAID", "PENDING", "UNPAID", "CANCELLED"],
+      enum: ["PAID", "PENDING", "UNPAID", "CANCELLED", "paid", "pending", "unpaid", "cancelled"],
       default: "PENDING",
     },
     status: {
       type: String,
-      enum: ["draft", "pending", "paid", "cancelled"],
+      enum: ["draft", "pending", "paid", "cancelled", "DRAFT", "PENDING", "PAID", "FAILED", "CANCELLED"],
       default: "pending",
     },
+    issuedAt: Date,
+    paidAt: Date,
     notes: String,
     dueDate: Date,
   },
   { timestamps: true }
 );
+
+BillingSchema.index({ patientId: 1, createdAt: -1 });
+BillingSchema.index({ status: 1, createdAt: -1 });
 
 export default mongoose.model("Billing", BillingSchema);

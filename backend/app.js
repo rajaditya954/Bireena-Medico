@@ -9,6 +9,9 @@ import { logger } from "./utils/logger.js";
 
 // Routes
 import authRoutes from "./routes/auth.routes.js";
+import * as authController from "./controllers/auth.controller.js";
+import { validateCreateUser } from "./validators/auth.validator.js";
+import { isAdmin } from "./middlewares/role.middleware.js";
 import userRoutes from "./routes/user.routes.js";
 import patientRoutes from "./routes/patient.routes.js";
 import doctorRoutes from "./routes/doctor.routes.js";
@@ -43,6 +46,17 @@ app.use(generalLimiter);
 
 // --- PUBLIC ROUTES (No authentication) ---
 
+// Root Route
+app.get("/", (req, res) => {
+  res.json({
+    message: "🏥 Bireena Medico Hospital API",
+    version: "2.0.0",
+    status: "running",
+    healthCheck: "/api/health",
+    docs: "API endpoints require /api prefix",
+  });
+});
+
 // Health check
 app.get("/api/health", (req, res) => {
   res.json({ ok: true, time: new Date().toISOString(), env: config.nodeEnv });
@@ -50,6 +64,15 @@ app.get("/api/health", (req, res) => {
 
 // Auth routes (register/login)
 app.use("/api/auth", authRoutes);
+
+// Admin compatibility route alias
+app.post(
+  "/api/admin/users",
+  authenticateToken,
+  isAdmin,
+  validateCreateUser,
+  authController.createUser
+);
 
 
 

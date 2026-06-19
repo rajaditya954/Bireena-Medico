@@ -30,11 +30,11 @@ const ROLES = [
 
 const getDemoCredentials = (r) => {
   const map = {
-    "Admin":                   { email: "admin.medico",       password: "medicouseradmin" },
-    "Doctor":                  { email: "doctor.medico",      password: "medicouserdoctor" },
-    "Lab Assistant":           { email: "lab.medico",         password: "medicouserlab" },
-    "Appointment":             { email: "appointment.medico", password: "medicouserappointment" },
-    "Dispensory / Clinicians": { email: "clinic.medico",      password: "medicouserclinic" },
+    "Admin":                   { email: "admin@hospital.com",       password: "Admin@123" },
+    "Doctor":                  { email: "doctor@hospital.com",      password: "Doctor@123" },
+    "Lab Assistant":           { email: "lab@hospital.com",         password: "Lab@1234" },
+    "Appointment":             { email: "scheduler@hospital.com",   password: "Schedule@123" },
+    "Dispensory / Clinicians": { email: "dispensary@hospital.com",  password: "Dispense@123" },
   };
   return map[r] || { email: "", password: "" };
 };
@@ -43,8 +43,8 @@ export default function Login() {
   const [role, setRole]               = useState("Admin");
   const [showDropdown, setShowDropdown] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [email, setEmail]             = useState("admin.medico");
-  const [password, setPassword]       = useState("medicouseradmin");
+  const [email, setEmail]             = useState("admin@hospital.com");
+  const [password, setPassword]       = useState("Admin@123");
   const [error, setError]             = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 

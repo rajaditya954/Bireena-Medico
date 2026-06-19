@@ -136,14 +136,40 @@ export default function ExpiryItems() {
   const totalValueAtRisk = items.reduce((sum, i) => sum + i.totalValue, 0);
 
   useEffect(() => {
-    // Load from localStorage or use mock data
-    const stored = localStorage.getItem("medico_expiry_items");
-    if (stored) {
-      setItems(JSON.parse(stored));
-    } else {
-      setItems(mockExpiryItems);
-      localStorage.setItem("medico_expiry_items", JSON.stringify(mockExpiryItems));
-    }
+    (async () => {
+      try {
+        const api = await import("../../lib/api");
+        const res = await api.api.listMedicines();
+        const meds = res.data?.medicines || res.data || [];
+        // Map medicines with expiry info into expiry items
+        const expiryItems = meds
+          .filter(m => m.expiryDate)
+          .map(m => ({
+            id: m._id || m.id,
+            medicineName: m.name || m.medicineName || m.genericName,
+            batchNo: m.batchNo || m.batch || "-",
+            warehouse: m.warehouse || "Main Warehouse",
+            expiryDate: m.expiryDate,
+            daysLeft: Math.ceil((new Date(m.expiryDate) - new Date()) / (1000 * 60 * 60 * 24)),
+            stock: m.currentStock || m.stock || 0,
+            unitPrice: m.mrp || m.price || 0,
+            totalValue: (m.currentStock || m.stock || 0) * (m.mrp || m.price || 0),
+            status: (new Date(m.expiryDate) - new Date()) < 0 ? "Expired" : "Expiring Soon",
+          }));
+        if (expiryItems.length) {
+          setItems(expiryItems);
+        } else {
+          setItems(mockExpiryItems);
+        }
+      } catch (err) {
+        const stored = localStorage.getItem("medico_expiry_items");
+        if (stored) setItems(JSON.parse(stored));
+        else {
+          setItems(mockExpiryItems);
+          localStorage.setItem("medico_expiry_items", JSON.stringify(mockExpiryItems));
+        }
+      }
+    })();
   }, []);
 
   useEffect(() => {

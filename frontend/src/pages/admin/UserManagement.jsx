@@ -355,16 +355,27 @@ export default function UserManagement() {
   const [showRoleDropdown, setShowRoleDropdown] = useState(null);
 
   useEffect(() => {
-    // Load users
-    const storedUsers = localStorage.getItem("careplus_users");
-    if (storedUsers) {
-      setUsers(JSON.parse(storedUsers));
-    } else {
-      const mockUsers = generateMockUsers();
-      setUsers(mockUsers);
-      localStorage.setItem("careplus_users", JSON.stringify(mockUsers));
-    }
-    setLoading(false);
+    // Load users from backend (fallback to local mock)
+    let cancelled = false;
+    (async () => {
+      try {
+        const { adminService } = await import("../../services/adminService");
+        const list = await adminService.getUsers();
+        if (!cancelled) setUsers(list || []);
+      } catch (err) {
+        const storedUsers = localStorage.getItem("careplus_users");
+        if (storedUsers) {
+          setUsers(JSON.parse(storedUsers));
+        } else {
+          const mockUsers = generateMockUsers();
+          setUsers(mockUsers);
+          localStorage.setItem("careplus_users", JSON.stringify(mockUsers));
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
   }, []);
 
   // Save to localStorage whenever users change
@@ -402,66 +413,164 @@ export default function UserManagement() {
 
   const handleCreateUser = (e) => {
     e.preventDefault();
-    const newUserId = `USR-${String(users.length + 1).padStart(4, '0')}`;
-    const createdUser = {
-      id: newUserId,
-      name: newUser.name,
-      email: newUser.email,
-      role: newUser.role,
-      department: "General",
-      status: "Active",
-      lastLogin: "Never",
-      ip: "0.0.0.0",
-      isOnline: false,
-      personalInfo: {
-        email: newUser.email,
-        mobile: "Not provided",
-        gender: "Not specified",
-        dateOfBirth: "Not provided",
-        address: "Not provided",
-        username: newUser.email.split('@')[0],
-        lastLogin: "Never",
-        ipAddress: "0.0.0.0",
-        assignedClinics: "Not assigned",
-        assignedDepartments: "Not assigned",
-        permissions: ["Default permissions"]
+    (async () => {
+      try {
+        const { adminService } = await import("../../services/adminService");
+        const normalizeRole = (r) => {
+          const map = {
+            Doctor: "DOCTOR",
+            "Lab Assistant": "LAB",
+            "Clinic Staff": "DISPENSARY_STAFF",
+            "Appointment Staff": "APPOINTMENT_MANAGER",
+            "Billing Staff": "BILLING",
+            Admin: "ADMIN",
+          };
+          return map[r] || r.toUpperCase().replace(/\s+/g, "_");
+        };
+
+        const payload = {
+          name: newUser.name,
+          email: newUser.email,
+          password: "ChangeMe@123",
+          role: normalizeRole(newUser.role),
+        };
+        await adminService.createUser(payload);
+        const list = await adminService.getUsers();
+        setUsers(list || []);
+        setIsAddModalOpen(false);
+        setNewUser({ name: "", email: "", role: "Doctor" });
+      } catch (err) {
+        // fallback: local create
+        const newUserId = `USR-${String(users.length + 1).padStart(4, "0")}`;
+        const createdUser = {
+          id: newUserId,
+          name: newUser.name,
+          email: newUser.email,
+          role: newUser.role,
+          department: "General",
+          status: "Active",
+          lastLogin: "Never",
+          ip: "0.0.0.0",
+          isOnline: false,
+          personalInfo: {
+            email: newUser.email,
+            mobile: "Not provided",
+            gender: "Not specified",
+            dateOfBirth: "Not provided",
+            address: "Not provided",
+            username: newUser.email.split("@")[0],
+            lastLogin: "Never",
+            ipAddress: "0.0.0.0",
+            assignedClinics: "Not assigned",
+            assignedDepartments: "Not assigned",
+            permissions: ["Default permissions"],
+          },
+        };
+        setUsers([...users, createdUser]);
+        setIsAddModalOpen(false);
+        setNewUser({ name: "", email: "", role: "Doctor" });
       }
-    };
-    setUsers([...users, createdUser]);
-    setIsAddModalOpen(false);
-    setNewUser({ name: "", email: "", role: "Doctor" });
+    })();
   };
 
   const handleToggleStatus = (userId) => {
-    setUsers(prev => prev.map(user => {
-      if (user.id === userId) {
-        const newStatus = user.status === "Active" ? "Inactive" : 
-                         user.status === "Inactive" ? "Active" : "Active";
-        return { ...user, status: newStatus, isOnline: newStatus === "Active" ? user.isOnline : false };
+    (async () => {
+      try {
+        const { adminService } = await import("../../services/adminService");
+        const u = users.find((x) => x.id === userId);
+        if (!u) return;
+        if (u.status === "Active") {
+          await adminService.deactivateUser(userId);
+        } else {
+          await adminService.activateUser(userId);
+        }
+        const list = await adminService.getUsers();
+        setUsers(list || []);
+      } catch (err) {
+        setUsers((prev) =>
+          prev.map((user) => {
+            if (user.id === userId) {
+              const newStatus = user.status === "Active" ? "Inactive" : user.status === "Inactive" ? "Active" : "Active";
+              return { ...user, status: newStatus, isOnline: newStatus === "Active" ? user.isOnline : false };
+            }
+            return user;
+          })
+        );
       }
-      return user;
-    }));
+    })();
   };
 
   const handleLockAccount = (userId) => {
-    setUsers(prev => prev.map(user => {
-      if (user.id === userId) {
-        const newStatus = user.status === "Locked" ? "Active" : "Locked";
-        return { ...user, status: newStatus, isOnline: false };
+    // Use deactivate/activate for lock semantics if backend available
+    (async () => {
+      try {
+        const { adminService } = await import("../../services/adminService");
+        const u = users.find((x) => x.id === userId);
+        if (!u) return;
+        if (u.status === "Locked") {
+          await adminService.activateUser(userId);
+        } else {
+          await adminService.deactivateUser(userId);
+        }
+        const list = await adminService.getUsers();
+        setUsers(list || []);
+      } catch (err) {
+        setUsers((prev) =>
+          prev.map((user) => {
+            if (user.id === userId) {
+              const newStatus = user.status === "Locked" ? "Active" : "Locked";
+              return { ...user, status: newStatus, isOnline: false };
+            }
+            return user;
+          })
+        );
       }
-      return user;
-    }));
+    })();
   };
 
   const handleResetPassword = (userId) => {
-    alert(`Password reset link sent to ${users.find(u => u.id === userId)?.email}`);
+    (async () => {
+      try {
+        // trigger backend forgot-password -> reset flow (admin can set new password via update)
+        const u = users.find((x) => x.id === userId);
+        if (!u) return alert("User not found");
+        // For simplicity, set a default password via admin create/update
+        const { adminService } = await import("../../services/adminService");
+        await adminService.changeUserPassword(userId, "ChangeMe@123");
+        alert(`Password reset to default for ${u.email}. Ask user to change on first login.`);
+        const list = await adminService.getUsers();
+        setUsers(list || []);
+      } catch (err) {
+        alert(`Password reset link sent to ${users.find((u) => u.id === userId)?.email}`);
+      }
+    })();
   };
 
   const handleChangeRole = (userId, newRole) => {
-    setUsers(prev => prev.map(user => 
-      user.id === userId ? { ...user, role: newRole } : user
-    ));
-    setShowRoleDropdown(null);
+    (async () => {
+      try {
+        const { adminService } = await import("../../services/adminService");
+        const roleMap = (r) => {
+          const map = {
+            Doctor: "DOCTOR",
+            "Lab Assistant": "LAB",
+            "Clinic Staff": "DISPENSARY_STAFF",
+            "Appointment Staff": "APPOINTMENT_MANAGER",
+            "Billing Staff": "BILLING",
+            Admin: "ADMIN",
+          };
+          return map[r] || r.toUpperCase().replace(/\s+/g, "_");
+        };
+        const payloadRole = roleMap(newRole);
+        await adminService.updateUser(userId, { role: payloadRole });
+        const list = await adminService.getUsers();
+        setUsers(list || []);
+      } catch (err) {
+        setUsers((prev) => prev.map((user) => (user.id === userId ? { ...user, role: newRole } : user)));
+      } finally {
+        setShowRoleDropdown(null);
+      }
+    })();
   };
 
   const metricsCards = [

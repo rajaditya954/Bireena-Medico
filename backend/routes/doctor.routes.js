@@ -1,7 +1,10 @@
 import express from "express";
 import * as doctorController from "../controllers/doctor.controller.js";
+import { authenticateToken } from "../middlewares/auth.middleware.js";
 
 const router = express.Router();
+
+router.get("/dashboard", authenticateToken, doctorController.getMyDashboard);
 
 router.get("/", doctorController.getAllDoctors);
 router.get("/:id", doctorController.getDoctorById);

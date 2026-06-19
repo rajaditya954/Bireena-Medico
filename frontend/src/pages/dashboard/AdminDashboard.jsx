@@ -193,8 +193,8 @@ export default function AdminAnalytics() {
                 </button>
               </div>
             </div>
-            <div className="h-80">
-              <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+            <div className="h-80 relative w-full">
+              <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                 <AreaChart data={appointmentsData}>
                   <defs>
                     <linearGradient id="colorAppointments" x1="0" y1="0" x2="0" y2="1">
@@ -227,8 +227,8 @@ export default function AdminAnalytics() {
             <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
               <h2 className="text-base font-bold text-[#06402B] mb-2">Patient Demographics</h2>
               <div className="flex flex-col md:flex-row items-center gap-4">
-                <div className="h-48 w-48">
-                  <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                <div className="h-48 w-48 relative">
+                  <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                     <PieChart>
                       <Pie data={genderData} cx="50%" cy="50%" innerRadius={50} outerRadius={70} paddingAngle={2} dataKey="value" label={({ percent }) => `${(percent * 100).toFixed(1)}%`} labelLine={false}>
                         {genderData.map((entry, idx) => (

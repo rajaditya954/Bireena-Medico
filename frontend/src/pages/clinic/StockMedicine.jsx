@@ -157,13 +157,39 @@ export default function StockManagement() {
   const outOfStockItems = items.filter(i => i.status === "Out of Stock").length;
 
   useEffect(() => {
-    const stored = localStorage.getItem("medico_stock_items");
-    if (stored) {
-      setItems(JSON.parse(stored));
-    } else {
-      setItems(mockStockItems);
-      localStorage.setItem("medico_stock_items", JSON.stringify(mockStockItems));
-    }
+    (async () => {
+      try {
+        const api = await import("../../lib/api");
+        const res = await api.api.listMedicines();
+        const meds = res.data?.medicines || res.data || [];
+        if (meds && meds.length) {
+          const mapped = meds.map(m => ({
+            id: m._id || m.id,
+            medicineName: m.name || m.medicineName,
+            category: m.category || "Uncategorized",
+            batchNo: m.batchNo || m.batch || "-",
+            warehouse: m.warehouse || "Main Warehouse",
+            stock: m.currentStock || m.stock || 0,
+            reorderLevel: m.reorderLevel || 0,
+            unitPrice: m.mrp || m.price || 0,
+            totalValue: (m.currentStock || m.stock || 0) * (m.mrp || m.price || 0),
+            expiryDate: m.expiryDate || null,
+            status: (m.currentStock || m.stock || 0) <= (m.reorderLevel || 0) ? "Low Stock" : "In Stock",
+            notes: m.notes || "",
+          }));
+          setItems(mapped);
+        } else {
+          setItems(mockStockItems);
+        }
+      } catch (err) {
+        const stored = localStorage.getItem("medico_stock_items");
+        if (stored) setItems(JSON.parse(stored));
+        else {
+          setItems(mockStockItems);
+          localStorage.setItem("medico_stock_items", JSON.stringify(mockStockItems));
+        }
+      }
+    })();
   }, []);
 
   useEffect(() => {

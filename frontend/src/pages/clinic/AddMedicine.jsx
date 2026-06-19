@@ -131,10 +131,29 @@ export default function AddMedicine() {
     setSubmitMessage(null);
 
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 800));
+      const api = await import("../../lib/api");
+      const payload = {
+        name: formData.medicineName,
+        genericName: formData.genericName,
+        category: formData.category,
+        form: formData.form,
+        strength: formData.strength,
+        unitType: formData.unitType,
+        amount: formData.amount ? parseFloat(formData.amount) : null,
+        currentStock: formData.currentStock ? parseInt(formData.currentStock) : 0,
+        mrp: formData.mrp ? parseFloat(formData.mrp) : null,
+        reorderLevel: formData.reorderLevel ? parseInt(formData.reorderLevel) : null,
+        expiryDate: formData.expiryDate || null,
+        supplier: formData.supplier,
+        description: formData.description,
+        requirePrescription: formData.requirePrescription,
+      };
 
-      // Create medicine object
+      await api.api.createMedicine(payload);
+      setSubmitMessage({ type: "success", text: "Medicine added successfully!" });
+      setTimeout(() => navigate("/inventory/medicines"), 1200);
+    } catch (error) {
+      // fallback to localStorage
       const newMedicine = {
         id: `MED-${Date.now()}`,
         ...formData,
@@ -145,17 +164,10 @@ export default function AddMedicine() {
         expiryDate: formData.expiryDate || null,
         createdAt: new Date().toISOString(),
       };
-
-      // Retrieve existing medicines from localStorage
       const existingMedicines = JSON.parse(localStorage.getItem("medico_medicines") || "[]");
       localStorage.setItem("medico_medicines", JSON.stringify([...existingMedicines, newMedicine]));
-
-      setSubmitMessage({ type: "success", text: "Medicine added successfully!" });
-      setTimeout(() => {
-        navigate("/inventory/medicines"); // Redirect to medicine list page
-      }, 1500);
-    } catch (error) {
-      setSubmitMessage({ type: "error", text: "Failed to add medicine. Please try again." });
+      setSubmitMessage({ type: "success", text: "Medicine added locally (offline fallback)." });
+      setTimeout(() => navigate("/inventory/medicines"), 1200);
     } finally {
       setIsSubmitting(false);
     }

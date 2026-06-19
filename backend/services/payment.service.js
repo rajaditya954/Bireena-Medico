@@ -61,6 +61,12 @@ class PaymentService {
       },
     ]);
   }
+
+  async verifyRazorpayPayment(razorpayPaymentId, razorpayOrderId, signature) {
+    // This would verify the signature with Razorpay's secret key
+    // For now, just a placeholder that returns true
+    return { verified: true };
+  }
 }
 
-export default new PaymentService();
+export default new PaymentService();

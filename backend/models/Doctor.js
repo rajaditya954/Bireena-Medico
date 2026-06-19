@@ -8,8 +8,9 @@ const DoctorSchema = new mongoose.Schema(
     specialization: { type: String, required: true },
     consultantType: { type: String, enum: ["doctor", "lab"], default: "doctor" },
     qualification: { type: String },
+    description: { type: String },
     qualifications: [{ type: String }],
-    registrationNumber: { type: String, unique: true },
+    registrationNumber: { type: String, unique: true, default: () => `REG${Date.now().toString(36)}${Math.floor(Math.random()*10000)}` },
     experience: { type: Number }, // years
     consultationFee: { type: Number, default: 500 },
     roomNumber: { type: String },

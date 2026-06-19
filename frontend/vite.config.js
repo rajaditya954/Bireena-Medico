@@ -20,7 +20,14 @@ export default defineConfig(({mode}) => {
       },
     },
     server: {
-      // Do not modifyâfile watching is disabled to prevent flickering during agent edits.
+      proxy: {
+        "/api": {
+          target: "http://localhost:5000",
+          changeOrigin: true,
+          secure: false,
+        },
+      },
+      // Do not modifyâ€”file watching is disabled to prevent flickering during agent edits.
       hmr: true,
     },
   };

@@ -1,9 +1,21 @@
 import mongoose from "mongoose";
+import { MongoMemoryServer } from "mongodb-memory-server";
+
+let memoryServer = null;
 
 export async function connectDB(uri) {
   try {
     mongoose.set("strictQuery", true);
-    await mongoose.connect(uri);
+
+    let connectUri = uri;
+    if (!connectUri) {
+      // Fallback to an in-memory MongoDB for development/testing when no URI provided
+      memoryServer = await MongoMemoryServer.create();
+      connectUri = memoryServer.getUri();
+      console.log("ℹ️  No MONGO_URI provided — using in-memory MongoDB for dev/tests");
+    }
+
+    await mongoose.connect(connectUri);
     console.log("✅ MongoDB connected successfully");
 
     // Sync indexes to remove any stale/unused unique indexes (like unique index on userId)
@@ -25,6 +37,12 @@ export async function connectDB(uri) {
   } catch (error) {
     console.error("❌ MongoDB connection failed:", error.message);
     process.exit(1);
+  }
+}
+
+export async function stopMemoryServer() {
+  if (memoryServer) {
+    await memoryServer.stop();
   }
 }
 

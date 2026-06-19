@@ -1,4 +1,5 @@
 import patientService from "../services/patient.service.js";
+import Appointment from "../models/Appointment.js";
 import { generateResponse, generateError } from "../utils/response.js";
 
 export const getAllPatients = async (req, res) => {
@@ -50,7 +51,27 @@ export const getPatientById = async (req, res) => {
     if (!patient) {
       return res.status(404).json(generateError("Patient not found"));
     }
-    res.json(generateResponse({ patient }, "Patient fetched successfully"));
+    
+    // Fetch last appointment info
+    const lastApp = await Appointment.findOne({ patientId: patient._id })
+      .sort({ appointmentDate: -1 })
+      .populate("doctorId");
+      
+    const patientObj = patient.toObject();
+    if (lastApp) {
+      const d = new Date(lastApp.appointmentDate);
+      const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      const formattedDate = `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}, ${lastApp.slot || ""}`;
+      patientObj.lastAppointment = formattedDate;
+      patientObj.doctor = lastApp.doctorId?.name || "";
+      patientObj.specialty = lastApp.doctorId?.specialization || "";
+    } else {
+      patientObj.lastAppointment = "No past appointments";
+      patientObj.doctor = "";
+      patientObj.specialty = "";
+    }
+
+    res.json(generateResponse({ patient: patientObj }, "Patient fetched successfully"));
   } catch (error) {
     res.status(500).json(generateError(error.message));
   }

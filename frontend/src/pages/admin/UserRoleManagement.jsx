@@ -159,36 +159,28 @@ export default function UserAdd() {
     setSubmitSuccess("");
 
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      const newUser = {
-        id: `USR-${Date.now()}`,
-        name: basicInfo.fullName,
-        email: basicInfo.email,
-        role: roleDept.role,
-        department: roleDept.department,
-        status: "Active",
-        lastLogin: "Never",
-        ip: "0.0.0.0",
-        isOnline: false,
-        personalInfo: {
-          email: basicInfo.email,
-          mobile: basicInfo.mobileCode + basicInfo.mobile,
-          gender: basicInfo.gender || "Not specified",
-          dateOfBirth: basicInfo.dateOfBirth || "Not provided",
-          address: basicInfo.address || "Not provided",
-          username: accountInfo.username,
-          lastLogin: "Never",
-          ipAddress: "0.0.0.0",
-          assignedClinics: access.labClinicAccess === "all" ? "All Clinics/Labs" : access.selectedLabsClinics.join(", "),
-          assignedDepartments: roleDept.department,
-          permissions: additionalPerms.length ? additionalPerms : ["Default permissions"],
-        },
+      const { adminService } = await import("../../services/adminService");
+      const roleMap = (r) => {
+        const map = {
+          Doctor: "DOCTOR",
+          "Lab Assistant": "LAB",
+          "Clinic Staff": "DISPENSARY_STAFF",
+          "Appointment Staff": "APPOINTMENT_MANAGER",
+          "Billing Staff": "BILLING",
+          Admin: "ADMIN",
+        };
+        return map[r] || r.toUpperCase().replace(/\s+/g, "_");
       };
 
-      const existingUsers = JSON.parse(localStorage.getItem("careplus_users") || "[]");
-      localStorage.setItem("careplus_users", JSON.stringify([...existingUsers, newUser]));
+      const payload = {
+        name: basicInfo.fullName,
+        email: basicInfo.email,
+        password: accountInfo.password || "ChangeMe@123",
+        role: roleMap(roleDept.role),
+        phone: basicInfo.mobileCode + basicInfo.mobile,
+      };
 
+      await adminService.createUser(payload);
       setSubmitSuccess("User created successfully!");
       setTimeout(() => navigate("/admin/users"), 1500);
     } catch (error) {

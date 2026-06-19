@@ -138,6 +138,7 @@ export const api = {
   getDoctorById: (id) => axiosInstance.get(`/doctors/${id}`),
   createDoctor: (data) => axiosInstance.post("/doctors", data),
   updateDoctor: (id, data) => axiosInstance.put(`/doctors/${id}`, data),
+  getDoctorDashboard: (params) => axiosInstance.get("/doctors/dashboard", { params }),
 
   // ==================== LABORATORY ====================
   getLabTests: (params) => axiosInstance.get("/laboratory/tests", { params }),
@@ -167,6 +168,36 @@ export const api = {
   createBill: (data) => axiosInstance.post("/bills", data),
   deleteBill: (id) => axiosInstance.delete(`/bills/${id}`),
   payBill: (id, data) => axiosInstance.post(`/bills/${id}/payments`, data),
+
+  // ==================== USERS (ADMIN) ====================
+  listUsers: (params) => axiosInstance.get("/users", { params }),
+  getUser: (id) => axiosInstance.get(`/users/${id}`),
+  createUser: (data) => axiosInstance.post("/auth/create-user", data),
+  updateUser: (id, data) => axiosInstance.put(`/users/${id}`, data),
+  deactivateUser: (id) => axiosInstance.patch(`/users/${id}/deactivate`),
+  activateUser: (id) => axiosInstance.patch(`/users/${id}/activate`),
+  deleteUser: (id) => axiosInstance.delete(`/users/${id}`),
+  changeUserRole: (id, role) => axiosInstance.patch(`/users/${id}/role`, { role }),
+  changePassword: (data) => axiosInstance.post("/users/change-password", data),
+  changeUserPassword: (id, newPassword) => axiosInstance.post(`/users/${id}/change-password`, { newPassword }),
+
+  // ==================== PRESCRIPTIONS ====================
+  listPrescriptionsByPatient: (patientId) => axiosInstance.get(`/prescriptions/patient/${patientId}`),
+  createPrescription: (data) => axiosInstance.post("/prescriptions", data),
+  updatePrescription: (id, data) => axiosInstance.put(`/prescriptions/${id}`, data),
+
+  // ==================== EXTRA LABORATORY ====================
+  listLabTests: () => axiosInstance.get("/laboratory/tests"),
+  createLabReport: (data) => axiosInstance.post("/laboratory/reports", data),
+  listLabReportsByPatient: (patientId) => axiosInstance.get(`/laboratory/reports/patient/${patientId}`),
+
+  // ==================== EXTRA PHARMACY ====================
+  listMedicines: (params) => axiosInstance.get("/pharmacy", { params }),
+  getMedicine: (id) => axiosInstance.get(`/pharmacy/${id}`),
+  createMedicine: (data) => axiosInstance.post("/pharmacy", data),
+  updateMedicine: (id, data) => axiosInstance.put(`/pharmacy/${id}`, data),
+  checkStock: () => axiosInstance.get("/pharmacy/stock/check"),
+  lowStock: () => axiosInstance.get("/pharmacy/stock/low"),
 };
 
 // ─────────────────────────────────────────────────────────────

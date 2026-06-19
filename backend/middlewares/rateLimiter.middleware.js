@@ -13,7 +13,7 @@ export const generalLimiter = rateLimit({
 
 export const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: isDev ? 100000 : 100, // limit each IP to 100 login requests per windowMs for development and testing
+  max: isDev ? 100000 : 5, // limit each IP to 5 login requests per windowMs for production
   message: "Too many login attempts, please try again later.",
   standardHeaders: true,
   legacyHeaders: false,

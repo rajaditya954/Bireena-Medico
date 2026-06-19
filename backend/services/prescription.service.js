@@ -14,6 +14,8 @@ class PrescriptionService {
   }
 
   async createPrescription(prescriptionData) {
+    const count = await Prescription.countDocuments();
+    prescriptionData.prescriptionId = prescriptionData.prescriptionId || `RX${String(count + 1).padStart(3, "0")}`;
     const prescription = new Prescription(prescriptionData);
     await prescription.save();
     return await prescription.populate(["appointmentId", "doctorId"]);

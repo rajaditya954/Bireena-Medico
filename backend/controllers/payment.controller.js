@@ -51,3 +51,19 @@ export const getPaymentStatistics = async (req, res) => {
     res.status(500).json(generateError(error.message));
   }
 };
+
+export const verifyPayment = async (req, res) => {
+  try {
+    const { razorpayPaymentId, razorpayOrderId, signature } = req.body;
+    const verified = await paymentService.verifyRazorpayPayment(razorpayPaymentId, razorpayOrderId, signature);
+    
+    if (verified) {
+      const payment = await paymentService.updatePaymentStatus(req.body.paymentId, "success");
+      res.json(generateResponse({ payment }, "Payment verified successfully"));
+    } else {
+      res.status(400).json(generateError("Payment verification failed"));
+    }
+  } catch (error) {
+    res.status(500).json(generateError(error.message));
+  }
+};
