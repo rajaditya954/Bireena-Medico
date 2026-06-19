@@ -83,3 +83,36 @@ export const seedPrescriptions = async (req, res) => {
     res.status(500).json(err);
   }
 };
+
+export const updatePatientMedicines = async (req, res) => {
+  try {
+    const { patientId, medicines } = req.body;
+
+    const prescription = await Prescription.findOne({
+      patientId
+    }).sort({ createdAt: -1 });
+
+    if (!prescription) {
+      return res.status(404).json({
+        success: false,
+        message: "Prescription not found"
+      });
+    }
+
+    prescription.medicines = medicines;
+
+    await prescription.save();
+
+    res.json({
+      success: true,
+      message: "Medicines updated",
+      data: prescription
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};

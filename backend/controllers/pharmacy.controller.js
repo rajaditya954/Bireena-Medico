@@ -3,6 +3,8 @@ import { generateResponse, generateError } from "../utils/response.js";
 import Medicine from "../models/Medicine.js";
 import Inventory from "../models/Inventory.js";
 import MedicineRequirement from "../models/MedicineRequirement.js";
+import History from "../models/History.js";
+
 
 
 export const getAllMedicines = async (req, res) => {
@@ -158,48 +160,48 @@ export const getStockAlerts = async (req, res) => {
   }
 };
 
-export const getExpiryAlerts = async (req,res)=>{
+export const getExpiryAlerts = async (req, res) => {
   const medicines = await Medicine.find({
     expiryDate: {
-      $exists:true
+      $exists: true
     }
   });
 
   res.json({
-    success:true,
+    success: true,
     data: medicines
   });
 }
 
-export const getRecentMedicines = async(req,res)=>{
+export const getRecentMedicines = async (req, res) => {
   const medicines =
     await Medicine.find()
-    .sort({createdAt:-1})
-    .limit(5);
+      .sort({ createdAt: -1 })
+      .limit(5);
 
   res.json({
-    success:true,
-    data:medicines
+    success: true,
+    data: medicines
   });
 }
 export const getCategoryCounts =
-async(req,res)=>{
+  async (req, res) => {
 
- const categories =
- await Medicine.aggregate([
-   {
-     $group:{
-       _id:"$category",
-       count:{$sum:1}
-     }
-   }
- ]);
+    const categories =
+      await Medicine.aggregate([
+        {
+          $group: {
+            _id: "$category",
+            count: { $sum: 1 }
+          }
+        }
+      ]);
 
- res.json({
-   success:true,
-   data:categories
- });
-}
+    res.json({
+      success: true,
+      data: categories
+    });
+  }
 
 export const getInventoryStats = async (req, res) => {
   try {
@@ -236,6 +238,168 @@ export const getInventoryStats = async (req, res) => {
       success: false,
       message: error.message
     });
-  } 
+  }
 };
 
+export const removeMedicineFromRequirement = async (req, res) => {
+  try {
+    const { requirementId, medicineId } = req.params;
+
+    const requirement = await MedicineRequirement.findByIdAndUpdate(
+      requirementId,
+      {
+        $pull: {
+          medicines: {
+            _id: medicineId
+          }
+        }
+      },
+      { new: true }
+    );
+
+    res.status(200).json({
+      success: true,
+      data: requirement
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+export const createRequirement = async (req, res) => {
+  try {
+    const {
+      patientId,
+      medicines,
+      requestedMedicines
+    } = req.body;
+
+    const saved = [];
+    
+
+     for(const med of medicines) {
+      console.log("MED:", med);
+
+  const item = await MedicineRequirement.create({
+
+    requirementId:
+      "REQ" +
+      Date.now() +
+      Math.floor(Math.random() * 10000),
+
+    patientId,
+
+    medicineId: med.medicineId,
+
+    requestedQty: med.quantity,
+
+    notes: med.notes || ""
+  });
+
+  saved.push(item);
+}
+
+    for (const med of requestedMedicines) {
+
+  if (!med.name || med.quantity <= 0) {
+    continue;
+  }
+  const item = await MedicineRequirement.create({
+
+    requirementId:
+      "REQ" +
+      Date.now() +
+      Math.floor(Math.random() * 10000),
+
+    patientId,
+
+    requestedMedicineName: med.name,
+
+    strength: med.strength,
+
+    unitType: med.unitType,
+
+    requestedQty: med.quantity,
+
+    notes: med.notes || ""
+
+  });
+
+  saved.push(item);
+}
+
+    await History.create({
+      patientId,
+      medicines,
+      requestedMedicines,
+      total: req.body.total,
+      paymentMethod: req.body.paymentMethod,
+      amountPaid: req.body.amountPaid,
+    });
+    console.log("History Saved");
+    res.status(201).json({
+      success: true,
+      data: saved
+    });
+
+  } catch (error) {
+
+    console.error("CREATE REQUIREMENT ERROR:");
+
+    console.error(error);
+
+    res.status(500).json({
+      success: false,
+      message: error.message,
+      stack: error.stack
+    });
+  };
+};
+
+export const getRequirementsByPatient = async (req, res) => {
+  try {
+
+    const requirements =
+      await MedicineRequirement.find({
+        patientId: req.params.patientId
+      }).populate("medicineId");
+
+    res.status(200).json({
+      success: true,
+      data: requirements
+    });
+
+  } catch (error) {
+
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+
+  }
+};
+
+export const getHistory = async (req, res) => {
+  try {
+    const history = await History.find()
+      .populate("patientId")
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      data: history
+    });
+
+  } catch (error) {
+
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+
+  }
+};

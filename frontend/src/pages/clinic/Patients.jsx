@@ -115,26 +115,36 @@ export default function AddMedicineForPatient() {
   const [amountPaid, setAmountPaid] = useState(0);
 
   const categories = ["all", ...new Set(medicineOptions.map(m => m.category))];
-  const unitTypes = ["all", ...new Set(medicineOptions.map(m => m.unitType))];
+  const unitTypes = ["all", ...new Set(medicineOptions.map(m => m.unit))];
 
   // Filter medicines for dropdown suggestion
   const filteredMedicineOptions = medicineOptions.filter(m =>
-  (categoryFilter === "all" || m.category === categoryFilter) &&
-  (unitFilter === "all" || m.unit === unitFilter) &&
-  (m.medicineName || "")
-    .toLowerCase()
-    .includes(medicineSearch.toLowerCase())
-);
+    (categoryFilter === "all" || m.category === categoryFilter) &&
+    (unitFilter === "all" || m.unit === unitFilter) &&
+    (m.medicineName || "")
+      .toLowerCase()
+      .includes(medicineSearch.toLowerCase())
+  );
 
   const fetchMedicines = async () => {
-    const res = await fetch(
-      "http://localhost:5000/api/pharmacy"
-    );
+    try {
+      const res = await fetch(
+        "http://localhost:5000/api/pharmacy"
+      );
 
-    const data = await res.json();
-    console.log(data.data.medicines[0]);
-    setMedicineOptions(data?.data?.medicines || []);
+      const data = await res.json();
+
+      console.log("MEDICINE API:", data);
+
+      setMedicineOptions(
+        data?.data?.medicines || []
+      );
+
+    } catch (err) {
+      console.log(err);
+    }
   };
+
   const fetchPatients = async () => {
     try {
       const res = await fetch(
@@ -163,17 +173,30 @@ export default function AddMedicineForPatient() {
   };
   const updateMedicine = (id, field, value) => {
     setSelectedMedicines(
-      selectedMedicines.map((med) =>
-        med._id === id
-          ? { ...med, [field]: value }
-          : med
-      )
-    );
-  };
+      selectedMedicines.map((med) => {
+        if (med._id !== id) return med;
 
-  const removeMedicine = (id) => {
-    setSelectedMedicines(
-      selectedMedicines.filter((m) => m._id !== id)
+        // medicine selected from dropdown
+        if (field === "medicineName") {
+          const selected = medicineOptions.find(
+            m => m.medicineName === value
+          );
+
+          return {
+            ...med,
+            medicineName: selected?.medicineName || "",
+            medicineId: selected?._id || "",
+            category: selected?.category || "",
+            unitType: selected?.unit || "",
+            price: selected?.mrp || 0,
+          };
+        }
+
+        return {
+          ...med,
+          [field]: value
+        };
+      })
     );
   };
 
@@ -199,48 +222,148 @@ export default function AddMedicineForPatient() {
     }));
   };
 
-
-
-  const handlePatientSelect = async (patient) => {
+const handlePatientSelect = async (patient) => {
   setSelectedPatient(patient);
+  setSelectedMedicines([]);
 
   try {
-    const res = await fetch(
+
+    // 1. Prescription Medicines
+    const presRes = await fetch(
       `http://localhost:5000/api/prescriptions/patient/${patient._id}`
     );
 
-    const data = await res.json();
+    const presData = await presRes.json();
 
-    const medicines =
-      data?.data?.prescriptions?.flatMap(
+    const prescriptionMeds =
+      presData?.data?.prescriptions?.flatMap(
         p => p.medicines || []
-      ) || [];
+      ).map((med) => {
 
-    const medicinesWithDetails = medicines.map((med) => {
-      const dbMed = medicineOptions.find(
-        (m) => String(m._id) === String(med.medicineId)
-      );
+        const dbMed = medicineOptions.find(
+          m => String(m._id) === String(med.medicineId)
+        );
 
-      return {
-        ...med,
-        category: dbMed?.category || "-",
-        unitType: dbMed?.unit || "-",
-        price: dbMed?.mrp || 0,
-      };
-    });
+        return {
+          _id: med._id,
+          medicineId: med.medicineId,
+          medicineName: med.medicineName,
+          quantity: med.quantity || 1,
+          category: dbMed?.category || "-",
+          unitType: dbMed?.unit || "-",
+          price: dbMed?.mrp || 0,
+          notes: med.notes || ""
+        };
+      }) || [];
 
-    console.log("PATIENT MEDICINES:", medicinesWithDetails);
 
-    setSelectedMedicines(medicinesWithDetails);
 
-  } catch (err) {
-    console.error(err);
+    // 2. Newly Added Medicines
+    const reqRes = await fetch(
+      `http://localhost:5000/api/pharmacy/requirements/patient/${patient._id}`
+    );
+
+    const reqData = await reqRes.json();
+
+    const requirementMeds =
+      reqData?.data?.map((item) => ({
+        _id: item._id,
+        medicineId: item.medicineId?._id,
+        medicineName:
+          item.medicineId?.medicineName ||
+          item.requestedMedicineName ||
+          "",
+        category:
+          item.medicineId?.category || "-",
+        unitType:
+          item.medicineId?.unit ||
+          item.unitType ||
+          "-",
+        quantity:
+          item.requestedQty || 1,
+        notes:
+          item.notes || ""
+      })) || [];
+
+
+
+    // 3. Merge Both Lists
+    const allMedicines = [
+      ...prescriptionMeds,
+      ...requirementMeds
+    ];
+
+
+
+    // 4. Remove Duplicates
+    const uniqueMedicines = allMedicines.filter(
+      (med, index, self) =>
+        index === self.findIndex(
+          m =>
+            String(m.medicineId) ===
+            String(med.medicineId)
+        )
+    );
+
+
+
+    console.log(
+      "FINAL MEDICINES:",
+      uniqueMedicines
+    );
+
+    setSelectedMedicines(uniqueMedicines);
+
+  } catch (error) {
+    console.error(error);
   }
 };
   const removeRequested = (id) => {
     setRequestedMedicines(requestedMedicines.filter(r => r.id !== id));
   };
 
+  const handleSubmitRequirement = async () => {
+    const validMedicines = selectedMedicines.filter(
+  med => med.medicineId
+);
+    const payload = {
+  patientId: selectedPatient._id,
+
+ medicines: selectedMedicines.filter(
+  med => med.medicineId
+),
+
+  requestedMedicines,
+
+  total: totals.total,
+
+  paymentMethod,
+
+  amountPaid,
+};
+    const res = await fetch(
+      "http://localhost:5000/api/pharmacy/requirements",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(payload)
+      }
+    );
+    console.log("SUBMIT PAYLOAD:", payload);
+
+    const data = await res.json();
+
+    if (data.success) {
+      alert("Requirement Saved");
+    }
+  };
+  const removeMedicine = (id) => {
+    setSelectedMedicines(prev =>
+      prev.filter(med => med._id !== id)
+    );
+  };
   const totals = calculateTotals(
     selectedMedicines,
     requestedMedicines,
@@ -256,12 +379,12 @@ export default function AddMedicineForPatient() {
     setAmountPaid(totals.total);
   }, [totals.total]);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    alert("Requirement submitted successfully!");
-    // In real app, send data to backend
-  };
+    await handleSubmitRequirement();
+  };  // In real app, send data to backend
 
+  console.log("selectedMedicines", selectedMedicines);
   return (
     <div className="min-h-screen bg-[#F2F9F6] p-4 md:p-6">
       <div className="max-w-[1600px] mx-auto">
@@ -447,11 +570,7 @@ export default function AddMedicineForPatient() {
                       {selectedMedicines.map((med) => (
                         <tr key={med._id} className="border-b border-gray-50">
                           <td className="px-3 py-2">
-                            <select
-                              value={med.medicineName}
-                              onChange={(e) => updateMedicine(med._id, "name", e.target.value)}
-                              className="w-full px-2 py-1 bg-gray-50 rounded-lg text-xs"
-                            >
+                            <select value={med.medicineName} onChange={(e) => updateMedicine(med._id, "medicineName", e.target.value)} className="w-full px-2 py-1 bg-gray-50 rounded-lg text-xs">
                               <option value="">Select medicine</option>
                               {filteredMedicineOptions.map(m => (
                                 <option key={m._id} value={m.medicineName}>{m.medicineName}</option>
@@ -459,12 +578,17 @@ export default function AddMedicineForPatient() {
                             </select>
                           </td>
                           <td className="px-3 py-2 text-gray-600">{med.category || "-"}</td>
-                          <td className="px-3 py-2 text-gray-600">{med.unit || "-"}</td>
+                          <td className="px-3 py-2 text-gray-600">{med.unitType || "-"}</td>
                           <td className="px-3 py-2">
                             <input
                               type="number"
                               value={med.quantity}
-                              onChange={(e) => updateMedicine(med.id, "quantity", parseInt(e.target.value) || 0)}
+                              onChange={(e) =>
+                                updateMedicine(
+                                  med._id,
+                                  "quantity",
+                                  Number(e.target.value))
+                              }
                               className="w-20 px-2 py-1 bg-gray-50 rounded-lg text-sm"
                               min="1"
                             />
@@ -473,16 +597,18 @@ export default function AddMedicineForPatient() {
                             <input
                               type="text"
                               value={med.notes}
-                              onChange={(e) => updateMedicine(med.id, "notes", e.target.value)}
+                              onChange={(e) => updateMedicine(med._id, "notes", e.target.value)}
                               className="w-full px-2 py-1 bg-gray-50 rounded-lg text-xs"
                               placeholder="e.g. After food"
                             />
                           </td>
                           <td className="px-3 py-2 text-center">
-                            <button type="button" onClick={() => removeMedicine(med.id)} className="text-red-500 hover:text-red-700">
+                            <button
+                              type="button"
+                              onClick={() => removeMedicine(med._id)}
+                            >
                               <Trash2 className="w-4 h-4" />
-                            </button>
-                          </td>
+                            </button> </td>
                         </tr>
                       ))}
                     </tbody>
@@ -625,7 +751,7 @@ export default function AddMedicineForPatient() {
                 <div className="flex gap-3 mt-6">
                   <button type="button" className="flex-1 py-2.5 border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50 transition">Cancel</button>
                   <button type="submit" className="flex-1 py-2.5 bg-[#06402B] text-white rounded-xl font-bold shadow-md hover:bg-emerald-800 transition flex items-center justify-center gap-2">
-                    <CheckCircle className="w-4 h-4" /> Submit Requirement
+                    <CheckCircle className="w-4 h-4" /> Submit
                   </button>
                 </div>
               </div>

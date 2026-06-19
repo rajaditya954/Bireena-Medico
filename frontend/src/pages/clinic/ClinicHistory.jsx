@@ -27,8 +27,25 @@ const DoctorHistory = () => {
   const [selectedRecord, setSelectedRecord] = useState(null);
   const [dateFilter, setDateFilter] = useState("");
 
+  const fetchHistory = async () => {
+  try {
+    const res = await fetch(
+      "http://localhost:5000/api/pharmacy/history"
+    );
+
+    const data = await res.json();
+
+    console.log("HISTORY API:", data);
+
+    setHistory(data.data || []);
+  } catch (error) {
+    console.error(error);
+  }
+};
+
   // Filter history based on search (patient name, ID, medicine, doctor)
   const filteredHistory = history.filter((item) => {
+
   const matchesSearch =
     (item.patientId?.fullName || "")
       .toLowerCase()
@@ -44,8 +61,13 @@ const DoctorHistory = () => {
         .includes(searchTerm.toLowerCase())
     );
 
-  return matchesSearch;
+  const matchesDate =
+    !dateFilter ||
+    new Date(item.createdAt).toLocaleDateString() === dateFilter;
+
+  return matchesSearch && matchesDate;
 });
+
 
   // Pagination
   const totalPages = Math.ceil(filteredHistory.length / rowsPerPage);
@@ -58,19 +80,11 @@ const DoctorHistory = () => {
   fetchHistory();
 }, []);
 
-const fetchHistory = async () => {
-  const res = await fetch(
-    "http://localhost:5000/api/prescriptions/history"
-  );
-
-  const data = await res.json();
-  console.log("API DATA:", data);
-
-setHistory(data?.data?.prescriptions || data?.data || []);};
+  
 
   // Get unique dates for filter
   const uniqueDates = [
-  "",
+    "",
   ...new Set(
     history.map(item =>
       new Date(item.createdAt).toLocaleDateString()
@@ -128,6 +142,8 @@ setHistory(data?.data?.prescriptions || data?.data || []);};
   };
   console.log("History:", history);
 console.log("Filtered:", filteredHistory);
+console.log("history length", history.length);
+
 
   return (
     <div className="min-h-screen bg-[#F2F9F6] p-4 md:p-6">
@@ -188,59 +204,86 @@ console.log("Filtered:", filteredHistory);
               </thead>
               <tbody className="divide-y divide-gray-50">
                 {paginatedHistory.map((record) => (
-                  <tr key={record.id} className="hover:bg-gray-50/30 transition">
-                    <td className="px-5 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 font-bold text-xs">
-                          {record.patientName.split(" ").map(n => n[0]).join("").slice(0,2).toUpperCase()}
-                        </div>
-                        <div>
-                          <p className="font-bold text-gray-900">{record.patientId?.fullName}</p>
-                          <p className="text-[10px] text-gray-400 font-mono">{record.patientId?.patientId}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-5 py-4">
-                      <div className="text-gray-800 font-medium">{new Date(record.createdAt).toLocaleDateString()}</div>
-                      <div className="text-xs text-gray-400">{record.time}</div>
-                    </td>
-                    <td className="px-5 py-4">
-                      <div className="font-medium text-gray-800">{record.doctor}</div>
-                      <div className="text-xs text-gray-400">{record.specialty}</div>
-                    </td>
-                    <td className="px-5 py-4">
-                      <div className="flex flex-wrap gap-1">
-                        {record.medicines.slice(0, 2).map((m, idx) => (
-                          <span key={idx} className="inline-flex items-center gap-1 text-xs bg-gray-100 px-2 py-0.5 rounded-full">
-                            <Pill className="w-2.5 h-2.5" /> {m.medicineName}
-                          </span>
-                        ))}
-                        {record.medicines.length > 2 && (
-                          <span className="text-xs text-gray-400">+{record.medicines.length - 2} more</span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-5 py-4 font-semibold text-gray-800">₹{new Date(record.createdAt).toLocaleDateString()}</td>
-                    <td className="px-5 py-4">
-                      <span className="text-xs capitalize bg-gray-100 px-2 py-1 rounded-full">{record.paymentMethod}</span>
-                    </td>
-                    <td className="px-5 py-4 text-center">
-                      <button
-                        onClick={() => console.log(record)}
-                        className="inline-flex items-center gap-1 px-3 py-1.5 bg-emerald-600 text-white text-xs font-semibold rounded-lg hover:bg-emerald-700 transition"
-                      >
-                        <Eye className="w-3.5 h-3.5" /> View
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-                {paginatedHistory.length === 0 && (
-                  <tr>
-                    <td colSpan={7} className="px-5 py-12 text-center text-gray-400">
-                      No history records found.
-                    </td>
-                  </tr>
-                )}
+  <tr key={record._id} className="hover:bg-gray-50/30 transition">
+
+    <td className="px-5 py-4">
+      <div className="flex items-center gap-3">
+        <div className="w-9 h-9 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 font-bold text-xs">
+          {record.patientId?.fullName
+            ?.split(" ")
+            ?.map(n => n[0])
+            ?.join("")
+            ?.slice(0, 2)
+            ?.toUpperCase()}
+        </div>
+
+        <div>
+          <p className="font-bold text-gray-900">
+            {record.patientId?.fullName}
+          </p>
+
+          <p className="text-[10px] text-gray-400 font-mono">
+            {record.patientId?.patientId}
+          </p>
+        </div>
+      </div>
+    </td>
+
+    <td className="px-5 py-4">
+      <div className="text-gray-800 font-medium">
+        {new Date(record.createdAt).toLocaleDateString()}
+      </div>
+    </td>
+
+    <td className="px-5 py-4">
+      <div className="font-medium text-gray-800">
+        {record.paymentMethod}
+      </div>
+    </td>
+
+    <td className="px-5 py-4">
+      <div className="flex flex-wrap gap-1">
+
+        {record.medicines?.slice(0, 2).map((m, idx) => (
+          <span
+            key={idx}
+            className="inline-flex items-center gap-1 text-xs bg-gray-100 px-2 py-0.5 rounded-full"
+          >
+            <Pill className="w-2.5 h-2.5" />
+            {m.medicineName} x {m.quantity}
+          </span>
+        ))}
+
+        {record.medicines?.length > 2 && (
+          <span className="text-xs text-gray-400">
+            +{record.medicines.length - 2} more
+          </span>
+        )}
+      </div>
+    </td>
+
+    <td className="px-5 py-4 font-semibold text-gray-800">
+      ₹{record.total}
+    </td>
+
+    <td className="px-5 py-4">
+      <span className="text-xs capitalize bg-gray-100 px-2 py-1 rounded-full">
+        Paid ₹{record.amountPaid}
+      </span>
+    </td>
+
+    <td className="px-5 py-4 text-center">
+      <button
+        onClick={() => handleViewDetails(record)}
+        className="inline-flex items-center gap-1 px-3 py-1.5 bg-emerald-600 text-white text-xs font-semibold rounded-lg hover:bg-emerald-700 transition"
+      >
+        <Eye className="w-3.5 h-3.5" />
+        View
+      </button>
+    </td>
+
+  </tr>
+))}
               </tbody>
             </table>
           </div>
