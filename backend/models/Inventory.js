@@ -1,19 +1,17 @@
 import mongoose from "mongoose";
 
-const InventorySchema = new mongoose.Schema(
-  {
-    medicineId: { type: mongoose.Schema.Types.ObjectId, ref: "Medicine", required: true },
-    quantity: { type: Number, required: true, default: 0 },
-    minimumThreshold: { type: Number, default: 50 },
-    maximumCapacity: { type: Number, default: 500 },
-    batchNumber: { type: String },
-    expiryDate: { type: Date },
-    suppliedBy: { type: String },
-    costPrice: { type: Number },
-    sellingPrice: { type: Number },
-    lastRestockedAt: { type: Date },
+const InventorySchema = new mongoose.Schema({
+  medicineId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Medicine",
+    required: true,
   },
-  { timestamps: true }
-);
+  currentStock: Number,
+  minimumStock: Number,
+  reorderLevel: Number,
+  supplier: String,
+  stockValue: Number,
+  location: String,
+});
 
-export default mongoose.model("Inventory", InventorySchema);
+export default mongoose.model("Inventory", InventorySchema,"inventory");

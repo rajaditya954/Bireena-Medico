@@ -94,6 +94,7 @@ export default function AddMedicine() {
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitMessage, setSubmitMessage] = useState(null);
+  
 
   // Handle input changes
   const handleChange = (field, value) => {

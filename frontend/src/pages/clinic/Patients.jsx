@@ -26,51 +26,59 @@ const mockMedicines = [
   { id: 6, name: "Metformin 500mg Tablet", category: "Diabetes", unitType: "Tablet", price: 15.0 },
 ];
 
-// Mock registered patients
-const mockRegisteredPatients = [
-  {
-    id: "PAT-0001",
-    name: "Alice Cooper",
-    age: 34,
-    gender: "Male",
-    mobile: "+91 9876543210",
-    address: "221B Baker Street, London",
-    bloodGroup: "O+",
-    allergies: "Penicillin",
-  },
-  {
-    id: "PAT-0002",
-    name: "John Doe",
-    age: 45,
-    gender: "Male",
-    mobile: "+91 9123456789",
-    address: "123 Main Street, Mumbai",
-    bloodGroup: "B+",
-    allergies: "None",
-  },
-];
 
 // Helper to calculate totals
-const calculateTotals = (items, requestedItems, discount = 0, taxRate = 0.05) => {
-  const subtotalItems = items.reduce((sum, i) => sum + (i.price * i.quantity), 0);
-  const subtotalRequested = requestedItems.reduce((sum, i) => sum + (i.price * i.quantity), 0);
-  const subtotal = subtotalItems + subtotalRequested;
-  const tax = subtotal * taxRate;
-  const total = subtotal + tax - discount;
-  return { subtotalItems, subtotalRequested, subtotal, tax, total };
-};
+const calculateTotals = (
+  items,
+  requestedItems,
+  discount = 0,
+  taxRate = 0.05
+) => {
 
+  const subtotalItems = items.reduce(
+    (sum, med) => sum + (Number(med.quantity || 0) * 10),
+    0
+  );
+
+  const subtotalRequested = requestedItems.reduce(
+    (sum, item) =>
+      sum +
+      (Number(item.price || 0) * Number(item.quantity || 0)),
+    0
+  );
+
+  const subtotal = subtotalItems + subtotalRequested;
+
+  const tax = subtotal * taxRate;
+
+  const total = subtotal + tax - Number(discount || 0);
+
+  return {
+    subtotalItems,
+    subtotalRequested,
+    subtotal,
+    tax,
+    total,
+  };
+};
 export default function AddMedicineForPatient() {
   const [activeTab, setActiveTab] = useState("registered"); // "registered" or "nonRegistered"
   const [selectedPatient, setSelectedPatient] = useState(null);
+  const [patients, setPatients] = useState([]);
   const [searchPatientQuery, setSearchPatientQuery] = useState("");
-  
+
   // Registered patient search
-  const filteredPatients = mockRegisteredPatients.filter(p =>
-    p.name.toLowerCase().includes(searchPatientQuery.toLowerCase()) ||
-    p.id.toLowerCase().includes(searchPatientQuery.toLowerCase()) ||
-    p.mobile.includes(searchPatientQuery)
-  );
+  const filteredPatients =
+    patients.filter(
+      (p) =>
+        p.fullName
+          ?.toLowerCase()
+          .includes(searchPatientQuery.toLowerCase()) ||
+        p.patientId
+          ?.toLowerCase()
+          .includes(searchPatientQuery.toLowerCase()) ||
+        p.phone?.includes(searchPatientQuery)
+    );
 
   // Non-registered patient form
   const [nonRegPatient, setNonRegPatient] = useState({
@@ -88,12 +96,10 @@ export default function AddMedicineForPatient() {
   });
 
   // Medicine lists
-  const [medicines, setMedicines] = useState([
-    { id: Date.now() + 1, name: "Paracetamol 650mg Tablet", category: "Pain Relief", unitType: "Tablet", quantity: 20, price: 18.0, notes: "After food" },
-    { id: Date.now() + 2, name: "Amoxicillin 500mg Capsule", category: "Antibiotic", unitType: "Capsule", quantity: 15, price: 25.0, notes: "Before food" },
-    { id: Date.now() + 3, name: "Cetirizine 10mg Tablet", category: "Antihistamine", unitType: "Tablet", quantity: 10, price: 12.0, notes: "Night only" },
-  ]);
-  
+  const [medicineOptions, setMedicineOptions] = useState([]);
+  const [selectedMedicines, setSelectedMedicines] = useState([]);
+
+
   const [requestedMedicines, setRequestedMedicines] = useState([
     { id: Date.now() + 4, name: "", strength: "", unitType: "Tablet", quantity: 0, price: 0, notes: "" },
   ]);
@@ -108,45 +114,90 @@ export default function AddMedicineForPatient() {
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [amountPaid, setAmountPaid] = useState(0);
 
-  const categories = ["all", ...new Set(mockMedicines.map(m => m.category))];
-  const unitTypes = ["all", ...new Set(mockMedicines.map(m => m.unitType))];
+  const categories = ["all", ...new Set(medicineOptions.map(m => m.category))];
+  const unitTypes = ["all", ...new Set(medicineOptions.map(m => m.unit))];
 
   // Filter medicines for dropdown suggestion
-  const filteredMedicineOptions = mockMedicines.filter(m => 
+  const filteredMedicineOptions = medicineOptions.filter(m =>
     (categoryFilter === "all" || m.category === categoryFilter) &&
-    (unitFilter === "all" || m.unitType === unitFilter) &&
-    m.name.toLowerCase().includes(medicineSearch.toLowerCase())
+    (unitFilter === "all" || m.unit === unitFilter) &&
+    (m.medicineName || "")
+      .toLowerCase()
+      .includes(medicineSearch.toLowerCase())
   );
 
+  const fetchMedicines = async () => {
+    try {
+      const res = await fetch(
+        "http://localhost:5000/api/pharmacy"
+      );
+
+      const data = await res.json();
+
+      console.log("MEDICINE API:", data);
+
+      setMedicineOptions(
+        data?.data?.medicines || []
+      );
+
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
+  const fetchPatients = async () => {
+    try {
+      const res = await fetch(
+        "http://localhost:5000/api/patients"
+      );
+
+      const data = await res.json();
+      console.log(JSON.stringify(data, null, 2));
+
+      setPatients(data.data.patients || []);
+    } catch (err) {
+      console.log(err);
+    }
+  };
   // Add new medicine row (from inventory)
   const addMedicineRow = () => {
-    setMedicines([
-      ...medicines,
-      { id: Date.now(), name: "", category: "", unitType: "", quantity: 1, price: 0, notes: "" }
+    setSelectedMedicines([
+      ...selectedMedicines,
+      {
+        _id: Date.now().toString(),
+        medicineName: "",
+        quantity: 1,
+        notes: ""
+      }
     ]);
   };
-
   const updateMedicine = (id, field, value) => {
-    setMedicines(medicines.map(med => {
-      if (med.id === id) {
-        let updated = { ...med, [field]: value };
-        // If name changes, try to auto-fill category, unitType, price from mock list
-        if (field === "name") {
-          const found = mockMedicines.find(m => m.name === value);
-          if (found) {
-            updated.category = found.category;
-            updated.unitType = found.unitType;
-            updated.price = found.price;
-          }
-        }
-        return updated;
-      }
-      return med;
-    }));
-  };
+    setSelectedMedicines(
+      selectedMedicines.map((med) => {
+        if (med._id !== id) return med;
 
-  const removeMedicine = (id) => {
-    setMedicines(medicines.filter(m => m.id !== id));
+        // medicine selected from dropdown
+        if (field === "medicineName") {
+          const selected = medicineOptions.find(
+            m => m.medicineName === value
+          );
+
+          return {
+            ...med,
+            medicineName: selected?.medicineName || "",
+            medicineId: selected?._id || "",
+            category: selected?.category || "",
+            unitType: selected?.unit || "",
+            price: selected?.mrp || 0,
+          };
+        }
+
+        return {
+          ...med,
+          [field]: value
+        };
+      })
+    );
   };
 
   // Add requested medicine row
@@ -171,22 +222,169 @@ export default function AddMedicineForPatient() {
     }));
   };
 
+const handlePatientSelect = async (patient) => {
+  setSelectedPatient(patient);
+  setSelectedMedicines([]);
+
+  try {
+
+    // 1. Prescription Medicines
+    const presRes = await fetch(
+      `http://localhost:5000/api/prescriptions/patient/${patient._id}`
+    );
+
+    const presData = await presRes.json();
+
+    const prescriptionMeds =
+      presData?.data?.prescriptions?.flatMap(
+        p => p.medicines || []
+      ).map((med) => {
+
+        const dbMed = medicineOptions.find(
+          m => String(m._id) === String(med.medicineId)
+        );
+
+        return {
+          _id: med._id,
+          medicineId: med.medicineId,
+          medicineName: med.medicineName,
+          quantity: med.quantity || 1,
+          category: dbMed?.category || "-",
+          unitType: dbMed?.unit || "-",
+          price: dbMed?.mrp || 0,
+          notes: med.notes || ""
+        };
+      }) || [];
+
+
+
+    // 2. Newly Added Medicines
+    const reqRes = await fetch(
+      `http://localhost:5000/api/pharmacy/requirements/patient/${patient._id}`
+    );
+
+    const reqData = await reqRes.json();
+
+    const requirementMeds =
+      reqData?.data?.map((item) => ({
+        _id: item._id,
+        medicineId: item.medicineId?._id,
+        medicineName:
+          item.medicineId?.medicineName ||
+          item.requestedMedicineName ||
+          "",
+        category:
+          item.medicineId?.category || "-",
+        unitType:
+          item.medicineId?.unit ||
+          item.unitType ||
+          "-",
+        quantity:
+          item.requestedQty || 1,
+        notes:
+          item.notes || ""
+      })) || [];
+
+
+
+    // 3. Merge Both Lists
+    const allMedicines = [
+      ...prescriptionMeds,
+      ...requirementMeds
+    ];
+
+
+
+    // 4. Remove Duplicates
+    const uniqueMedicines = allMedicines.filter(
+      (med, index, self) =>
+        index === self.findIndex(
+          m =>
+            String(m.medicineId) ===
+            String(med.medicineId)
+        )
+    );
+
+
+
+    console.log(
+      "FINAL MEDICINES:",
+      uniqueMedicines
+    );
+
+    setSelectedMedicines(uniqueMedicines);
+
+  } catch (error) {
+    console.error(error);
+  }
+};
   const removeRequested = (id) => {
     setRequestedMedicines(requestedMedicines.filter(r => r.id !== id));
   };
 
-  const totals = calculateTotals(medicines, requestedMedicines, discount);
+  const handleSubmitRequirement = async () => {
+    const validMedicines = selectedMedicines.filter(
+  med => med.medicineId
+);
+    const payload = {
+  patientId: selectedPatient._id,
+
+ medicines: selectedMedicines.filter(
+  med => med.medicineId
+),
+
+  requestedMedicines,
+
+  total: totals.total,
+
+  paymentMethod,
+
+  amountPaid,
+};
+    const res = await fetch(
+      "http://localhost:5000/api/pharmacy/requirements",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(payload)
+      }
+    );
+    console.log("SUBMIT PAYLOAD:", payload);
+
+    const data = await res.json();
+
+    if (data.success) {
+      alert("Requirement Saved");
+    }
+  };
+  const removeMedicine = (id) => {
+    setSelectedMedicines(prev =>
+      prev.filter(med => med._id !== id)
+    );
+  };
+  const totals = calculateTotals(
+    selectedMedicines,
+    requestedMedicines,
+    discount,
+  );
+
+  useEffect(() => {
+    fetchPatients();
+    fetchMedicines();
+  }, []);
 
   useEffect(() => {
     setAmountPaid(totals.total);
   }, [totals.total]);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    alert("Requirement submitted successfully!");
-    // In real app, send data to backend
-  };
+    await handleSubmitRequirement();
+  };  // In real app, send data to backend
 
+  console.log("selectedMedicines", selectedMedicines);
   return (
     <div className="min-h-screen bg-[#F2F9F6] p-4 md:p-6">
       <div className="max-w-[1600px] mx-auto">
@@ -197,21 +395,19 @@ export default function AddMedicineForPatient() {
         <div className="flex gap-2 border-b border-gray-200 mb-6">
           <button
             onClick={() => setActiveTab("registered")}
-            className={`px-5 py-2.5 text-sm font-semibold rounded-t-lg transition ${
-              activeTab === "registered"
-                ? "bg-white text-emerald-700 border-b-2 border-emerald-600"
-                : "text-gray-500 hover:text-emerald-600"
-            }`}
+            className={`px-5 py-2.5 text-sm font-semibold rounded-t-lg transition ${activeTab === "registered"
+              ? "bg-white text-emerald-700 border-b-2 border-emerald-600"
+              : "text-gray-500 hover:text-emerald-600"
+              }`}
           >
             Registered Patients
           </button>
           <button
             onClick={() => setActiveTab("nonRegistered")}
-            className={`px-5 py-2.5 text-sm font-semibold rounded-t-lg transition ${
-              activeTab === "nonRegistered"
-                ? "bg-white text-emerald-700 border-b-2 border-emerald-600"
-                : "text-gray-500 hover:text-emerald-600"
-            }`}
+            className={`px-5 py-2.5 text-sm font-semibold rounded-t-lg transition ${activeTab === "nonRegistered"
+              ? "bg-white text-emerald-700 border-b-2 border-emerald-600"
+              : "text-gray-500 hover:text-emerald-600"
+              }`}
           >
             Non-Registered Patients
           </button>
@@ -239,26 +435,28 @@ export default function AddMedicineForPatient() {
                     <div className="space-y-3 max-h-96 overflow-y-auto">
                       {filteredPatients.map((patient) => (
                         <div
-                          key={patient.id}
-                          onClick={() => setSelectedPatient(patient)}
-                          className={`p-4 rounded-xl border cursor-pointer transition ${
-                            selectedPatient?.id === patient.id
-                              ? "border-emerald-500 bg-emerald-50"
-                              : "border-gray-100 hover:bg-gray-50"
-                          }`}
+                          key={patient.patientId}
+                          onClick={() => handlePatientSelect(patient)}
+                          className={`p-4 rounded-xl border cursor-pointer transition ${selectedPatient?._id === patient._id
+                            ? "border-emerald-500 bg-emerald-50"
+                            : "border-gray-100 hover:bg-gray-50"
+                            }`}
                         >
                           <div className="flex items-start gap-3">
                             <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 font-bold">
-                              {patient.name.charAt(0)}
+                              {patient.fullName?.charAt(0)}
                             </div>
                             <div className="flex-1">
                               <div className="flex justify-between">
-                                <h3 className="font-bold text-gray-800">{patient.name}</h3>
-                                <span className="text-xs text-gray-400 font-mono">{patient.id}</span>
+                                <h3 className="font-bold text-gray-800">{patient.fullName}</h3>
+                                <span className="text-xs text-gray-400 font-mono">{patient.patientId}</span>
                               </div>
                               <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-2 text-xs text-gray-500">
-                                <span><span className="font-semibold">Age/Gender:</span> {patient.age} Y, {patient.gender}</span>
-                                <span><span className="font-semibold">Mobile:</span> {patient.mobile}</span>
+                                <span><span className="font-semibold">Gender:
+                                </span>
+                                  {patient.gender}
+                                </span>
+                                <span><span className="font-semibold">Mobile:</span> {patient.phone}</span>
                                 <span className="col-span-2"><span className="font-semibold">Address:</span> {patient.address}</span>
                                 <span><span className="font-semibold">Blood Group:</span> {patient.bloodGroup}</span>
                                 <span><span className="font-semibold">Allergies:</span> {patient.allergies}</span>
@@ -278,51 +476,51 @@ export default function AddMedicineForPatient() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-xs font-semibold text-gray-500 mb-1">Patient Name *</label>
-                        <input type="text" value={nonRegPatient.name} onChange={e => setNonRegPatient({...nonRegPatient, name: e.target.value})} className="w-full px-3 py-2 bg-gray-50 rounded-lg text-sm" required />
+                        <input type="text" value={nonRegPatient.name} onChange={e => setNonRegPatient({ ...nonRegPatient, name: e.target.value })} className="w-full px-3 py-2 bg-gray-50 rounded-lg text-sm" required />
                       </div>
                       <div>
                         <label className="block text-xs font-semibold text-gray-500 mb-1">Age *</label>
-                        <input type="number" value={nonRegPatient.age} onChange={e => setNonRegPatient({...nonRegPatient, age: e.target.value})} className="w-full px-3 py-2 bg-gray-50 rounded-lg text-sm" />
+                        <input type="number" value={nonRegPatient.age} onChange={e => setNonRegPatient({ ...nonRegPatient, age: e.target.value })} className="w-full px-3 py-2 bg-gray-50 rounded-lg text-sm" />
                       </div>
                       <div>
                         <label className="block text-xs font-semibold text-gray-500 mb-1">Gender</label>
-                        <select value={nonRegPatient.gender} onChange={e => setNonRegPatient({...nonRegPatient, gender: e.target.value})} className="w-full px-3 py-2 bg-gray-50 rounded-lg text-sm">
+                        <select value={nonRegPatient.gender} onChange={e => setNonRegPatient({ ...nonRegPatient, gender: e.target.value })} className="w-full px-3 py-2 bg-gray-50 rounded-lg text-sm">
                           <option>Male</option><option>Female</option><option>Other</option>
                         </select>
                       </div>
                       <div>
                         <label className="block text-xs font-semibold text-gray-500 mb-1">Mobile *</label>
-                        <input type="tel" value={nonRegPatient.mobile} onChange={e => setNonRegPatient({...nonRegPatient, mobile: e.target.value})} className="w-full px-3 py-2 bg-gray-50 rounded-lg text-sm" />
+                        <input type="tel" value={nonRegPatient.mobile} onChange={e => setNonRegPatient({ ...nonRegPatient, mobile: e.target.value })} className="w-full px-3 py-2 bg-gray-50 rounded-lg text-sm" />
                       </div>
                       <div className="sm:col-span-2">
                         <label className="block text-xs font-semibold text-gray-500 mb-1">Address</label>
-                        <input type="text" value={nonRegPatient.address} onChange={e => setNonRegPatient({...nonRegPatient, address: e.target.value})} className="w-full px-3 py-2 bg-gray-50 rounded-lg text-sm" />
+                        <input type="text" value={nonRegPatient.address} onChange={e => setNonRegPatient({ ...nonRegPatient, address: e.target.value })} className="w-full px-3 py-2 bg-gray-50 rounded-lg text-sm" />
                       </div>
                       <div>
                         <label className="block text-xs font-semibold text-gray-500 mb-1">Blood Group</label>
-                        <input type="text" value={nonRegPatient.bloodGroup} onChange={e => setNonRegPatient({...nonRegPatient, bloodGroup: e.target.value})} className="w-full px-3 py-2 bg-gray-50 rounded-lg text-sm" placeholder="e.g. O+" />
+                        <input type="text" value={nonRegPatient.bloodGroup} onChange={e => setNonRegPatient({ ...nonRegPatient, bloodGroup: e.target.value })} className="w-full px-3 py-2 bg-gray-50 rounded-lg text-sm" placeholder="e.g. O+" />
                       </div>
                       <div>
                         <label className="block text-xs font-semibold text-gray-500 mb-1">Allergies (If any)</label>
-                        <input type="text" value={nonRegPatient.allergies} onChange={e => setNonRegPatient({...nonRegPatient, allergies: e.target.value})} className="w-full px-3 py-2 bg-gray-50 rounded-lg text-sm" placeholder="None" />
+                        <input type="text" value={nonRegPatient.allergies} onChange={e => setNonRegPatient({ ...nonRegPatient, allergies: e.target.value })} className="w-full px-3 py-2 bg-gray-50 rounded-lg text-sm" placeholder="None" />
                       </div>
                       <div>
                         <label className="block text-xs font-semibold text-gray-500 mb-1">ID Type (Optional)</label>
-                        <select value={nonRegPatient.idType} onChange={e => setNonRegPatient({...nonRegPatient, idType: e.target.value})} className="w-full px-3 py-2 bg-gray-50 rounded-lg text-sm">
+                        <select value={nonRegPatient.idType} onChange={e => setNonRegPatient({ ...nonRegPatient, idType: e.target.value })} className="w-full px-3 py-2 bg-gray-50 rounded-lg text-sm">
                           <option value="">Select</option><option>Aadhaar</option><option>PAN</option><option>Driving License</option>
                         </select>
                       </div>
                       <div>
                         <label className="block text-xs font-semibold text-gray-500 mb-1">ID Number (Optional)</label>
-                        <input type="text" value={nonRegPatient.idNumber} onChange={e => setNonRegPatient({...nonRegPatient, idNumber: e.target.value})} className="w-full px-3 py-2 bg-gray-50 rounded-lg text-sm" />
+                        <input type="text" value={nonRegPatient.idNumber} onChange={e => setNonRegPatient({ ...nonRegPatient, idNumber: e.target.value })} className="w-full px-3 py-2 bg-gray-50 rounded-lg text-sm" />
                       </div>
                       <div>
                         <label className="block text-xs font-semibold text-gray-500 mb-1">Email (Optional)</label>
-                        <input type="email" value={nonRegPatient.email} onChange={e => setNonRegPatient({...nonRegPatient, email: e.target.value})} className="w-full px-3 py-2 bg-gray-50 rounded-lg text-sm" />
+                        <input type="email" value={nonRegPatient.email} onChange={e => setNonRegPatient({ ...nonRegPatient, email: e.target.value })} className="w-full px-3 py-2 bg-gray-50 rounded-lg text-sm" />
                       </div>
                       <div>
                         <label className="block text-xs font-semibold text-gray-500 mb-1">Aadhaar Card (Optional)</label>
-                        <input type="text" value={nonRegPatient.aadhaar} onChange={e => setNonRegPatient({...nonRegPatient, aadhaar: e.target.value})} className="w-full px-3 py-2 bg-gray-50 rounded-lg text-sm" placeholder="XXXX XXXX XXXX" />
+                        <input type="text" value={nonRegPatient.aadhaar} onChange={e => setNonRegPatient({ ...nonRegPatient, aadhaar: e.target.value })} className="w-full px-3 py-2 bg-gray-50 rounded-lg text-sm" placeholder="XXXX XXXX XXXX" />
                       </div>
                     </div>
                     <div className="mt-4 text-xs text-amber-600 bg-amber-50 p-3 rounded-lg">
@@ -369,17 +567,13 @@ export default function AddMedicineForPatient() {
                       </tr>
                     </thead>
                     <tbody>
-                      {medicines.map((med) => (
-                        <tr key={med.id} className="border-b border-gray-50">
+                      {selectedMedicines.map((med) => (
+                        <tr key={med._id} className="border-b border-gray-50">
                           <td className="px-3 py-2">
-                            <select
-                              value={med.name}
-                              onChange={(e) => updateMedicine(med.id, "name", e.target.value)}
-                              className="w-full px-2 py-1 bg-gray-50 rounded-lg text-xs"
-                            >
+                            <select value={med.medicineName} onChange={(e) => updateMedicine(med._id, "medicineName", e.target.value)} className="w-full px-2 py-1 bg-gray-50 rounded-lg text-xs">
                               <option value="">Select medicine</option>
                               {filteredMedicineOptions.map(m => (
-                                <option key={m.id} value={m.name}>{m.name}</option>
+                                <option key={m._id} value={m.medicineName}>{m.medicineName}</option>
                               ))}
                             </select>
                           </td>
@@ -389,7 +583,12 @@ export default function AddMedicineForPatient() {
                             <input
                               type="number"
                               value={med.quantity}
-                              onChange={(e) => updateMedicine(med.id, "quantity", parseInt(e.target.value) || 0)}
+                              onChange={(e) =>
+                                updateMedicine(
+                                  med._id,
+                                  "quantity",
+                                  Number(e.target.value))
+                              }
                               className="w-20 px-2 py-1 bg-gray-50 rounded-lg text-sm"
                               min="1"
                             />
@@ -398,16 +597,18 @@ export default function AddMedicineForPatient() {
                             <input
                               type="text"
                               value={med.notes}
-                              onChange={(e) => updateMedicine(med.id, "notes", e.target.value)}
+                              onChange={(e) => updateMedicine(med._id, "notes", e.target.value)}
                               className="w-full px-2 py-1 bg-gray-50 rounded-lg text-xs"
                               placeholder="e.g. After food"
                             />
                           </td>
                           <td className="px-3 py-2 text-center">
-                            <button type="button" onClick={() => removeMedicine(med.id)} className="text-red-500 hover:text-red-700">
+                            <button
+                              type="button"
+                              onClick={() => removeMedicine(med._id)}
+                            >
                               <Trash2 className="w-4 h-4" />
-                            </button>
-                          </td>
+                            </button> </td>
                         </tr>
                       ))}
                     </tbody>
@@ -440,7 +641,7 @@ export default function AddMedicineForPatient() {
                           <td className="px-3 py-2"><input type="text" value={req.name} onChange={e => updateRequested(req.id, "name", e.target.value)} className="w-full px-2 py-1 bg-gray-50 rounded-lg text-sm" placeholder="Enter medicine name" /></td>
                           <td className="px-3 py-2"><input type="text" value={req.strength} onChange={e => updateRequested(req.id, "strength", e.target.value)} className="w-full px-2 py-1 bg-gray-50 rounded-lg text-sm" placeholder="e.g. 500mg" /></td>
                           <td className="px-3 py-2">
-                            <select value={req.unitType} onChange={e => updateRequested(req.id, "unitType", e.target.value)} className="px-2 py-1 bg-gray-50 rounded-lg text-sm">
+                            <select value={req.unit} onChange={e => updateRequested(req.id, "unitType", e.target.value)} className="px-2 py-1 bg-gray-50 rounded-lg text-sm">
                               <option>Tablet</option><option>Capsule</option><option>Inhaler</option><option>Syrup</option><option>Injection</option>
                             </select>
                           </td>
@@ -462,14 +663,14 @@ export default function AddMedicineForPatient() {
             <div className="space-y-6">
               <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 sticky top-6">
                 <h2 className="text-base font-bold text-gray-800 mb-3">Requirement Summary</h2>
-                
+
                 {/* Patient Information Summary */}
                 <div className="bg-gray-50 rounded-lg p-3 mb-4">
                   <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Patient Information</h3>
                   {activeTab === "registered" && selectedPatient ? (
                     <div className="space-y-1 text-sm">
-                      <p><span className="font-semibold">{selectedPatient.name}</span> ({selectedPatient.id})</p>
-                      <p className="text-xs text-gray-500">Mobile: {selectedPatient.mobile}</p>
+                      <p><span className="font-semibold">{selectedPatient.fullName}</span> ({selectedPatient.patientId})</p>
+                      <p className="text-xs text-gray-500">Mobile: {selectedPatient.phone}</p>
                       <p className="text-xs text-gray-500">Address: {selectedPatient.address}</p>
                       <p className="text-xs text-gray-500">Age/Gender: {selectedPatient.age} Y, {selectedPatient.gender}</p>
                       <p className="text-xs text-gray-500">Blood Group: {selectedPatient.bloodGroup}</p>
@@ -491,13 +692,13 @@ export default function AddMedicineForPatient() {
                 <div className="mb-4">
                   <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Medicines</h3>
                   <ul className="space-y-1 text-xs">
-                    {medicines.filter(m => m.name && m.quantity > 0).map(m => (
-                      <li key={m.id} className="flex justify-between"><span>{m.name}</span><span className="font-semibold">x{m.quantity}</span></li>
+                    {selectedMedicines.filter(m => m.medicineName && m.quantity > 0).map(m => (
+                      <li key={m._id} className="flex justify-between"><span>{m.medicineName}</span><span className="font-semibold">x{m.quantity}</span></li>
                     ))}
                     {requestedMedicines.filter(r => r.name && r.quantity > 0).map(r => (
                       <li key={r.id} className="flex justify-between"><span>{r.name} {r.strength}</span><span className="font-semibold">x{r.quantity}</span></li>
                     ))}
-                    {medicines.filter(m => m.name && m.quantity > 0).length === 0 && requestedMedicines.filter(r => r.name && r.quantity > 0).length === 0 && (
+                    {selectedMedicines.filter(m => m.medicineName && m.quantity > 0).length === 0 && requestedMedicines.filter(r => r.name && r.quantity > 0).length === 0 && (
                       <li className="text-gray-400">No items added</li>
                     )}
                   </ul>
@@ -522,9 +723,8 @@ export default function AddMedicineForPatient() {
                           key={method}
                           type="button"
                           onClick={() => setPaymentMethod(method)}
-                          className={`px-3 py-1.5 rounded-full text-xs font-semibold transition flex items-center gap-1 ${
-                            paymentMethod === method ? "bg-emerald-600 text-white" : "bg-gray-100 text-gray-700"
-                          }`}
+                          className={`px-3 py-1.5 rounded-full text-xs font-semibold transition flex items-center gap-1 ${paymentMethod === method ? "bg-emerald-600 text-white" : "bg-gray-100 text-gray-700"
+                            }`}
                         >
                           {method === "cash" && <Banknote className="w-3 h-3" />}
                           {method === "upi" && <Smartphone className="w-3 h-3" />}
@@ -551,7 +751,7 @@ export default function AddMedicineForPatient() {
                 <div className="flex gap-3 mt-6">
                   <button type="button" className="flex-1 py-2.5 border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50 transition">Cancel</button>
                   <button type="submit" className="flex-1 py-2.5 bg-[#06402B] text-white rounded-xl font-bold shadow-md hover:bg-emerald-800 transition flex items-center justify-center gap-2">
-                    <CheckCircle className="w-4 h-4" /> Submit Requirement
+                    <CheckCircle className="w-4 h-4" /> Submit
                   </button>
                 </div>
               </div>

@@ -1,0 +1,31 @@
+{
+  "name": "bireena-medico",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+  "test": "echo \"Error: no test specified\" && exit 1",
+  "backend": "cd backend && npm run dev",
+  "frontend": "cd frontend && npm run dev",
+  "dev": "concurrently \"cd backend && npm run dev\" \"cd frontend && npm run dev\""
+
+
+
+
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/BireenaInfotech/Bireena-Medico.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/BireenaInfotech/Bireena-Medico/issues"
+  },
+  "homepage": "https://github.com/BireenaInfotech/Bireena-Medico#readme",
+  "devDependencies": {
+    "concurrently": "^10.0.3"
+  }
+}

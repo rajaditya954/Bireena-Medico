@@ -33,6 +33,9 @@ class PharmacyService {
     return await Inventory.findOne({ medicineId });
   }
 
+  async getInventoryWithMedicines() {
+  return await Inventory.find().populate("medicineId");
+}
   async updateInventory(medicineId, quantityChange) {
     const inventory = await Inventory.findOne({ medicineId });
     if (!inventory) throw new Error("Inventory not found");

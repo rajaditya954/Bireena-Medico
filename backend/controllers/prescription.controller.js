@@ -68,3 +68,62 @@ export const getActivePrescriptions = async (req, res) => {
     res.status(500).json(generateError(error.message));
   }
 };
+
+export const getClinicHistory = async (req, res) => {
+  try {
+    const prescriptions = await Prescription.find()
+      .populate("patientId")
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      data: prescriptions
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+export const seedPrescriptions = async (req, res) => {
+  try {
+    // insertMany([...])
+  } catch (err) {
+    res.status(500).json(err);
+  }
+};
+
+export const updatePatientMedicines = async (req, res) => {
+  try {
+    const { patientId, medicines } = req.body;
+
+    const prescription = await Prescription.findOne({
+      patientId
+    }).sort({ createdAt: -1 });
+
+    if (!prescription) {
+      return res.status(404).json({
+        success: false,
+        message: "Prescription not found"
+      });
+    }
+
+    prescription.medicines = medicines;
+
+    await prescription.save();
+
+    res.json({
+      success: true,
+      message: "Medicines updated",
+      data: prescription
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};

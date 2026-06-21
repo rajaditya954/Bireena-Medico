@@ -27,6 +27,7 @@ import paymentRoutes from "./routes/payment.routes.js";        // contains verif
 import notificationRoutes from "./routes/notification.routes.js";
 import reportRoutes from "./routes/report.routes.js";
 import analyticsRoutes from "./routes/analytics.routes.js";
+import historyRoutes from "./routes/history.routes.js";
 
 const app = express();
 
@@ -100,6 +101,7 @@ app.use("/api/payments", paymentRoutes);          // verify, refund, statistics 
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/reports", reportRoutes);
 app.use("/api/analytics", analyticsRoutes);
+app.use("/api/history", historyRoutes);
 
 // --- ERROR HANDLING ---
 app.use(notFoundHandler);
