@@ -1,14 +1,14 @@
-import mongoose from "mongoose";
+import db from "../config/db-client.js";
 
-const PatientHistorySchema = new mongoose.Schema(
+const PatientHistorySchema = new db.Schema(
   {
-    patientId: { type: mongoose.Schema.Types.ObjectId, ref: "Patient", required: true },
-    doctorId: { type: mongoose.Schema.Types.ObjectId, ref: "Doctor", required: true },
-    appointmentId: { type: mongoose.Schema.Types.ObjectId, ref: "Appointment", required: true },
+    patientId: { type: db.Schema.Types.ObjectId, ref: "Patient", required: true },
+    doctorId: { type: db.Schema.Types.ObjectId, ref: "Doctor", required: true },
+    appointmentId: { type: db.Schema.Types.ObjectId, ref: "Appointment", required: true },
     diagnosis: { type: String },
     notes: { type: String },
   },
   { timestamps: true }
 );
 
-export default mongoose.model("PatientHistory", PatientHistorySchema);
+export default db.model("PatientHistory", PatientHistorySchema);

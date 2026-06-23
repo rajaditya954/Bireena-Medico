@@ -1,9 +1,9 @@
-import mongoose from "mongoose";
+import db from "../config/db-client.js";
 
 
-const PatientSchema = new mongoose.Schema(
+const PatientSchema = new db.Schema(
   {
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    userId: { type: db.Schema.Types.ObjectId, ref: "User" },
     patientId: { type: String, unique: true, index: true },
     fullName: { type: String, required: true },
     dob: { type: Date },
@@ -37,7 +37,7 @@ const PatientSchema = new mongoose.Schema(
   { timestamps: true }
 );
 const Patient =
-  mongoose.models.Patient ||
-  mongoose.model("Patient", PatientSchema);
+  db.models.Patient ||
+  db.model("Patient", PatientSchema);
 
 export default Patient;

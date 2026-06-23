@@ -1,7 +1,7 @@
-import mongoose from "mongoose";
+import db from "../config/db-client.js";
 
 
-const ServiceSchema = new mongoose.Schema(
+const ServiceSchema = new db.Schema(
   {
     name: { type: String, required: true, unique: true },
     description: { type: String },
@@ -20,4 +20,4 @@ const ServiceSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-export default mongoose.model("Service", ServiceSchema);
+export default db.model("Service", ServiceSchema);

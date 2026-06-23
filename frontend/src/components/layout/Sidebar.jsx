@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 import {
   LayoutDashboard,
@@ -88,11 +88,11 @@ export default function Sidebar({ user, isSidebarOpen, handleLogout }) {
       case Role.CLINIC:
         return [
           { name: "Clinic Dashboard", path: "/clinic/dashboard", icon: LayoutDashboard },
-          { name: "Add Medicine", path: "/clinic/Patients", icon: Pill },
+          { name: "Add Medicine", path: "/clinic/add-medicine", icon: Pill },
+          { name: "Patients / Dispense", path: "/clinic/patients", icon: Users },
           { name: "Billing", path: "/clinic/billing", icon: Receipt },
           { name: "Stocks", path: "/clinic/stocks", icon: BarChart3 },
-          { name: "History", path: "/clinic/history", icon: BarChart3 },
-
+          { name: "History", path: "/clinic/history", icon: History },
         ];
 
       case Role.ADMIN:
@@ -119,7 +119,7 @@ export default function Sidebar({ user, isSidebarOpen, handleLogout }) {
               { name: "Medicine Inventory", path: "/clinic/dashboard" },
               { name: "Add Medicine", path: "/clinic/add-medicine" },
               { name: "Expired Medicines", path: "/clinic/expired-medicines" },
-              { name: "Stocks", path: "/clinic/stock", icon: BarChart3 },
+              { name: "Stocks", path: "/clinic/stocks", icon: BarChart3 },
 
             ],
           },
@@ -131,6 +131,25 @@ export default function Sidebar({ user, isSidebarOpen, handleLogout }) {
   };
 
   const menuItems = getMenuItems();
+
+  useEffect(() => {
+    if (!user || !menuItems.length) return;
+    setOpenDropdowns((prev) => {
+      const updated = { ...prev };
+      menuItems.forEach((item) => {
+        if (item.hasSubmenu && item.submenu) {
+          const hasActiveSub = item.submenu.some(
+            (sub) => location.pathname === sub.path || location.pathname.startsWith(sub.path + "/")
+          );
+          // Force open if a child is active; never force close a manually opened dropdown
+          if (hasActiveSub) {
+            updated[item.name] = true;
+          }
+        }
+      });
+      return updated;
+    });
+  }, [location.pathname, user]);
 
   // Split menu into sections — first item is dashboard, rest is "manage"
   const dashboardItem = menuItems[0];

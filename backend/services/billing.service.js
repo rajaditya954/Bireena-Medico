@@ -2,6 +2,12 @@ import Billing from "../models/Billing.js";
 import Invoice from "../models/Invoice.js";
 
 class BillingService {
+  async getAllBillings() {
+    return await Billing.find()
+      .populate("patientId")
+      .sort({ createdAt: -1 });
+  }
+
   async createBilling(billingData) {
     if (!billingData.billingId) {
       const count = await Billing.countDocuments();

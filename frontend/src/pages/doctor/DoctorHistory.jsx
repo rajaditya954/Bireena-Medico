@@ -416,7 +416,7 @@ const DoctorHistory = () => {
 
       {/* Modal for detailed view */}
       {selectedRecord && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
           <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-auto shadow-2xl">
             <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex justify-between items-center">
               <h3 className="text-xl font-bold text-[#06402B]">Record Details</h3>

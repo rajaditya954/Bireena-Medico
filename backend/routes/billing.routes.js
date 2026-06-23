@@ -3,11 +3,12 @@ import * as billingController from "../controllers/billing.controller.js";
 
 const router = express.Router();
 
+router.get("/", billingController.getAllBillings);
 router.post("/", billingController.createBilling);
-router.get("/:id", billingController.getBillingById);
 router.get("/patient/:patientId", billingController.getPatientBillings);
+router.get("/:patientId/pending", billingController.getPendingBills);
+router.get("/:id", billingController.getBillingById);
 router.put("/:id/status", billingController.updateBillingStatus);
 router.post("/:billingId/invoice", billingController.generateInvoice);
-router.get("/:patientId/pending", billingController.getPendingBills);
 
 export default router;

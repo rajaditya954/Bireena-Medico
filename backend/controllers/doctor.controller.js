@@ -53,10 +53,9 @@ export const getMyDashboard = async (req, res) => {
       }
 
       if (!doctor) {
-        doctor = await Doctor.findOne({});
-        if (!doctor) {
-          return res.status(404).json(generateError(`Doctor profile not found.`));
-        }
+        return res.status(404).json(generateError(
+          `No doctor profile found for your account. Please contact an administrator to link your account.`
+        ));
       }
 
       appointments = await appointmentService.getAllAppointments({
@@ -160,11 +159,22 @@ export const getAllDoctors = async (req, res) => {
     const mapped = doctors.map(d => ({
       id: d._id,
       _id: d._id,
+      userId: d.userId,
+      doctorCode: d.doctorCode,
       name: d.name,
       specialization: d.specialization,
       consultantType: d.consultantType || "doctor",
-      roomNumber: d.roomNumber,
+      qualification: d.qualification,
+      description: d.description,
+      qualifications: d.qualifications || [],
+      registrationNumber: d.registrationNumber,
+      experience: d.experience,
       consultationFee: d.consultationFee,
+      roomNumber: d.roomNumber,
+      schedule: d.schedule || [],
+      isVerified: d.isVerified,
+      rating: d.rating,
+      totalConsultations: d.totalConsultations
     }));
     res.json(generateResponse(mapped, "Doctors fetched successfully"));
   } catch (error) {
@@ -189,7 +199,7 @@ export const createDoctor = async (req, res) => {
     const User = (await import("../models/User.js")).default;
     const Doctor = (await import("../models/Doctor.js")).default;
 
-    let { userId, email, password, name, fullName, phone, doctorCode, experience, consultationFee, qualification, qualifications, schedule, timeSlots } = req.body;
+    let { userId, email, username, password, name, fullName, phone, doctorCode, experience, consultationFee, qualification, qualifications, schedule, timeSlots } = req.body;
     
     const doctorName = name || fullName;
     if (!doctorName) {
@@ -197,19 +207,31 @@ export const createDoctor = async (req, res) => {
     }
 
     if (!userId) {
-      if (!email || !password) {
-        return res.status(400).json(generateError("Email and Password are required to create a new doctor account"));
+      // Support both username-based and email-based creation
+      const loginIdentifier = username || email;
+      if (!loginIdentifier || !password) {
+        return res.status(400).json(generateError("Username and Password are required to create a new doctor account"));
       }
 
-      const existingUser = await User.findOne({ email: email.toLowerCase() });
+      // Auto-generate email from username if only username is provided
+      const userEmail = email || `${username.toLowerCase().replace(/[^a-z0-9._-]/g, '')}@bireena.local`;
+      const userUsername = username || email.split('@')[0];
+
+      const existingUser = await User.findOne({ 
+        $or: [
+          { email: userEmail.toLowerCase() },
+          { username: userUsername.toLowerCase() }
+        ]
+      });
       if (existingUser) {
-        return res.status(400).json(generateError("Email is already registered"));
+        return res.status(400).json(generateError("Username is already taken"));
       }
 
       // Create the User record
       const newUser = new User({
         name: doctorName,
-        email: email.toLowerCase(),
+        username: userUsername.toLowerCase(),
+        email: userEmail.toLowerCase(),
         phone: phone || "",
         role: "doctor",
         isActive: true,

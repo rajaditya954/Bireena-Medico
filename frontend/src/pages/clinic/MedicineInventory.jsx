@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 
+const BASE_URL = import.meta.env.VITE_API_URL || "/api";
+
 const MedicineInventory = () => {
   const [medicines, setMedicines] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -18,24 +20,25 @@ const MedicineInventory = () => {
   }, []);
 
   const fetchMedicines = async () => {
-  try {
-    setLoading(true);
+    try {
+      setLoading(true);
+      const token = localStorage.getItem("aarogya_token");
+      const response = await fetch(
+        `${BASE_URL}/pharmacy/inventory`,
+        { headers: token ? { Authorization: `Bearer ${token}` } : {} }
+      );
 
-    const response = await fetch(
-  "http://localhost:5000/api/pharmacy/inventory"
-);
+      const result = await response.json();
+      console.log("Medicines:", result?.data?.inventory);
 
-    const result = await response.json();
-  console.log("Medicines:", result.data.medicines);
-
-    setMedicines(result.data.inventory);
-    setError(null);
-  } catch (err) {
-    setError(err.message);
-  } finally {
-    setLoading(false);
-  }
-};
+      setMedicines(result?.data?.inventory || []);
+      setError(null);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -79,10 +82,18 @@ const MedicineInventory = () => {
   const handleDeleteMedicine = async (medicineId) => {
     if (window.confirm("Are you sure you want to delete this medicine?")) {
       try {
-        // TODO: Replace with actual API call
-        // await clinicService.deleteMedicine(medicineId);
-        fetchMedicines();
-        setMedicines(result.data.inventory);
+        const token = localStorage.getItem("aarogya_token");
+        const response = await fetch(
+          `${BASE_URL}/pharmacy/inventory/${medicineId}`,
+          {
+            method: "DELETE",
+            headers: token ? { Authorization: `Bearer ${token}` } : {},
+          }
+        );
+        if (!response.ok) {
+          throw new Error("Failed to delete medicine");
+        }
+        await fetchMedicines();
       } catch (err) {
         setError(err.message);
         console.error("Error deleting medicine:", err);
@@ -218,16 +229,28 @@ const MedicineInventory = () => {
                     Category
                   </th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
-                    Current Stock
+                    Manufacturer
                   </th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
-                    status
+                    MRP
                   </th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
-                    supplier
+                    Unit
+                  </th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
+                    Batch No
+                  </th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
+                    Stock
                   </th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
                     Location
+                  </th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
+                    Date Added
+                  </th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
+                    Actions
                   </th>
                 </tr>
               </thead>
@@ -237,36 +260,42 @@ const MedicineInventory = () => {
                     key={medicine._id}
                     className="border-b border-gray-200 hover:bg-gray-50"
                   >
-                    <td className="px-6 py-4 text-sm text-gray-900">
-                      {medicine.medicineCode}
+                    <td className="px-6 py-4 text-sm text-gray-900 font-medium">
+                      {medicine.medicineId?.medicineCode}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-600 font-bold">
+                      {medicine.medicineId?.medicineName}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-600">
-                      {medicine.medicineName}
+                      {medicine.medicineId?.category}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-600">
-                      {medicine.category}
+                      {medicine.medicineId?.manufacturer}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-600">
-                      {medicine.manufacturer}
+                      ₹{medicine.medicineId?.mrp}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-600">
-                      ₹{medicine.mrp}
+                      {medicine.medicineId?.unit}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-600 font-mono">
+                      {medicine.medicineId?.batchNo}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-600 font-semibold">
+                      {medicine.currentStock}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-600">
-                      {medicine.unit}
+                      {medicine.location}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-600">
-                      {medicine.batchNo}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">
-                      {new Date(medicine.createdAt).toLocaleDateString()}
+                      {medicine.medicineId?.createdAt ? new Date(medicine.medicineId.createdAt).toLocaleDateString() : "N/A"}
                     </td>
                     <td className="px-6 py-4 text-sm space-x-2">
                       <button
                         onClick={() =>
                           handleDeleteMedicine(medicine._id)
                         }
-                        className="text-red-600 hover:text-red-900 transition"
+                        className="text-red-600 hover:text-red-900 transition font-medium"
                       >
                         Delete
                       </button>

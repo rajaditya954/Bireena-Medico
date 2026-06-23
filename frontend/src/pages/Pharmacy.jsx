@@ -155,7 +155,7 @@ function InventoryView() {
                             </div>
                          </div>
                       </td>
-                      <td className="px-8 py-5 font-bold text-gray-900">${item.price.toFixed(2)}</td>
+                      <td className="px-8 py-5 font-bold text-gray-900">₹{item.price.toFixed(2)}</td>
                       <td className="px-8 py-5 text-right">
                          <button className="p-2 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all">
                             <MoreVertical className="w-5 h-5" />
@@ -221,11 +221,11 @@ function DispenseView() {
             <div className="pt-8 border-t border-white/10 space-y-6">
                <div className="flex justify-between items-center text-emerald-100 font-bold uppercase tracking-widest text-[10px]">
                   <span>Subtotal</span>
-                  <span>$0.00</span>
+                  <span>₹0.00</span>
                </div>
                <div className="flex justify-between items-center text-2xl font-black tracking-tight">
                   <span>Total</span>
-                  <span>$0.00</span>
+                  <span>₹0.00</span>
                </div>
                <button disabled className="w-full h-16 bg-white/10 text-white/50 rounded-2xl font-bold cursor-not-allowed">
                   Proceed to Payment

@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+import db from "../config/db-client.js";
 import queueService from "../services/queue.service.js";
 import { generateResponse, generateError } from "../utils/response.js";
 
@@ -8,7 +8,7 @@ export const getQueueByDoctor = async (req, res) => {
     const { date } = req.query;
     const dateStr = date || new Date().toISOString().split("T")[0];
 
-    if (!mongoose.Types.ObjectId.isValid(doctorId)) {
+    if (!db.Types.ObjectId.isValid(doctorId)) {
       return res.json(generateResponse([], "Queue fetched successfully"));
     }
 
@@ -25,7 +25,7 @@ export const getQueueStats = async (req, res) => {
     const { date } = req.query;
     const dateStr = date || new Date().toISOString().split("T")[0];
 
-    if (!mongoose.Types.ObjectId.isValid(doctorId)) {
+    if (!db.Types.ObjectId.isValid(doctorId)) {
       return res.json(generateResponse({ waiting: 0, inProgress: 0, completed: 0, estimatedWaitMinutes: 0 }, "Queue statistics fetched successfully"));
     }
 

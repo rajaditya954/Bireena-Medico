@@ -1,8 +1,8 @@
-import mongoose from "mongoose";
+import db from "../config/db-client.js";
 
-const RefreshTokenSchema = new mongoose.Schema(
+const RefreshTokenSchema = new db.Schema(
   {
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+    userId: { type: db.Schema.Types.ObjectId, ref: "User", required: true },
     token: { type: String, required: true, unique: true },
     expiresAt: { type: Date, required: true },
     isRevoked: { type: Boolean, default: false },
@@ -10,4 +10,4 @@ const RefreshTokenSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-export default mongoose.model("RefreshToken", RefreshTokenSchema);
+export default db.model("RefreshToken", RefreshTokenSchema);

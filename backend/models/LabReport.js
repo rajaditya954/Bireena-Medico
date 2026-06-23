@@ -1,12 +1,12 @@
-import mongoose from "mongoose";
+import db from "../config/db-client.js";
 
-const LabReportSchema = new mongoose.Schema({
+const LabReportSchema = new db.Schema({
   reportId: { type: String, unique: true, index: true },
-  patientId: { type: mongoose.Schema.Types.ObjectId, ref: "Patient", required: true },
-  doctorId: { type: mongoose.Schema.Types.ObjectId, ref: "Doctor" },
-  appointmentId: { type: mongoose.Schema.Types.ObjectId, ref: "Appointment" },
-  technicianId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-  tests: [{ type: mongoose.Schema.Types.ObjectId, ref: "LabTest" }],
+  patientId: { type: db.Schema.Types.ObjectId, ref: "Patient", required: true },
+  doctorId: { type: db.Schema.Types.ObjectId, ref: "Doctor" },
+  appointmentId: { type: db.Schema.Types.ObjectId, ref: "Appointment" },
+  technicianId: { type: db.Schema.Types.ObjectId, ref: "User" },
+  tests: [{ type: db.Schema.Types.ObjectId, ref: "LabTest" }],
   status: {
     type: String,
     enum: ["PENDING", "IN_PROGRESS", "COMPLETED", "APPROVED", "CANCELLED"],
@@ -27,7 +27,7 @@ const LabReportSchema = new mongoose.Schema({
 
 LabReportSchema.pre("save", async function (next) {
   if (this.reportId) return next();
-  const last = await mongoose.model("LabReport").findOne({ reportId: /^LAB\d+$/ }).sort({ reportId: -1 }).lean();
+  const last = await db.model("LabReport").findOne({ reportId: /^LAB\d+$/ }).sort({ reportId: -1 }).lean();
   let nextNum = 1001;
   if (last?.reportId) {
     const match = last.reportId.match(/LAB(\d+)/);
@@ -37,4 +37,4 @@ LabReportSchema.pre("save", async function (next) {
   next();
 });
 
-export default mongoose.model("LabReport", LabReportSchema);
+export default db.model("LabReport", LabReportSchema);

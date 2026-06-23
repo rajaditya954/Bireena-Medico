@@ -1,6 +1,6 @@
-import mongoose from "mongoose";
+import db from "../config/db-client.js";
 
-const RoleSchema = new mongoose.Schema(
+const RoleSchema = new db.Schema(
   {
     name: {
       type: String,
@@ -31,4 +31,4 @@ const RoleSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-export default mongoose.model("Role", RoleSchema);
+export default db.model("Role", RoleSchema);

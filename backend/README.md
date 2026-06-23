@@ -14,7 +14,7 @@ backend/
 │   ├── cloudinary.js   # Cloudinary setup
 │   └── socket.js       # Socket.io setup
 │
-├── models/             # Mongoose schemas
+├── models/             # Database model schemas
 │   ├── User.js
 │   ├── Patient.js
 │   ├── Doctor.js
@@ -150,7 +150,7 @@ Service
   ↓
 Model
   ↓
-MongoDB Database
+Supabase Database
 ```
 
 ## Getting Started
@@ -346,10 +346,10 @@ Authorization: Bearer <token>
 
 ## Database
 
-MongoDB is required. Configure connection in `.env`:
+PostgreSQL (via Supabase Connection Pooler) is required. Configure connection in `.env`:
 
 ```
-MONGO_URI=mongodb://localhost:27017/medico_hospital
+DATABASE_URL=postgresql://...
 ```
 
 ## Security Best Practices

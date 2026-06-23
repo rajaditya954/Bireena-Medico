@@ -49,6 +49,16 @@ const seed = async () => {
     MedicineDistribution.deleteMany(),
   ]);
 
+  console.log("Syncing database collection indexes...");
+  try {
+    await Patient.syncIndexes();
+    await LabTest.syncIndexes();
+    await Medicine.syncIndexes();
+    console.log("✅ Indexes synchronized successfully");
+  } catch (err) {
+    console.log("⚠️ Index synchronization warning:", err.message);
+  }
+
   const roles = [
     { name: "admin", permissions: ["ALL"] },
     { name: "doctor", permissions: ["READ_PATIENTS", "WRITE_PRESCRIPTIONS", "READ_HISTORY"] },
@@ -225,29 +235,24 @@ const seed = async () => {
   });
 
   const medicine1 = await Medicine.create({
-    name: "Paracetamol 650",
-    genericName: "Paracetamol",
+    medicineCode: "MED001",
+    medicineName: "Paracetamol 650",
+    category: "Analgesics",
     manufacturer: "ABC Pharma",
-    dosage: "650mg",
-    form: "tablet",
-    price: 25,
-    stock: 350,
+    mrp: 25,
+    unit: "tablet",
     expiryDate: new Date("2025-12-31"),
-    sideEffects: ["Nausea", "Dizziness"],
-    contraindications: ["Liver disease"],
+    batchNo: "B001",
   });
 
   const inventory1 = await Inventory.create({
     medicineId: medicine1._id,
-    quantity: 350,
-    minimumThreshold: 50,
-    maximumCapacity: 500,
-    batchNumber: "B001",
-    expiryDate: new Date("2025-12-31"),
-    suppliedBy: "ABC Pharma",
-    costPrice: 15,
-    sellingPrice: 25,
-    lastRestockedAt: new Date(),
+    currentStock: 350,
+    minimumStock: 50,
+    reorderLevel: 50,
+    supplier: "ABC Pharma",
+    stockValue: 350 * 25,
+    location: "Store A",
   });
 
   const appointment = await Appointment.create({
@@ -370,6 +375,7 @@ const seed = async () => {
 
   await MedicineRequirement.create({
     requirementId: "REQ001",
+    patientId: patient._id,
     medicineId: medicine1._id,
     requestedQty: 100,
     approvedQty: 0,

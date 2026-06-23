@@ -1,6 +1,6 @@
-import mongoose from "mongoose";
+import db from "../config/db-client.js";
 
-const MedicineSchema = new mongoose.Schema(
+const MedicineSchema = new db.Schema(
   {
     medicineCode: {
       type: String,
@@ -51,7 +51,7 @@ const MedicineSchema = new mongoose.Schema(
   }
 );
 
-export default mongoose.model(
+export default db.model(
   "Medicine",
   MedicineSchema
 );

@@ -9,7 +9,7 @@ import {
   AlertCircle,
   CheckCircle2,
   Package,
-  DollarSign,
+  IndianRupee,
   TrendingDown,
   AlertTriangle,
   Warehouse,
@@ -135,6 +135,8 @@ import { Button } from "../../components/common/Button";
   },
 ];*/
 
+const BASE_URL = import.meta.env.VITE_API_URL || "/api";
+
 // ==================== Main Component ====================
 export default function StockManagement() {
   const [items, setItems] = useState([]);
@@ -162,8 +164,10 @@ export default function StockManagement() {
 
   const fetchInventory = async () => {
     try {
+      const token = localStorage.getItem("aarogya_token");
       const response = await fetch(
-        "http://localhost:5000/api/pharmacy/inventory"
+        `${BASE_URL}/pharmacy/inventory`,
+        { headers: token ? { Authorization: `Bearer ${token}` } : {} }
       );
 
       if (!response.ok) {
@@ -172,7 +176,7 @@ export default function StockManagement() {
 
       const result = await response.json();
 
-      setItems(result.data.inventory);
+      setItems(result?.data?.inventory || []);
     } catch (error) {
       console.error(error);
     }
@@ -216,48 +220,50 @@ export default function StockManagement() {
   const handleEdit = (item) => {
     setEditingItem(item);
     setEditForm({
-      stock: item.stock,
-      reorderLevel: item.reorderLevel,
-      unitPrice: item.unitPrice,
+      stock: item.currentStock || 0,
+      reorderLevel: item.reorderLevel || 0,
+      unitPrice: item.medicineId?.mrp || 0,
       notes: item.notes || "",
     });
   };
 
-  const handleSaveEdit = () => {
-    const updatedStock = parseInt(editForm.stock);
-    const updatedReorderLevel = parseInt(editForm.reorderLevel);
-    const updatedUnitPrice = parseFloat(editForm.unitPrice);
-    const newTotalValue = updatedStock * updatedUnitPrice;
-
-    let newStatus = "In Stock";
-    if (updatedStock <= 0) newStatus = "Out of Stock";
-    else if (updatedStock <= updatedReorderLevel) newStatus = "Low Stock";
-    else newStatus = "In Stock";
-
-    const updatedItems = items.map(item =>
-      item.id === editingItem.id
-        ? {
-          ...item,
-          stock: updatedStock,
-          reorderLevel: updatedReorderLevel,
-          unitPrice: updatedUnitPrice,
-          totalValue: newTotalValue,
-          status: newStatus,
-          notes: editForm.notes,
+  const handleSaveEdit = async () => {
+    try {
+      const token = localStorage.getItem("aarogya_token");
+      const response = await fetch(
+        `${BASE_URL}/pharmacy/inventory/${editingItem._id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify({
+            stock: parseInt(editForm.stock),
+            reorderLevel: parseInt(editForm.reorderLevel),
+            unitPrice: parseFloat(editForm.unitPrice),
+            notes: editForm.notes,
+          }),
         }
-        : item
-    );
+      );
 
-    setItems(updatedItems);
-    localStorage.setItem("medico_stock_items", JSON.stringify(updatedItems));
-    setEditingItem(null);
-    setSaveMessage({ type: "success", text: "Stock updated successfully!" });
-    setTimeout(() => setSaveMessage(null), 3000);
+      if (!response.ok) {
+        throw new Error("Failed to update stock");
+      }
+
+      await fetchInventory();
+      setEditingItem(null);
+      setSaveMessage({ type: "success", text: "Stock updated successfully!" });
+      setTimeout(() => setSaveMessage(null), 3000);
+    } catch (error) {
+      console.error(error);
+      alert("Error updating stock: " + error.message);
+    }
   };
 
   const metricsCards = [
     { label: "Total Stock Items", value: totalStockItems, icon: Package, color: "text-blue-600", bg: "bg-blue-50", subtitle: "All items" },
-    { label: "Total Stock Value", value: `$${totalStockValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, icon: DollarSign, color: "text-emerald-600", bg: "bg-emerald-50", subtitle: "Across all locations" },
+    { label: "Total Stock Value", value: `₹${totalStockValue.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, icon: IndianRupee, color: "text-emerald-600", bg: "bg-emerald-50", subtitle: "Across all locations" },
     { label: "Low Stock Items", value: lowStockItems, icon: TrendingDown, color: "text-amber-600", bg: "bg-amber-50", subtitle: "Require attention" },
     { label: "Out of Stock Items", value: outOfStockItems, icon: AlertTriangle, color: "text-red-600", bg: "bg-red-50", subtitle: "Not available" },
   ];
@@ -358,8 +364,8 @@ export default function StockManagement() {
                   <td className="px-6 py-4 text-sm text-slate-600">{item.location}</td>
                   <td className="px-6 py-4 text-sm text-slate-600">{item.currentStock}</td>
                   <td className="px-6 py-4 text-sm text-slate-600">{item.reorderLevel}</td>
-                  <td className="px-6 py-4 text-sm text-slate-600">${(item.medicineId?.mrp || 0).toFixed(2)}</td>
-                  <td className="px-6 py-4 text-sm font-medium text-slate-700">${(item.stockValue || 0).toFixed(2)}</td>
+                  <td className="px-6 py-4 text-sm text-slate-600">₹{Number(item.medicineId?.mrp || 0).toFixed(2)}</td>
+                  <td className="px-6 py-4 text-sm font-medium text-slate-700">₹{Number(item.stockValue || 0).toFixed(2)}</td>
                   <td className="px-6 py-4">
                     <span className={cn(
                       "px-2 py-1 rounded-full text-[10px] font-bold",
@@ -394,7 +400,7 @@ export default function StockManagement() {
 
       {/* Save Message */}
       {saveMessage && (
-        <div className="fixed bottom-6 right-6 z-50 animate-in fade-in slide-in-from-bottom-4">
+        <div className="fixed bottom-6 right-6 z-[100] animate-in fade-in slide-in-from-bottom-4">
           <div className="bg-emerald-50 text-emerald-700 rounded-xl px-4 py-3 flex items-center gap-2 shadow-lg">
             <CheckCircle2 className="w-4 h-4" />
             {saveMessage.text}
@@ -405,7 +411,7 @@ export default function StockManagement() {
       {/* Edit Modal (non-sticky) */}
       <AnimatePresence>
         {editingItem && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 overflow-y-auto">
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -422,7 +428,7 @@ export default function StockManagement() {
               <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-5 flex items-center justify-between rounded-t-3xl z-10">
                 <div>
                   <h2 className="text-xl font-black text-slate-800">Edit Stock Item</h2>
-                  <p className="text-sm text-primary font-bold">{editingItem.medicineName}</p>
+                  <p className="text-sm text-primary font-bold">{editingItem.medicineId?.medicineName}</p>
                 </div>
                 <button
                   onClick={() => setEditingItem(null)}
@@ -436,13 +442,13 @@ export default function StockManagement() {
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Warehouse</label>
                     <p className="text-sm font-medium text-slate-700 bg-gray-50 rounded-xl px-4 py-2.5">
-                      {editingItem.warehouse}
+                      {editingItem.location}
                     </p>
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Batch No.</label>
                     <p className="text-sm font-mono text-slate-700 bg-gray-50 rounded-xl px-4 py-2.5">
-                      {editingItem.batchNo}
+                      {editingItem.medicineId?.batchNo}
                     </p>
                   </div>
                 </div>
@@ -451,7 +457,7 @@ export default function StockManagement() {
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Expiry Date</label>
                     <p className="text-sm text-slate-700 bg-gray-50 rounded-xl px-4 py-2.5">
-                      {new Date(editingItem.expiryDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                      {editingItem.medicineId?.expiryDate ? new Date(editingItem.medicineId.expiryDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : "N/A"}
                     </p>
                   </div>
                   <div className="space-y-1.5">
@@ -467,7 +473,7 @@ export default function StockManagement() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Unit Price (USD)</label>
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Unit Price (INR)</label>
                     <input
                       type="number"
                       step="0.01"
@@ -489,9 +495,9 @@ export default function StockManagement() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Total Value (USD)</label>
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Total Value (INR)</label>
                     <p className="text-sm font-bold text-primary bg-gray-50 rounded-xl px-4 py-2.5">
-                      ${(parseInt(editForm.stock || 0) * parseFloat(editForm.unitPrice || 0)).toFixed(2)}
+                      ₹{(parseInt(editForm.stock || 0) * parseFloat(editForm.unitPrice || 0)).toFixed(2)}
                     </p>
                   </div>
                   <div className="space-y-1.5">

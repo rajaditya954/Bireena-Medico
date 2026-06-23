@@ -1,4 +1,4 @@
-const BASE = import.meta.env.VITE_API_URL || "http://localhost:5001/api";
+const BASE = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 const API_ORIGIN = BASE.replace(/\/api\/?$/, "");
 
 const TOKEN_KEY = "aarogya_token";

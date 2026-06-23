@@ -1,17 +1,17 @@
 //import { required } from "join";
-import mongoose from "mongoose";
+import db from "../config/db-client.js";
 
-const MedicineRequirementSchema = new mongoose.Schema(
+const MedicineRequirementSchema = new db.Schema(
   {
     requirementId: { type: String},
     patientId: {
-  type: mongoose.Schema.Types.ObjectId,
+  type: db.Schema.Types.ObjectId,
   ref: "Patient",
   required: true,
 },
     requestedMedicineName: String,strength: String,unitType: String,
     medicineId: {
-  type: mongoose.Schema.Types.ObjectId,
+  type: db.Schema.Types.ObjectId,
   ref: "Medicine",
   required: false
 },
@@ -26,11 +26,11 @@ unitType: String,
       enum: ["PENDING", "APPROVED", "REJECTED"],
       default: "PENDING",
     },
-    requestedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-    approvedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    requestedBy: { type: db.Schema.Types.ObjectId, ref: "User" },
+    approvedBy: { type: db.Schema.Types.ObjectId, ref: "User" },
     notes: { type: String },
   },
   { timestamps: true }
 );
 
-export default mongoose.model("MedicineRequirement", MedicineRequirementSchema);
+export default db.model("MedicineRequirement", MedicineRequirementSchema);

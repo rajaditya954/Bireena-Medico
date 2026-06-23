@@ -1,13 +1,13 @@
-import mongoose from "mongoose";
+import db from "../config/db-client.js";
 
-const AuditLogSchema = new mongoose.Schema(
+const AuditLogSchema = new db.Schema(
   {
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    userId: { type: db.Schema.Types.ObjectId, ref: "User" },
     action: { type: String, required: true }, // e.g., "CREATE", "UPDATE", "DELETE", "LOGIN"
     resource: { type: String, required: true }, // e.g., "Patient", "Appointment"
-    resourceId: mongoose.Schema.Types.Mixed,
-    oldValues: mongoose.Schema.Types.Mixed,
-    newValues: mongoose.Schema.Types.Mixed,
+    resourceId: db.Schema.Types.Mixed,
+    oldValues: db.Schema.Types.Mixed,
+    newValues: db.Schema.Types.Mixed,
     ipAddress: String,
     userAgent: String,
     status: { type: String, enum: ["success", "failed"], default: "success" },
@@ -16,4 +16,4 @@ const AuditLogSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-export default mongoose.model("AuditLog", AuditLogSchema);
+export default db.model("AuditLog", AuditLogSchema);

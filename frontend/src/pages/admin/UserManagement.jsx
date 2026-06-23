@@ -1,16 +1,14 @@
 import React, { useState, useEffect } from "react";
-import { 
-  Users, 
-  UserPlus, 
-  Shield, 
-  UserX, 
-  UserCheck, 
+import {
+  Users,
+  UserPlus,
+  Shield,
+  UserX,
+  UserCheck,
   Search,
-  Filter,
   MoreVertical,
   Activity,
   UserCog,
-  BarChart,
   ShieldAlert,
   Eye,
   Lock,
@@ -19,333 +17,53 @@ import {
   Phone,
   MapPin,
   Calendar,
-  Globe,
   Server,
-  Edit,
   Power,
   AlertCircle,
   CheckCircle,
   Circle,
   Briefcase,
-  FileText,
-  HardDrive
+  ChevronRight,
+  X,
+  Stethoscope,
+  FlaskConical,
+  Building2,
+  CalendarCheck,
+  Receipt,
+  Crown,
+  Hash,
+  Globe,
+  Unlock,
+  RefreshCw,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { cn } from "../../lib/utils";
 import { Button } from "../../components/common/Button";
 
-// ==================== Mock Data Generator ====================
-const generateMockUsers = () => {
-  const baseUsers = [
-    {
-      id: "USR-0001",
-      name: "Dr. Sarah Miller",
-      email: "sarah.miller@careplus.com",
-      role: "Doctor",
-      department: "Cardiology Clinic",
-      status: "Active",
-      lastLogin: "12 May 2025, 10:30 AM",
-      ip: "192.168.1.10",
-      isOnline: true,
-      personalInfo: {
-        email: "sarah.miller@careplus.com",
-        mobile: "+91 9876543210",
-        gender: "Female",
-        dateOfBirth: "15 Mar 1988",
-        address: "221B Baker Street, London, UK",
-        username: "sarah.miller",
-        lastLogin: "12 May 2025, 10:30 AM",
-        ipAddress: "192.168.1.10",
-        assignedClinics: "Cardiology Clinic",
-        assignedDepartments: "Cardiology, ECG, Consultation",
-        permissions: ["View own patients", "Prescriptions", "Appointments"]
-      }
-    },
-    {
-      id: "USR-0002",
-      name: "John Lab Assistant",
-      email: "john.lab@careplus.com",
-      role: "Lab Assistant",
-      department: "Pathology Lab / Hematology Reports",
-      status: "Active",
-      lastLogin: "12 May 2025, 09:15 AM",
-      ip: "192.168.1.15",
-      isOnline: true,
-      personalInfo: {
-        email: "john.lab@careplus.com",
-        mobile: "+91 9876543211",
-        gender: "Male",
-        dateOfBirth: "10 Jan 1990",
-        address: "123 Lab Street, London, UK",
-        username: "john.lab",
-        lastLogin: "12 May 2025, 09:15 AM",
-        ipAddress: "192.168.1.15",
-        assignedClinics: "Pathology Lab",
-        assignedDepartments: "Hematology",
-        permissions: ["View assigned lab reports", "Update results"]
-      }
-    },
-    {
-      id: "USR-0003",
-      name: "Priya Lab Assistant",
-      email: "priya.lab@careplus.com",
-      role: "Lab Assistant",
-      department: "Pathology Lab / Biochemistry Reports",
-      status: "Active",
-      lastLogin: "12 May 2025, 08:45 AM",
-      ip: "192.168.1.16",
-      isOnline: true,
-      personalInfo: {
-        email: "priya.lab@careplus.com",
-        mobile: "+91 9876543212",
-        gender: "Female",
-        dateOfBirth: "22 Mar 1992",
-        address: "456 Biochemistry Ave, London, UK",
-        username: "priya.lab",
-        lastLogin: "12 May 2025, 08:45 AM",
-        ipAddress: "192.168.1.16",
-        assignedClinics: "Pathology Lab",
-        assignedDepartments: "Biochemistry",
-        permissions: ["View assigned lab reports", "Update results"]
-      }
-    },
-    {
-      id: "USR-0004",
-      name: "Mike Lab Assistant",
-      email: "mike.lab@careplus.com",
-      role: "Lab Assistant",
-      department: "Pathology Lab / Microbiology Reports",
-      status: "Active",
-      lastLogin: "11 May 2025, 04:20 PM",
-      ip: "192.168.1.17",
-      isOnline: false,
-      personalInfo: {
-        email: "mike.lab@careplus.com",
-        mobile: "+91 9876543213",
-        gender: "Male",
-        dateOfBirth: "5 Aug 1989",
-        address: "789 Microbiology Rd, London, UK",
-        username: "mike.lab",
-        lastLogin: "11 May 2025, 04:20 PM",
-        ipAddress: "192.168.1.17",
-        assignedClinics: "Pathology Lab",
-        assignedDepartments: "Microbiology",
-        permissions: ["View assigned lab reports", "Update results"]
-      }
-    },
-    {
-      id: "USR-0005",
-      name: "Ravi Clinic Staff",
-      email: "ravi.clinic@careplus.com",
-      role: "Clinic Staff",
-      department: "Main Clinic / Medicine Distribution",
-      status: "Active",
-      lastLogin: "12 May 2025, 11:00 AM",
-      ip: "192.168.1.20",
-      isOnline: true,
-      personalInfo: {
-        email: "ravi.clinic@careplus.com",
-        mobile: "+91 9876543214",
-        gender: "Male",
-        dateOfBirth: "17 Jul 1985",
-        address: "101 Clinic Street, London, UK",
-        username: "ravi.clinic",
-        lastLogin: "12 May 2025, 11:00 AM",
-        ipAddress: "192.168.1.20",
-        assignedClinics: "Main Clinic",
-        assignedDepartments: "Medicine Distribution",
-        permissions: ["Manage medicine distribution", "View patients"]
-      }
-    },
-    {
-      id: "USR-0006",
-      name: "Anita Appointment",
-      email: "anita.app@careplus.com",
-      role: "Appointment Staff",
-      department: "Reception / Appointment Booking",
-      status: "Active",
-      lastLogin: "12 May 2025, 10:05 AM",
-      ip: "192.168.1.21",
-      isOnline: true,
-      personalInfo: {
-        email: "anita.app@careplus.com",
-        mobile: "+91 9876543215",
-        gender: "Female",
-        dateOfBirth: "30 Nov 1993",
-        address: "202 Reception Blvd, London, UK",
-        username: "anita.app",
-        lastLogin: "12 May 2025, 10:05 AM",
-        ipAddress: "192.168.1.21",
-        assignedClinics: "Reception",
-        assignedDepartments: "Appointment Booking",
-        permissions: ["Manage appointments", "View calendar"]
-      }
-    },
-    {
-      id: "USR-0007",
-      name: "Suresh Billing",
-      email: "suresh.billing@careplus.com",
-      role: "Billing Staff",
-      department: "Billing Department / Payment & Invoices",
-      status: "Active",
-      lastLogin: "12 May 2025, 09:50 AM",
-      ip: "192.168.1.22",
-      isOnline: true,
-      personalInfo: {
-        email: "suresh.billing@careplus.com",
-        mobile: "+91 9876543216",
-        gender: "Male",
-        dateOfBirth: "25 Apr 1987",
-        address: "303 Billing Tower, London, UK",
-        username: "suresh.billing",
-        lastLogin: "12 May 2025, 09:50 AM",
-        ipAddress: "192.168.1.22",
-        assignedClinics: "Billing Department",
-        assignedDepartments: "Payments & Invoices",
-        permissions: ["Manage billing", "Process payments", "Generate invoices"]
-      }
-    },
-    {
-      id: "USR-0008",
-      name: "Admin User",
-      email: "admin@careplus.com",
-      role: "Admin",
-      department: "System Administration / Full Access",
-      status: "Active",
-      lastLogin: "12 May 2025, 11:30 AM",
-      ip: "192.168.1.23",
-      isOnline: true,
-      personalInfo: {
-        email: "admin@careplus.com",
-        mobile: "+91 9876543217",
-        gender: "Male",
-        dateOfBirth: "1 Jan 1980",
-        address: "404 Admin Plaza, London, UK",
-        username: "admin",
-        lastLogin: "12 May 2025, 11:30 AM",
-        ipAddress: "192.168.1.23",
-        assignedClinics: "System",
-        assignedDepartments: "All Departments",
-        permissions: ["Full system access", "User management", "All modules"]
-      }
-    },
-    {
-      id: "USR-0009",
-      name: "Dr. John Doe",
-      email: "john.doe@careplus.com",
-      role: "Doctor",
-      department: "Neurology Clinic",
-      status: "Inactive",
-      lastLogin: "05 May 2025, 03:20 PM",
-      ip: "192.168.1.25",
-      isOnline: false,
-      personalInfo: {
-        email: "john.doe@careplus.com",
-        mobile: "+91 9876543218",
-        gender: "Male",
-        dateOfBirth: "12 Jun 1982",
-        address: "505 Neurology Street, London, UK",
-        username: "john.doe",
-        lastLogin: "05 May 2025, 03:20 PM",
-        ipAddress: "192.168.1.25",
-        assignedClinics: "Neurology Clinic",
-        assignedDepartments: "Neurology",
-        permissions: ["View own patients", "Prescriptions"]
-      }
-    },
-    {
-      id: "USR-0010",
-      name: "Tom Lab Assistant",
-      email: "tom.lab@careplus.com",
-      role: "Lab Assistant",
-      department: "Pathology Lab / Immunology Reports",
-      status: "Locked",
-      lastLogin: "02 May 2025, 01:10 PM",
-      ip: "192.168.1.18",
-      isOnline: false,
-      personalInfo: {
-        email: "tom.lab@careplus.com",
-        mobile: "+91 9876543219",
-        gender: "Male",
-        dateOfBirth: "19 Sep 1991",
-        address: "606 Immunology Lane, London, UK",
-        username: "tom.lab",
-        lastLogin: "02 May 2025, 01:10 PM",
-        ipAddress: "192.168.1.18",
-        assignedClinics: "Pathology Lab",
-        assignedDepartments: "Immunology",
-        permissions: ["View assigned lab reports"]
-      }
-    }
-  ];
-
-  // Generate additional users to reach total 48 with metrics: 42 Active, 6 Inactive, 2 Locked, 12 Online
-  const additionalUsers = [];
-  const roles = ["Doctor", "Lab Assistant", "Clinic Staff", "Appointment Staff", "Billing Staff", "Admin"];
-  const departments = ["General Medicine", "Pediatrics", "Orthopedics", "Radiology", "Pharmacy", "Emergency"];
-  
-  let activeCount = baseUsers.filter(u => u.status === "Active").length;
-  let inactiveCount = baseUsers.filter(u => u.status === "Inactive").length;
-  let lockedCount = baseUsers.filter(u => u.status === "Locked").length;
-
-  for (let i = 11; i <= 48; i++) {
-    let status = "Active";
-    if (activeCount < 42 && inactiveCount < 6 && lockedCount < 2) {
-      if (lockedCount < 2 && i % 23 === 0) status = "Locked";
-      else if (inactiveCount < 6 && i % 11 === 0) status = "Inactive";
-      else status = "Active";
-    } else if (activeCount < 42) {
-      status = "Active";
-    } else if (inactiveCount < 6) {
-      status = "Inactive";
-    } else if (lockedCount < 2) {
-      status = "Locked";
-    }
-    
-    if (status === "Active") activeCount++;
-    else if (status === "Inactive") inactiveCount++;
-    else if (status === "Locked") lockedCount++;
-    
-    const role = roles[i % roles.length];
-    const isOnline = status === "Active" && (i % 4 === 0 || i % 7 === 0);
-    const lastLoginDate = new Date();
-    lastLoginDate.setDate(lastLoginDate.getDate() - (i % 14));
-    
-    additionalUsers.push({
-      id: `USR-${String(i).padStart(4, '0')}`,
-      name: `User ${i}`,
-      email: `user${i}@careplus.com`,
-      role: role,
-      department: departments[i % departments.length] + (role === "Lab Assistant" ? " Lab" : ""),
-      status: status,
-      lastLogin: lastLoginDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) + 
-                 `, ${String(lastLoginDate.getHours()).padStart(2, '0')}:${String(lastLoginDate.getMinutes()).padStart(2, '0')} ${lastLoginDate.getHours() >= 12 ? 'PM' : 'AM'}`,
-      ip: `192.168.1.${100 + i}`,
-      isOnline: isOnline,
-      personalInfo: {
-        email: `user${i}@careplus.com`,
-        mobile: `+91 ${Math.floor(Math.random() * 9000000000) + 1000000000}`,
-        gender: i % 2 === 0 ? "Male" : "Female",
-        dateOfBirth: `${Math.floor(Math.random() * 28) + 1} ${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][i % 12]} ${1980 + (i % 20)}`,
-        address: `${i} Additional Street, London, UK`,
-        username: `user${i}`,
-        lastLogin: lastLoginDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) + 
-                   `, ${String(lastLoginDate.getHours()).padStart(2, '0')}:${String(lastLoginDate.getMinutes()).padStart(2, '0')} ${lastLoginDate.getHours() >= 12 ? 'PM' : 'AM'}`,
-        ipAddress: `192.168.1.${100 + i}`,
-        assignedClinics: departments[i % departments.length],
-        assignedDepartments: departments[i % departments.length],
-        permissions: ["Standard permissions"]
-      }
-    });
-  }
-
-  return [...baseUsers, ...additionalUsers];
+/* ═══════════════════ ROLE CONFIG ═══════════════════ */
+const ROLE_CONFIG = {
+  Doctor:             { icon: Stethoscope,  gradient: "from-emerald-600 to-teal-700",  light: "bg-emerald-50 text-emerald-700", border: "border-emerald-100", dot: "bg-emerald-500" },
+  "Lab Assistant":    { icon: FlaskConical,  gradient: "from-emerald-600 to-teal-700",  light: "bg-emerald-50 text-emerald-700", border: "border-emerald-100", dot: "bg-emerald-500" },
+  "Clinic Staff":     { icon: Building2,    gradient: "from-emerald-600 to-teal-700",  light: "bg-emerald-50 text-emerald-700", border: "border-emerald-100", dot: "bg-emerald-500" },
+  "Appointment Staff":{ icon: CalendarCheck, gradient: "from-emerald-600 to-teal-700",  light: "bg-emerald-50 text-emerald-700", border: "border-emerald-100", dot: "bg-emerald-500" },
+  "Billing Staff":    { icon: Receipt,      gradient: "from-emerald-600 to-teal-700",  light: "bg-emerald-50 text-emerald-700", border: "border-emerald-100", dot: "bg-emerald-500" },
+  Admin:              { icon: Crown,        gradient: "from-slate-700 to-slate-800",   light: "bg-slate-100 text-slate-700",  border: "border-slate-200", dot: "bg-slate-700" },
 };
 
-// ==================== Main Component ====================
+const getRoleConfig = (role) => ROLE_CONFIG[role] || ROLE_CONFIG.Admin;
+
+const STATUS_CONFIG = {
+  Active:   { cls: "bg-emerald-50 text-emerald-700 border-emerald-100", dot: "bg-emerald-500" },
+  Inactive: { cls: "bg-red-50 text-red-600 border-red-100",           dot: "bg-red-500" },
+  Locked:   { cls: "bg-amber-50 text-amber-700 border-amber-100",     dot: "bg-amber-500" },
+};
+
+const ALL_ROLES = ["Doctor", "Lab Assistant", "Clinic Staff", "Appointment Staff", "Billing Staff", "Admin"];
+
+/* ═══════════════════ MAIN COMPONENT ═══════════════════ */
 export default function UserManagement() {
   const [users, setUsers] = useState([]);
-  const [selectedUserId, setSelectedUserId] = useState("USR-0001");
+  const [selectedUserId, setSelectedUserId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterRole, setFilterRole] = useState("all");
@@ -353,23 +71,24 @@ export default function UserManagement() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [newUser, setNewUser] = useState({ name: "", email: "", role: "Doctor" });
   const [showRoleDropdown, setShowRoleDropdown] = useState(null);
+  const [detailPanelOpen, setDetailPanelOpen] = useState(false);
 
   useEffect(() => {
-    // Load users from backend (fallback to local mock)
     let cancelled = false;
     (async () => {
       try {
         const { adminService } = await import("../../services/adminService");
         const list = await adminService.getUsers();
-        if (!cancelled) setUsers(list || []);
+        if (!cancelled) {
+          setUsers(list || []);
+          if (list?.length > 0 && !selectedUserId) setSelectedUserId(list[0].id);
+        }
       } catch (err) {
         const storedUsers = localStorage.getItem("careplus_users");
         if (storedUsers) {
-          setUsers(JSON.parse(storedUsers));
-        } else {
-          const mockUsers = generateMockUsers();
-          setUsers(mockUsers);
-          localStorage.setItem("careplus_users", JSON.stringify(mockUsers));
+          const parsed = JSON.parse(storedUsers);
+          setUsers(parsed);
+          if (parsed.length > 0) setSelectedUserId(parsed[0].id);
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -378,7 +97,6 @@ export default function UserManagement() {
     return () => { cancelled = true; };
   }, []);
 
-  // Save to localStorage whenever users change
   useEffect(() => {
     if (users.length > 0) {
       localStorage.setItem("careplus_users", JSON.stringify(users));
@@ -387,84 +105,43 @@ export default function UserManagement() {
 
   const selectedUser = users.find(u => u.id === selectedUserId);
 
-  // Metrics calculations
   const totalUsers = users.length;
   const activeUsers = users.filter(u => u.status === "Active").length;
   const inactiveUsers = users.filter(u => u.status === "Inactive").length;
   const lockedUsers = users.filter(u => u.status === "Locked").length;
   const onlineNow = users.filter(u => u.isOnline && u.status === "Active").length;
 
-  // Role counts for overview table
-  const roleCounts = {
-    "Lab Assistant": users.filter(u => u.role === "Lab Assistant").length,
-    "Clinic Staff": users.filter(u => u.role === "Clinic Staff").length,
-    "Appointment Staff": users.filter(u => u.role === "Appointment Staff").length,
-    "Billing Staff": users.filter(u => u.role === "Billing Staff").length,
-    "Admin": users.filter(u => u.role === "Admin").length,
-  };
+  const roleCounts = {};
+  ALL_ROLES.forEach(r => { roleCounts[r] = users.filter(u => u.role === r).length; });
 
   const filteredUsers = users.filter(u => {
-    const matchesSearch = u.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    const matchesSearch = u.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          u.email.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesRole = filterRole === "all" || u.role === filterRole;
     const matchesStatus = filterStatus === "all" || u.status === filterStatus;
     return matchesSearch && matchesRole && matchesStatus;
   });
 
+  /* ─── Handlers ─── */
   const handleCreateUser = (e) => {
     e.preventDefault();
     (async () => {
       try {
         const { adminService } = await import("../../services/adminService");
         const normalizeRole = (r) => {
-          const map = {
-            Doctor: "DOCTOR",
-            "Lab Assistant": "LAB",
-            "Clinic Staff": "DISPENSARY_STAFF",
-            "Appointment Staff": "APPOINTMENT_MANAGER",
-            "Billing Staff": "BILLING",
-            Admin: "ADMIN",
-          };
+          const map = { Doctor: "DOCTOR", "Lab Assistant": "LAB", "Clinic Staff": "DISPENSARY_STAFF", "Appointment Staff": "APPOINTMENT_MANAGER", "Billing Staff": "BILLING", Admin: "ADMIN" };
           return map[r] || r.toUpperCase().replace(/\s+/g, "_");
         };
-
-        const payload = {
-          name: newUser.name,
-          email: newUser.email,
-          password: "ChangeMe@123",
-          role: normalizeRole(newUser.role),
-        };
-        await adminService.createUser(payload);
+        await adminService.createUser({ name: newUser.name, email: newUser.email, password: "ChangeMe@123", role: normalizeRole(newUser.role) });
         const list = await adminService.getUsers();
         setUsers(list || []);
         setIsAddModalOpen(false);
         setNewUser({ name: "", email: "", role: "Doctor" });
       } catch (err) {
-        // fallback: local create
         const newUserId = `USR-${String(users.length + 1).padStart(4, "0")}`;
         const createdUser = {
-          id: newUserId,
-          name: newUser.name,
-          email: newUser.email,
-          role: newUser.role,
-          department: "General",
-          status: "Active",
-          lastLogin: "Never",
-          ip: "0.0.0.0",
-          isOnline: false,
-          personalInfo: {
-            email: newUser.email,
-            mobile: "Not provided",
-            gender: "Not specified",
-            dateOfBirth: "Not provided",
-            address: "Not provided",
-            username: newUser.email.split("@")[0],
-            lastLogin: "Never",
-            ipAddress: "0.0.0.0",
-            assignedClinics: "Not assigned",
-            assignedDepartments: "Not assigned",
-            permissions: ["Default permissions"],
-          },
+          id: newUserId, name: newUser.name, email: newUser.email, role: newUser.role, department: "General", status: "Active", lastLogin: "Never", ip: "0.0.0.0", isOnline: false,
+          personalInfo: { email: newUser.email, mobile: "Not provided", gender: "Not specified", dateOfBirth: "Not provided", address: "Not provided", username: newUser.email.split("@")[0], lastLogin: "Never", ipAddress: "0.0.0.0", assignedClinics: "Not assigned", assignedDepartments: "Not assigned", permissions: ["Default permissions"] },
         };
         setUsers([...users, createdUser]);
         setIsAddModalOpen(false);
@@ -477,53 +154,42 @@ export default function UserManagement() {
     (async () => {
       try {
         const { adminService } = await import("../../services/adminService");
-        const u = users.find((x) => x.id === userId);
+        const u = users.find(x => x.id === userId);
         if (!u) return;
-        if (u.status === "Active") {
-          await adminService.deactivateUser(userId);
-        } else {
-          await adminService.activateUser(userId);
-        }
+        if (u.status === "Active") await adminService.deactivateUser(userId);
+        else await adminService.activateUser(userId);
         const list = await adminService.getUsers();
         setUsers(list || []);
       } catch (err) {
-        setUsers((prev) =>
-          prev.map((user) => {
-            if (user.id === userId) {
-              const newStatus = user.status === "Active" ? "Inactive" : user.status === "Inactive" ? "Active" : "Active";
-              return { ...user, status: newStatus, isOnline: newStatus === "Active" ? user.isOnline : false };
-            }
-            return user;
-          })
-        );
+        setUsers(prev => prev.map(user => {
+          if (user.id === userId) {
+            const newStatus = user.status === "Active" ? "Inactive" : "Active";
+            return { ...user, status: newStatus, isOnline: newStatus === "Active" ? user.isOnline : false };
+          }
+          return user;
+        }));
       }
     })();
   };
 
   const handleLockAccount = (userId) => {
-    // Use deactivate/activate for lock semantics if backend available
     (async () => {
       try {
         const { adminService } = await import("../../services/adminService");
-        const u = users.find((x) => x.id === userId);
+        const u = users.find(x => x.id === userId);
         if (!u) return;
-        if (u.status === "Locked") {
-          await adminService.activateUser(userId);
-        } else {
-          await adminService.deactivateUser(userId);
-        }
+        if (u.status === "Locked") await adminService.activateUser(userId);
+        else await adminService.deactivateUser(userId);
         const list = await adminService.getUsers();
         setUsers(list || []);
       } catch (err) {
-        setUsers((prev) =>
-          prev.map((user) => {
-            if (user.id === userId) {
-              const newStatus = user.status === "Locked" ? "Active" : "Locked";
-              return { ...user, status: newStatus, isOnline: false };
-            }
-            return user;
-          })
-        );
+        setUsers(prev => prev.map(user => {
+          if (user.id === userId) {
+            const newStatus = user.status === "Locked" ? "Active" : "Locked";
+            return { ...user, status: newStatus, isOnline: false };
+          }
+          return user;
+        }));
       }
     })();
   };
@@ -531,17 +197,15 @@ export default function UserManagement() {
   const handleResetPassword = (userId) => {
     (async () => {
       try {
-        // trigger backend forgot-password -> reset flow (admin can set new password via update)
-        const u = users.find((x) => x.id === userId);
+        const u = users.find(x => x.id === userId);
         if (!u) return alert("User not found");
-        // For simplicity, set a default password via admin create/update
         const { adminService } = await import("../../services/adminService");
         await adminService.changeUserPassword(userId, "ChangeMe@123");
         alert(`Password reset to default for ${u.email}. Ask user to change on first login.`);
         const list = await adminService.getUsers();
         setUsers(list || []);
       } catch (err) {
-        alert(`Password reset link sent to ${users.find((u) => u.id === userId)?.email}`);
+        alert(`Password reset link sent to ${users.find(u => u.id === userId)?.email}`);
       }
     })();
   };
@@ -551,533 +215,610 @@ export default function UserManagement() {
       try {
         const { adminService } = await import("../../services/adminService");
         const roleMap = (r) => {
-          const map = {
-            Doctor: "DOCTOR",
-            "Lab Assistant": "LAB",
-            "Clinic Staff": "DISPENSARY_STAFF",
-            "Appointment Staff": "APPOINTMENT_MANAGER",
-            "Billing Staff": "BILLING",
-            Admin: "ADMIN",
-          };
+          const map = { Doctor: "DOCTOR", "Lab Assistant": "LAB", "Clinic Staff": "DISPENSARY_STAFF", "Appointment Staff": "APPOINTMENT_MANAGER", "Billing Staff": "BILLING", Admin: "ADMIN" };
           return map[r] || r.toUpperCase().replace(/\s+/g, "_");
         };
-        const payloadRole = roleMap(newRole);
-        await adminService.updateUser(userId, { role: payloadRole });
+        await adminService.updateUser(userId, { role: roleMap(newRole) });
         const list = await adminService.getUsers();
         setUsers(list || []);
       } catch (err) {
-        setUsers((prev) => prev.map((user) => (user.id === userId ? { ...user, role: newRole } : user)));
+        setUsers(prev => prev.map(user => (user.id === userId ? { ...user, role: newRole } : user)));
       } finally {
         setShowRoleDropdown(null);
       }
     })();
   };
 
+  const handleSelectUser = (userId) => {
+    setSelectedUserId(userId);
+    setDetailPanelOpen(true);
+  };
+
+  /* ─── Metrics ─── */
   const metricsCards = [
-    { label: "Total Users", value: totalUsers, icon: Users, color: "text-blue-600", bg: "bg-blue-50" },
-    { label: "Active Users", value: activeUsers, icon: UserCheck, color: "text-emerald-600", bg: "bg-emerald-50" },
-    { label: "Inactive Users", value: inactiveUsers, icon: UserX, color: "text-red-600", bg: "bg-red-50" },
-    { label: "Locked Users", value: lockedUsers, icon: Lock, color: "text-amber-600", bg: "bg-amber-50" },
-    { label: "Online Now", value: onlineNow, icon: Activity, color: "text-purple-600", bg: "bg-purple-50" },
+    { label: "Total Users", value: totalUsers, icon: Users, gradient: "from-slate-600 to-slate-700", bg: "bg-slate-50" },
+    { label: "Active", value: activeUsers, icon: UserCheck, gradient: "from-emerald-600 to-teal-700", bg: "bg-emerald-50" },
+    { label: "Inactive", value: inactiveUsers, icon: UserX, gradient: "from-slate-400 to-slate-500", bg: "bg-slate-50" },
+    { label: "Locked", value: lockedUsers, icon: Lock, gradient: "from-slate-500 to-slate-600", bg: "bg-slate-50" },
+    { label: "Online Now", value: onlineNow, icon: Activity, gradient: "from-emerald-500 to-teal-600", bg: "bg-emerald-50" },
   ];
 
+  /* ═══════════════════ RENDER ═══════════════════ */
   return (
-    <div className="min-h-screen bg-gray-50/40 p-6 lg:p-8">
-      <div className="max-w-[1600px] mx-auto space-y-8">
-        {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+    <div className="space-y-6 pb-12">
+      {/* ───── Header ───── */}
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 pb-2">
+        <div className="flex items-center gap-3">
+          <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
+            <Users className="w-5 h-5 text-white" />
+          </div>
           <div>
-            <h1 className="text-3xl lg:text-4xl font-black text-slate-800 tracking-tight">User Management</h1>
-            <p className="text-gray-400 text-xs font-bold uppercase tracking-widest mt-1">Manage system users, roles, permissions and access control.</p>
+            <h1 className="text-2xl font-black text-slate-800 tracking-tight">User Management</h1>
+            <p className="text-gray-400 text-[11px] font-bold uppercase tracking-widest">
+              Manage roles, access & permissions
+            </p>
           </div>
-          <Button 
-            onClick={() => setIsAddModalOpen(true)}
-            className="h-12 px-6 rounded-xl flex items-center gap-2 shadow-lg shadow-primary/20 bg-primary hover:bg-primary/90"
+        </div>
+        <button
+          onClick={() => setIsAddModalOpen(true)}
+          className="h-11 px-5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white flex items-center gap-2 font-bold text-xs shadow-lg shadow-emerald-500/15 hover:from-emerald-700 hover:to-teal-700 transition-all active:scale-[0.98]"
+        >
+          <UserPlus className="w-4 h-4" /> Add New User
+        </button>
+      </div>
+
+      {/* ───── Metrics ───── */}
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+        {metricsCards.map((stat, i) => (
+          <motion.div
+            key={i}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.05 }}
+            className="bg-white p-4 rounded-2xl border border-gray-100 hover:shadow-lg hover:shadow-gray-100/50 transition-all group"
           >
-            <UserPlus className="w-4 h-4" /> Add New User
-          </Button>
-        </div>
-
-        {/* Metrics Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-          {metricsCards.map((stat, i) => (
-            <motion.div 
-              key={i}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.05 }}
-              className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all"
-            >
-              <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center mb-3", stat.bg, stat.color)}>
-                <stat.icon className="w-5 h-5" />
-              </div>
-              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">{stat.label}</p>
-              <p className="text-2xl font-black text-slate-800">{stat.value}</p>
-            </motion.div>
-          ))}
-        </div>
-
-        {/* Two Column Layout: Left Panel (User Details) + Right Panel (Table & Overviews) */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          {/* LEFT PANEL - User Details */}
-          <div className="lg:col-span-4 space-y-6">
-            {selectedUser && (
-              <motion.div 
-                key={selectedUser.id}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden sticky top-8"
-              >
-                {/* User Header */}
-                <div className="p-6 border-b border-gray-100 bg-gradient-to-r from-primary/5 to-transparent">
-                  <div className="flex items-center gap-4">
-                    <div className="w-16 h-16 rounded-2xl bg-primary/10 text-primary flex items-center justify-center text-2xl font-black">
-                      {selectedUser.name.split(' ').map(n => n[0]).join('')}
-                    </div>
-                    <div>
-                      <h2 className="text-xl font-black text-slate-800">{selectedUser.name}</h2>
-                      <p className="text-sm font-bold text-primary">{selectedUser.role}</p>
-                      <p className="text-xs text-gray-400 font-mono mt-1">{selectedUser.id}</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Personal Information */}
-                <div className="p-6 border-b border-gray-50">
-                  <h3 className="text-xs font-black text-gray-400 uppercase tracking-wider mb-4 flex items-center gap-2">
-                    <UserCog className="w-3.5 h-3.5" /> Personal Information
-                  </h3>
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2 text-sm">
-                      <Mail className="w-4 h-4 text-gray-400" />
-                      <span className="text-slate-600">{selectedUser.personalInfo?.email || selectedUser.email}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <Phone className="w-4 h-4 text-gray-400" />
-                      <span className="text-slate-600">{selectedUser.personalInfo?.mobile || "Not provided"}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <Users className="w-4 h-4 text-gray-400" />
-                      <span className="text-slate-600">Gender: {selectedUser.personalInfo?.gender || "Not specified"}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <Calendar className="w-4 h-4 text-gray-400" />
-                      <span className="text-slate-600">DOB: {selectedUser.personalInfo?.dateOfBirth || "Not provided"}</span>
-                    </div>
-                    <div className="flex items-start gap-2 text-sm">
-                      <MapPin className="w-4 h-4 text-gray-400 mt-0.5" />
-                      <span className="text-slate-600">{selectedUser.personalInfo?.address || "Not provided"}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Access Information */}
-                <div className="p-6 border-b border-gray-50">
-                  <h3 className="text-xs font-black text-gray-400 uppercase tracking-wider mb-4 flex items-center gap-2">
-                    <Key className="w-3.5 h-3.5" /> Access Information
-                  </h3>
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-500">Username:</span>
-                      <span className="font-mono text-slate-700">{selectedUser.personalInfo?.username || selectedUser.email.split('@')[0]}</span>
-                    </div>
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-500">Password:</span>
-                      <span className="font-mono text-slate-700">••••••••</span>
-                    </div>
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-500">Last Login:</span>
-                      <span className="text-slate-700">{selectedUser.lastLogin}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Login Information */}
-                <div className="p-6 border-b border-gray-50">
-                  <h3 className="text-xs font-black text-gray-400 uppercase tracking-wider mb-4 flex items-center gap-2">
-                    <Server className="w-3.5 h-3.5" /> Login Information
-                  </h3>
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-500">IP Address:</span>
-                      <span className="font-mono text-slate-700">{selectedUser.ip}</span>
-                    </div>
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-500">Status:</span>
-                      <span className={cn(
-                        "px-2 py-0.5 rounded-full text-[10px] font-bold",
-                        selectedUser.status === "Active" ? "bg-emerald-50 text-emerald-600" :
-                        selectedUser.status === "Inactive" ? "bg-red-50 text-red-600" : "bg-amber-50 text-amber-600"
-                      )}>
-                        {selectedUser.status}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Role & Permissions */}
-                <div className="p-6 border-b border-gray-50">
-                  <h3 className="text-xs font-black text-gray-400 uppercase tracking-wider mb-4 flex items-center gap-2">
-                    <Shield className="w-3.5 h-3.5" /> Role & Permissions
-                  </h3>
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-500">Role:</span>
-                      <span className="font-bold text-primary">{selectedUser.role}</span>
-                    </div>
-                    <div className="text-sm">
-                      <span className="text-gray-500 block mb-1">Permissions:</span>
-                      <ul className="text-slate-600 text-xs space-y-1 pl-4 list-disc">
-                        {selectedUser.personalInfo?.permissions.map((p, idx) => (
-                          <li key={idx}>{p}</li>
-                        )) || <li>Standard access</li>}
-                      </ul>
-                    </div>
-                    <div className="text-sm">
-                      <span className="text-gray-500 block">Assigned Clinics:</span>
-                      <p className="text-slate-700">{selectedUser.personalInfo?.assignedClinics || "Not assigned"}</p>
-                    </div>
-                    <div className="text-sm">
-                      <span className="text-gray-500 block">Assigned Departments:</span>
-                      <p className="text-slate-700">{selectedUser.personalInfo?.assignedDepartments || "Not assigned"}</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Account Actions */}
-                <div className="p-6 bg-gray-50/30">
-                  <h3 className="text-xs font-black text-gray-400 uppercase tracking-wider mb-4">Account Actions</h3>
-                  <div className="flex gap-3">
-                    <Button 
-                      onClick={() => handleResetPassword(selectedUser.id)}
-                      variant="outline"
-                      className="flex-1 h-10 rounded-xl text-xs"
-                    >
-                      <Key className="w-3.5 h-3.5 mr-1" /> Reset Password
-                    </Button>
-                    <Button 
-                      onClick={() => handleLockAccount(selectedUser.id)}
-                      className={cn(
-                        "flex-1 h-10 rounded-xl text-xs",
-                        selectedUser.status === "Locked" ? "bg-emerald-600 hover:bg-emerald-700" : "bg-amber-600 hover:bg-amber-700"
-                      )}
-                    >
-                      <Lock className="w-3.5 h-3.5 mr-1" /> {selectedUser.status === "Locked" ? "Unlock" : "Lock"} Account
-                    </Button>
-                  </div>
-                  <Button 
-                    onClick={() => handleToggleStatus(selectedUser.id)}
-                    variant="ghost"
-                    className="w-full mt-3 h-10 rounded-xl text-xs text-red-600 hover:bg-red-50"
-                  >
-                    <Power className="w-3.5 h-3.5 mr-1" /> {selectedUser.status === "Active" ? "Deactivate" : "Activate"} User
-                  </Button>
-                </div>
-              </motion.div>
-            )}
-          </div>
-
-          {/* RIGHT PANEL - Table, Role Overview, Lab Access */}
-          <div className="lg:col-span-8 space-y-6">
-            {/* Search and Filters */}
-            <div className="bg-white rounded-2xl border border-gray-100 p-4">
-              <div className="flex flex-col md:flex-row gap-4">
-                <div className="flex-1 relative">
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <input 
-                    type="text" 
-                    placeholder="Search by name, email or mobile..."
-                    className="w-full h-12 pl-11 pr-4 bg-gray-50 border-none rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-primary/20 transition-all"
-                    value={searchTerm}
-                    onChange={e => setSearchTerm(e.target.value)}
-                  />
-                </div>
-                <div className="flex gap-3">
-                  <select 
-                    className="h-12 px-4 bg-gray-50 border-none rounded-xl text-sm font-medium text-gray-600 outline-none focus:ring-2 focus:ring-primary/20"
-                    value={filterRole}
-                    onChange={e => setFilterRole(e.target.value)}
-                  >
-                    <option value="all">All Roles</option>
-                    <option value="Doctor">Doctor</option>
-                    <option value="Lab Assistant">Lab Assistant</option>
-                    <option value="Clinic Staff">Clinic Staff</option>
-                    <option value="Appointment Staff">Appointment Staff</option>
-                    <option value="Billing Staff">Billing Staff</option>
-                    <option value="Admin">Admin</option>
-                  </select>
-                  <select 
-                    className="h-12 px-4 bg-gray-50 border-none rounded-xl text-sm font-medium text-gray-600 outline-none focus:ring-2 focus:ring-primary/20"
-                    value={filterStatus}
-                    onChange={e => setFilterStatus(e.target.value)}
-                  >
-                    <option value="all">All Status</option>
-                    <option value="Active">Active</option>
-                    <option value="Inactive">Inactive</option>
-                    <option value="Locked">Locked</option>
-                  </select>
-                </div>
-              </div>
+            <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${stat.gradient} flex items-center justify-center mb-3 shadow-sm group-hover:scale-105 transition-transform`}>
+              <stat.icon className="w-4 h-4 text-white" />
             </div>
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">{stat.label}</p>
+            <p className="text-2xl font-black text-slate-800">{loading ? "—" : stat.value}</p>
+          </motion.div>
+        ))}
+      </div>
 
-            {/* Users Table */}
-            <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
+      {/* ───── Search & Filters ───── */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Search by name or email..."
+            className="w-full h-12 pl-11 pr-4 bg-white border border-gray-200/60 rounded-2xl text-sm font-medium outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all shadow-sm"
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+          />
+        </div>
+        <select
+          className="h-12 px-4 bg-white border border-gray-200/60 rounded-2xl text-sm font-medium text-gray-600 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all shadow-sm cursor-pointer min-w-[150px]"
+          value={filterRole}
+          onChange={e => setFilterRole(e.target.value)}
+        >
+          <option value="all">All Roles</option>
+          {ALL_ROLES.map(r => <option key={r} value={r}>{r}</option>)}
+        </select>
+        <select
+          className="h-12 px-4 bg-white border border-gray-200/60 rounded-2xl text-sm font-medium text-gray-600 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all shadow-sm cursor-pointer min-w-[140px]"
+          value={filterStatus}
+          onChange={e => setFilterStatus(e.target.value)}
+        >
+          <option value="all">All Status</option>
+          <option value="Active">Active</option>
+          <option value="Inactive">Inactive</option>
+          <option value="Locked">Locked</option>
+        </select>
+      </div>
+
+      {/* ───── Main Layout ───── */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* ──── Users Table ──── */}
+        <div className="lg:col-span-8 space-y-6">
+          {loading ? (
+            <div className="flex flex-col items-center justify-center py-20 bg-white rounded-2xl border border-gray-100">
+              <RefreshCw className="w-7 h-7 text-blue-500 animate-spin mb-3" />
+              <p className="text-gray-500 text-sm font-bold">Loading users...</p>
+            </div>
+          ) : (
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
-                    <tr className="bg-gray-50/80 border-b border-gray-100">
-                      <th className="text-left px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-wider">User</th>
-                      <th className="text-left px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-wider">Role</th>
-                      <th className="text-left px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-wider">Department / Lab</th>
-                      <th className="text-left px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-wider">Status</th>
-                      <th className="text-left px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-wider">Last Login</th>
-                      <th className="text-right px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-wider">Actions</th>
+                    <tr className="bg-gradient-to-r from-gray-50/80 to-gray-50/40 border-b border-gray-100">
+                      {["User", "Role", "Status", "Last Login", ""].map((h, i) => (
+                        <th key={i} className={cn("px-5 py-3.5 text-[10px] font-black text-gray-400 uppercase tracking-wider", i === 4 ? "text-right" : "text-left")}>
+                          {h}
+                        </th>
+                      ))}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-50">
                     <AnimatePresence mode="popLayout">
-                      {filteredUsers.slice(0, 15).map((user) => (
-                        <motion.tr 
-                          key={user.id}
-                          layout
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          exit={{ opacity: 0 }}
-                          onClick={() => setSelectedUserId(user.id)}
-                          className={cn(
-                            "group hover:bg-gray-50/50 transition-all cursor-pointer",
-                            selectedUserId === user.id && "bg-primary/5"
-                          )}
-                        >
-                          <td className="px-6 py-4">
-                            <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center text-sm font-black">
-                                {user.name.split(' ').map(n => n[0]).join('')}
-                              </div>
-                              <div>
-                                <p className="font-bold text-slate-800 text-sm">{user.name}</p>
-                                <p className="text-xs text-gray-400">{user.email}</p>
-                              </div>
-                            </div>
+                      {filteredUsers.length === 0 ? (
+                        <tr>
+                          <td colSpan={5} className="text-center py-16">
+                            <Users className="w-10 h-10 text-gray-200 mx-auto mb-3" />
+                            <p className="text-gray-400 text-sm font-bold">No users found</p>
+                            <p className="text-gray-300 text-xs mt-1">Try adjusting your filters</p>
                           </td>
-                          <td className="px-6 py-4">
-                            <div className="relative">
-                              <button 
-                                onClick={(e) => { e.stopPropagation(); setShowRoleDropdown(showRoleDropdown === user.id ? null : user.id); }}
-                                className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-bold text-gray-600 hover:border-primary transition-all"
-                              >
-                                <UserCog className="w-3.5 h-3.5 text-primary" />
-                                {user.role}
-                              </button>
-                              {showRoleDropdown === user.id && (
-                                <div className="absolute left-0 top-full mt-1 w-40 bg-white rounded-xl shadow-xl border border-gray-100 z-50 overflow-hidden py-1">
-                                  {["Doctor", "Lab Assistant", "Clinic Staff", "Appointment Staff", "Billing Staff", "Admin"].map(role => (
-                                    <button 
-                                      key={role}
-                                      onClick={(e) => { e.stopPropagation(); handleChangeRole(user.id, role); }}
-                                      className={cn(
-                                        "w-full text-left px-3 py-2 text-xs font-medium transition-colors",
-                                        user.role === role ? "text-primary bg-primary/5" : "text-gray-500 hover:bg-gray-50"
-                                      )}
-                                    >
-                                      {role}
-                                    </button>
-                                  ))}
+                        </tr>
+                      ) : (
+                        filteredUsers.map((user) => {
+                          const rc = getRoleConfig(user.role);
+                          const sc = STATUS_CONFIG[user.status] || STATUS_CONFIG.Active;
+                          const isSelected = selectedUserId === user.id;
+                          return (
+                            <motion.tr
+                              key={user.id}
+                              layout
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 1 }}
+                              exit={{ opacity: 0 }}
+                              onClick={() => handleSelectUser(user.id)}
+                              className={cn(
+                                "group hover:bg-blue-50/30 transition-all cursor-pointer",
+                                isSelected && "bg-blue-50/50"
+                              )}
+                            >
+                              {/* User */}
+                              <td className="px-5 py-3.5">
+                                <div className="flex items-center gap-3">
+                                  <div className="relative">
+                                    <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${rc.gradient} text-white flex items-center justify-center text-xs font-black shadow-sm`}>
+                                      {user.name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase()}
+                                    </div>
+                                    {/* Online dot */}
+                                    {user.isOnline && user.status === "Active" && (
+                                      <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-500 border-2 border-white" />
+                                    )}
+                                  </div>
+                                  <div className="min-w-0">
+                                    <p className="font-bold text-slate-800 text-sm truncate">{user.name}</p>
+                                    <p className="text-[11px] text-gray-400 truncate">{user.email}</p>
+                                  </div>
                                 </div>
-                              )}
-                            </div>
-                          </td>
-                          <td className="px-6 py-4">
-                            <p className="text-sm text-slate-600">{user.department}</p>
-                          </td>
-                          <td className="px-6 py-4">
-                            <div className="flex flex-col gap-1">
-                              <span className={cn(
-                                "inline-flex w-fit px-2 py-0.5 rounded-full text-[10px] font-bold",
-                                user.status === "Active" ? "bg-emerald-50 text-emerald-600" :
-                                user.status === "Inactive" ? "bg-red-50 text-red-600" : "bg-amber-50 text-amber-600"
-                              )}>
-                                {user.status}
-                              </span>
-                              {user.isOnline && user.status === "Active" && (
-                                <span className="inline-flex items-center gap-1 text-[9px] text-emerald-600">
-                                  <Circle className="w-1.5 h-1.5 fill-emerald-500 text-emerald-500" /> Online
+                              </td>
+
+                              {/* Role */}
+                              <td className="px-5 py-3.5">
+                                <div className="relative">
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); setShowRoleDropdown(showRoleDropdown === user.id ? null : user.id); }}
+                                    className={cn("inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold border transition-all", rc.light, rc.border, "hover:shadow-sm")}
+                                  >
+                                    <rc.icon className="w-3 h-3" />
+                                    {user.role}
+                                  </button>
+                                  {showRoleDropdown === user.id && (
+                                    <div className="absolute left-0 top-full mt-1 w-44 bg-white rounded-xl shadow-2xl border border-gray-100 z-50 overflow-hidden py-1">
+                                      {ALL_ROLES.map(role => {
+                                        const rrc = getRoleConfig(role);
+                                        return (
+                                          <button
+                                            key={role}
+                                            onClick={(e) => { e.stopPropagation(); handleChangeRole(user.id, role); }}
+                                            className={cn(
+                                              "w-full text-left px-3 py-2 text-xs font-medium transition-colors flex items-center gap-2",
+                                              user.role === role ? "bg-blue-50 text-blue-700" : "text-gray-600 hover:bg-gray-50"
+                                            )}
+                                          >
+                                            <rrc.icon className="w-3.5 h-3.5" />
+                                            {role}
+                                            {user.role === role && <CheckCircle className="w-3 h-3 ml-auto text-blue-500" />}
+                                          </button>
+                                        );
+                                      })}
+                                    </div>
+                                  )}
+                                </div>
+                              </td>
+
+                              {/* Status */}
+                              <td className="px-5 py-3.5">
+                                <span className={cn("inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-bold border", sc.cls)}>
+                                  <span className={cn("w-1.5 h-1.5 rounded-full", sc.dot)} />
+                                  {user.status}
                                 </span>
-                              )}
-                              {!user.isOnline && user.status === "Active" && (
-                                <span className="text-[9px] text-gray-400">Offline</span>
-                              )}
-                            </div>
-                          </td>
-                          <td className="px-6 py-4">
-                            <div className="text-xs text-slate-600">{user.lastLogin}</div>
-                            <div className="text-[10px] text-gray-400 font-mono mt-0.5">IP: {user.ip}</div>
-                          </td>
-                          <td className="px-6 py-4 text-right">
-                            <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <button 
-                                onClick={(e) => { e.stopPropagation(); handleToggleStatus(user.id); }}
-                                className={cn(
-                                  "w-8 h-8 rounded-lg flex items-center justify-center transition-all",
-                                  user.status === "Active" ? "bg-red-50 text-red-600 hover:bg-red-100" : "bg-emerald-50 text-emerald-600 hover:bg-emerald-100"
-                                )}
-                                title={user.status === "Active" ? "Deactivate" : "Activate"}
-                              >
-                                {user.status === "Active" ? <UserX className="w-4 h-4" /> : <UserCheck className="w-4 h-4" />}
-                              </button>
-                              <button 
-                                onClick={(e) => { e.stopPropagation(); handleLockAccount(user.id); }}
-                                className="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 hover:bg-amber-100 flex items-center justify-center transition-all"
-                                title={user.status === "Locked" ? "Unlock" : "Lock"}
-                              >
-                                <Lock className="w-4 h-4" />
-                              </button>
-                              <button className="w-8 h-8 rounded-lg bg-gray-50 text-gray-400 hover:bg-slate-800 hover:text-white transition-all flex items-center justify-center">
-                                <MoreVertical className="w-4 h-4" />
-                              </button>
-                            </div>
-                          </td>
-                        </motion.tr>
-                      ))}
+                              </td>
+
+                              {/* Last Login */}
+                              <td className="px-5 py-3.5">
+                                <p className="text-xs text-slate-600">{user.lastLogin}</p>
+                                <p className="text-[10px] text-gray-400 font-mono mt-0.5">{user.ip}</p>
+                              </td>
+
+                              {/* Actions */}
+                              <td className="px-5 py-3.5 text-right">
+                                <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); handleToggleStatus(user.id); }}
+                                    className={cn(
+                                      "w-8 h-8 rounded-lg flex items-center justify-center transition-all",
+                                      user.status === "Active" ? "bg-red-50 text-red-500 hover:bg-red-100" : "bg-emerald-50 text-emerald-500 hover:bg-emerald-100"
+                                    )}
+                                    title={user.status === "Active" ? "Deactivate" : "Activate"}
+                                  >
+                                    {user.status === "Active" ? <UserX className="w-3.5 h-3.5" /> : <UserCheck className="w-3.5 h-3.5" />}
+                                  </button>
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); handleLockAccount(user.id); }}
+                                    className="w-8 h-8 rounded-lg bg-amber-50 text-amber-500 hover:bg-amber-100 flex items-center justify-center transition-all"
+                                    title={user.status === "Locked" ? "Unlock" : "Lock"}
+                                  >
+                                    {user.status === "Locked" ? <Unlock className="w-3.5 h-3.5" /> : <Lock className="w-3.5 h-3.5" />}
+                                  </button>
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); handleSelectUser(user.id); }}
+                                    className="w-8 h-8 rounded-lg bg-gray-50 text-gray-400 hover:bg-blue-50 hover:text-blue-600 flex items-center justify-center transition-all"
+                                  >
+                                    <Eye className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              </td>
+                            </motion.tr>
+                          );
+                        })
+                      )}
                     </AnimatePresence>
                   </tbody>
                 </table>
               </div>
-              {filteredUsers.length === 0 && (
-                <div className="text-center py-12 text-gray-400 text-sm">No users found</div>
+
+              {/* Table Footer */}
+              {filteredUsers.length > 0 && (
+                <div className="px-5 py-3 border-t border-gray-50 bg-gray-50/30 flex items-center justify-between">
+                  <p className="text-[11px] text-gray-400 font-medium">
+                    Showing <span className="font-bold text-slate-600">{filteredUsers.length}</span> of {totalUsers} users
+                  </p>
+                  <div className="flex items-center gap-2">
+                    {filterRole !== "all" && (
+                      <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md flex items-center gap-1">
+                        Role: {filterRole}
+                        <button onClick={() => setFilterRole("all")} className="hover:text-blue-800"><X className="w-2.5 h-2.5" /></button>
+                      </span>
+                    )}
+                    {filterStatus !== "all" && (
+                      <span className="text-[10px] font-bold text-purple-600 bg-purple-50 px-2 py-0.5 rounded-md flex items-center gap-1">
+                        Status: {filterStatus}
+                        <button onClick={() => setFilterStatus("all")} className="hover:text-purple-800"><X className="w-2.5 h-2.5" /></button>
+                      </span>
+                    )}
+                  </div>
+                </div>
               )}
             </div>
+          )}
 
-            {/* Role Based Access Overview */}
-            <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6">
-              <h3 className="text-lg font-black text-slate-800 mb-1">Role Based Access Overview</h3>
-              <p className="text-xs text-gray-400 mb-6">Each role has specific access permissions to modules and features.</p>
-              
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-gray-100">
-                      <th className="text-left py-3 text-xs font-black text-gray-400 uppercase tracking-wider">Role</th>
-                      <th className="text-left py-3 text-xs font-black text-gray-400 uppercase tracking-wider">Access Description</th>
-                      <th className="text-right py-3 text-xs font-black text-gray-400 uppercase tracking-wider">Users</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-50">
-                    <tr className="hover:bg-gray-50/50 transition-colors">
-                      <td className="py-3 font-bold text-slate-700">Lab Assistant</td>
-                      <td className="py-3 text-sm text-gray-500">Can view & manage assigned lab reports only</td>
-                      <td className="py-3 text-right font-bold text-primary">{roleCounts["Lab Assistant"]}</td>
-                    </tr>
-                    <tr className="hover:bg-gray-50/50 transition-colors">
-                      <td className="py-3 font-bold text-slate-700">Clinic Staff</td>
-                      <td className="py-3 text-sm text-gray-500">Can manage medicine distribution & patients</td>
-                      <td className="py-3 text-right font-bold text-primary">{roleCounts["Clinic Staff"]}</td>
-                    </tr>
-                    <tr className="hover:bg-gray-50/50 transition-colors">
-                      <td className="py-3 font-bold text-slate-700">Appointments Staff</td>
-                      <td className="py-3 text-sm text-gray-500">Can manage appointments & calendar</td>
-                      <td className="py-3 text-right font-bold text-primary">{roleCounts["Appointment Staff"]}</td>
-                    </tr>
-                    <tr className="hover:bg-gray-50/50 transition-colors">
-                      <td className="py-3 font-bold text-slate-700">Billing Staff</td>
-                      <td className="py-3 text-sm text-gray-500">Can manage billing, invoices & payments</td>
-                      <td className="py-3 text-right font-bold text-primary">{roleCounts["Billing Staff"]}</td>
-                    </tr>
-                    <tr className="hover:bg-gray-50/50 transition-colors">
-                      <td className="py-3 font-bold text-slate-700">Admin</td>
-                      <td className="py-3 text-sm text-gray-500">Full system access & user management</td>
-                      <td className="py-3 text-right font-bold text-primary">{roleCounts["Admin"]}</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
+          {/* ──── Role Based Access Overview ──── */}
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-50 bg-gradient-to-r from-gray-50/50 to-white">
+              <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
+                <Shield className="w-4 h-4 text-blue-500" />
+                Role Based Access Overview
+              </h3>
+              <p className="text-[11px] text-gray-400 mt-0.5">Each role has specific access permissions to modules and features.</p>
             </div>
 
-            {/* Lab Report Access Control */}
-            <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6">
-              <h3 className="text-lg font-black text-slate-800 mb-1">Lab Report Access Control</h3>
-              <p className="text-xs text-gray-400 mb-4">Lab assistants can only access specific report types.</p>
-              
-              <div className="flex flex-wrap gap-3">
-                {["Hematology Reports", "Microbiology Reports", "Immunology Reports", "Pathology (General)", "All Lab Reports"].map((report, idx) => (
-                  <button 
-                    key={idx}
-                    className="px-4 py-2 rounded-xl text-sm font-medium bg-gray-50 text-gray-600 hover:bg-primary hover:text-white transition-all"
-                  >
-                    {report}
-                  </button>
-                ))}
-              </div>
+            <div className="divide-y divide-gray-50">
+              {[
+                { role: "Doctor", desc: "View own patients, prescriptions & appointments" },
+                { role: "Lab Assistant", desc: "View & manage assigned lab reports only" },
+                { role: "Clinic Staff", desc: "Manage medicine distribution & patients" },
+                { role: "Appointment Staff", desc: "Manage appointments & calendar" },
+                { role: "Billing Staff", desc: "Manage billing, invoices & payments" },
+                { role: "Admin", desc: "Full system access & user management" },
+              ].map(({ role, desc }) => {
+                const rc = getRoleConfig(role);
+                return (
+                  <div key={role} className="flex items-center justify-between px-6 py-3 hover:bg-gray-50/50 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${rc.gradient} flex items-center justify-center shadow-sm`}>
+                        <rc.icon className="w-3.5 h-3.5 text-white" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold text-slate-700">{role}</p>
+                        <p className="text-[11px] text-gray-400">{desc}</p>
+                      </div>
+                    </div>
+                    <span className="text-sm font-black text-slate-800 bg-gray-50 px-3 py-1 rounded-lg">{roleCounts[role] || 0}</span>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
+
+        {/* ──── Right Detail Panel ──── */}
+        <div className="lg:col-span-4">
+          {selectedUser ? (
+            <motion.div
+              key={selectedUser.id}
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.25 }}
+              className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden sticky top-6"
+            >
+              {/* User Profile Header */}
+              <div className={`bg-gradient-to-br ${getRoleConfig(selectedUser.role).gradient} p-6 relative overflow-hidden`}>
+                {/* Background pattern */}
+                <div className="absolute inset-0 opacity-10">
+                  <div className="absolute top-0 right-0 w-32 h-32 rounded-full bg-white/20 -translate-y-1/2 translate-x-1/2" />
+                  <div className="absolute bottom-0 left-0 w-24 h-24 rounded-full bg-white/10 translate-y-1/2 -translate-x-1/2" />
+                </div>
+                <div className="relative flex items-center gap-4">
+                  <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm text-white flex items-center justify-center text-xl font-black border border-white/10">
+                    {selectedUser.name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase()}
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-bold text-white">{selectedUser.name}</h2>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-xs font-bold text-white/80 bg-white/15 px-2 py-0.5 rounded-md backdrop-blur-sm">
+                        {selectedUser.role}
+                      </span>
+                      <span className={cn(
+                        "text-[10px] font-bold px-2 py-0.5 rounded-md",
+                        selectedUser.status === "Active" ? "bg-emerald-400/20 text-emerald-100" :
+                        selectedUser.status === "Locked" ? "bg-amber-400/20 text-amber-100" : "bg-red-400/20 text-red-100"
+                      )}>
+                        {selectedUser.status}
+                      </span>
+                    </div>
+                    <p className="text-[10px] font-mono text-white/50 mt-1">{selectedUser.id}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Detail Sections */}
+              <div className="divide-y divide-gray-50">
+                {/* Personal Information */}
+                <DetailSection title="Personal Information" icon={<UserCog className="w-3.5 h-3.5 text-blue-500" />}>
+                  <InfoRow icon={<Mail className="w-3.5 h-3.5" />} label="Email" value={selectedUser.personalInfo?.email || selectedUser.email} />
+                  <InfoRow icon={<Phone className="w-3.5 h-3.5" />} label="Mobile" value={selectedUser.personalInfo?.mobile || "Not provided"} />
+                  <InfoRow icon={<Calendar className="w-3.5 h-3.5" />} label="DOB" value={selectedUser.personalInfo?.dateOfBirth || "Not provided"} />
+                  <InfoRow icon={<MapPin className="w-3.5 h-3.5" />} label="Address" value={selectedUser.personalInfo?.address || "Not provided"} />
+                </DetailSection>
+
+                {/* Access Info */}
+                <DetailSection title="Access Information" icon={<Key className="w-3.5 h-3.5 text-amber-500" />}>
+                  <InfoRow icon={<Hash className="w-3.5 h-3.5" />} label="Username" value={selectedUser.personalInfo?.username || selectedUser.email?.split("@")[0]} mono />
+                  <InfoRow icon={<Lock className="w-3.5 h-3.5" />} label="Password" value="••••••••" mono />
+                  <InfoRow icon={<Calendar className="w-3.5 h-3.5" />} label="Last Login" value={selectedUser.lastLogin} />
+                  <InfoRow icon={<Globe className="w-3.5 h-3.5" />} label="IP Address" value={selectedUser.ip} mono />
+                </DetailSection>
+
+                {/* Role & Permissions */}
+                <DetailSection title="Role & Permissions" icon={<Shield className="w-3.5 h-3.5 text-emerald-500" />}>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-gray-400 font-medium">Current Role</span>
+                      <span className={cn("text-xs font-bold px-2 py-0.5 rounded-md", getRoleConfig(selectedUser.role).light)}>
+                        {selectedUser.role}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-xs text-gray-400 font-medium block mb-1.5">Permissions</span>
+                      <div className="flex flex-wrap gap-1">
+                        {(selectedUser.personalInfo?.permissions || ["Standard access"]).map((p, idx) => (
+                          <span key={idx} className="text-[10px] font-bold text-slate-600 bg-gray-50 border border-gray-100 px-2 py-0.5 rounded-md">
+                            {p}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-gray-400 font-medium">Clinic</span>
+                      <span className="text-xs text-slate-700 font-medium">{selectedUser.personalInfo?.assignedClinics || "—"}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-gray-400 font-medium">Department</span>
+                      <span className="text-xs text-slate-700 font-medium">{selectedUser.personalInfo?.assignedDepartments || "—"}</span>
+                    </div>
+                  </div>
+                </DetailSection>
+
+                {/* Account Actions */}
+                <div className="p-5 space-y-2.5">
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-3">Account Actions</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      onClick={() => handleResetPassword(selectedUser.id)}
+                      className="h-9 rounded-xl bg-gray-50 border border-gray-100 text-slate-600 hover:bg-blue-50 hover:border-blue-200 hover:text-blue-700 transition-all font-bold text-[11px] flex items-center justify-center gap-1.5"
+                    >
+                      <Key className="w-3 h-3" /> Reset Password
+                    </button>
+                    <button
+                      onClick={() => handleLockAccount(selectedUser.id)}
+                      className={cn(
+                        "h-9 rounded-xl border font-bold text-[11px] flex items-center justify-center gap-1.5 transition-all",
+                        selectedUser.status === "Locked"
+                          ? "bg-emerald-50 border-emerald-100 text-emerald-700 hover:bg-emerald-100"
+                          : "bg-amber-50 border-amber-100 text-amber-700 hover:bg-amber-100"
+                      )}
+                    >
+                      {selectedUser.status === "Locked" ? <Unlock className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
+                      {selectedUser.status === "Locked" ? "Unlock" : "Lock"}
+                    </button>
+                  </div>
+                  <button
+                    onClick={() => handleToggleStatus(selectedUser.id)}
+                    className={cn(
+                      "w-full h-9 rounded-xl border font-bold text-[11px] flex items-center justify-center gap-1.5 transition-all",
+                      selectedUser.status === "Active"
+                        ? "bg-red-50 border-red-100 text-red-600 hover:bg-red-100"
+                        : "bg-emerald-50 border-emerald-100 text-emerald-700 hover:bg-emerald-100"
+                    )}
+                  >
+                    <Power className="w-3 h-3" />
+                    {selectedUser.status === "Active" ? "Deactivate User" : "Activate User"}
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          ) : (
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-10 text-center sticky top-6">
+              <div className="w-16 h-16 rounded-3xl bg-gray-50 flex items-center justify-center mx-auto mb-4">
+                <Eye className="w-8 h-8 text-gray-300" />
+              </div>
+              <p className="text-slate-700 font-bold text-sm">Select a User</p>
+              <p className="text-gray-400 text-xs mt-1">Click on any user row to view their details here</p>
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Add User Modal */}
+      {/* ═══════ Add User Modal ═══════ */}
       <AnimatePresence>
         {isAddModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div 
-              initial={{ opacity: 0 }} 
-              animate={{ opacity: 1 }} 
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+              className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"
               onClick={() => setIsAddModalOpen(false)}
             />
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl p-8"
+              className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden"
             >
-              <h2 className="text-2xl font-black text-slate-800 mb-1">Provision New User</h2>
-              <p className="text-xs text-gray-400 mb-6">System Access Allocation</p>
-              
-              <form onSubmit={handleCreateUser} className="space-y-5">
+              {/* Modal Header */}
+              <div className="bg-gradient-to-r from-emerald-600 to-teal-600 p-6 relative overflow-hidden">
+                <div className="absolute inset-0 opacity-10">
+                  <div className="absolute top-0 right-0 w-24 h-24 rounded-full bg-white/20 -translate-y-1/2 translate-x-1/2" />
+                </div>
+                <div className="relative flex items-center justify-between">
+                  <div>
+                    <h2 className="text-xl font-bold text-white">Add New User</h2>
+                    <p className="text-emerald-100/80 text-xs mt-1">Provision system access for a new team member</p>
+                  </div>
+                  <button
+                    onClick={() => setIsAddModalOpen(false)}
+                    className="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 transition-colors flex items-center justify-center"
+                  >
+                    <X className="w-4 h-4 text-white" />
+                  </button>
+                </div>
+              </div>
+
+              <form onSubmit={handleCreateUser} className="p-6 space-y-5">
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider ml-1">Full Name</label>
-                  <input 
+                  <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                    <Users className="w-3 h-3 text-emerald-500" /> Full Name
+                  </label>
+                  <input
                     required
-                    type="text" 
-                    className="w-full h-12 px-4 bg-gray-50 border-none rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-primary/20"
+                    type="text"
+                    placeholder="Enter full name"
+                    className="w-full h-11 px-4 bg-gray-50/80 border border-gray-200/60 rounded-xl text-sm font-semibold outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 transition-all text-slate-800 placeholder:text-gray-400/60"
                     value={newUser.name}
                     onChange={e => setNewUser({...newUser, name: e.target.value})}
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider ml-1">Email Address</label>
-                  <input 
+                  <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                    <Mail className="w-3 h-3 text-emerald-500" /> Email Address
+                  </label>
+                  <input
                     required
-                    type="email" 
-                    className="w-full h-12 px-4 bg-gray-50 border-none rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-primary/20"
+                    type="email"
+                    placeholder="user@example.com"
+                    className="w-full h-11 px-4 bg-gray-50/80 border border-gray-200/60 rounded-xl text-sm font-semibold outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 transition-all text-slate-800 placeholder:text-gray-400/60"
                     value={newUser.email}
                     onChange={e => setNewUser({...newUser, email: e.target.value})}
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider ml-1">Designated Role</label>
-                  <select 
-                    className="w-full h-12 px-4 bg-gray-50 border-none rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-primary/20"
-                    value={newUser.role}
-                    onChange={e => setNewUser({...newUser, role: e.target.value})}
-                  >
-                    <option value="Doctor">Doctor</option>
-                    <option value="Lab Assistant">Lab Assistant</option>
-                    <option value="Clinic Staff">Clinic Staff</option>
-                    <option value="Appointment Staff">Appointment Staff</option>
-                    <option value="Billing Staff">Billing Staff</option>
-                    <option value="Admin">Admin</option>
-                  </select>
+                  <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                    <Shield className="w-3 h-3 text-emerald-500" /> Designated Role
+                  </label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {ALL_ROLES.map(role => {
+                      const rc = getRoleConfig(role);
+                      const isActive = newUser.role === role;
+                      return (
+                        <button
+                          key={role}
+                          type="button"
+                          onClick={() => setNewUser({...newUser, role})}
+                          className={cn(
+                            "py-2.5 px-2 rounded-xl border text-[11px] font-bold transition-all flex flex-col items-center gap-1.5",
+                            isActive
+                              ? `bg-gradient-to-br ${rc.gradient} text-white border-transparent shadow-lg`
+                              : "bg-gray-50 border-gray-100 text-gray-500 hover:bg-gray-100"
+                          )}
+                        >
+                          <rc.icon className="w-4 h-4" />
+                          {role.split(" ")[0]}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-                <div className="pt-4 flex gap-3">
-                  <Button type="button" variant="outline" onClick={() => setIsAddModalOpen(false)} className="flex-1 h-11 rounded-xl">Cancel</Button>
-                  <Button type="submit" className="flex-1 h-11 rounded-xl shadow-lg shadow-primary/20">Provision User</Button>
+
+                <div className="bg-blue-50/60 border border-blue-100 rounded-xl p-3 flex items-start gap-2">
+                  <AlertCircle className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
+                  <p className="text-[11px] text-blue-600 font-medium leading-relaxed">
+                    A default password <code className="bg-blue-100 px-1 rounded text-[10px] font-mono">ChangeMe@123</code> will be assigned. The user should change it on first login.
+                  </p>
+                </div>
+
+                <div className="flex gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsAddModalOpen(false)}
+                    className="flex-1 h-11 rounded-xl bg-gray-100 text-slate-600 hover:bg-gray-200 font-bold text-xs transition-all"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="flex-1 h-11 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white hover:from-emerald-700 hover:to-teal-700 font-bold text-xs shadow-lg shadow-emerald-500/15 transition-all flex items-center justify-center gap-2"
+                  >
+                    <UserPlus className="w-4 h-4" /> Create User
+                  </button>
                 </div>
               </form>
             </motion.div>
           </div>
         )}
       </AnimatePresence>
+    </div>
+  );
+}
+
+/* ═══════════════════ Sub-Components ═══════════════════ */
+
+function DetailSection({ title, icon, children }) {
+  return (
+    <div className="p-5">
+      <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+        {icon} {title}
+      </h3>
+      <div className="space-y-2.5">{children}</div>
+    </div>
+  );
+}
+
+function InfoRow({ icon, label, value, mono }) {
+  return (
+    <div className="flex items-center gap-2.5">
+      <div className="w-7 h-7 rounded-lg bg-gray-50 flex items-center justify-center text-gray-400 shrink-0">
+        {icon}
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">{label}</p>
+        <p className={cn("text-xs text-slate-700 truncate", mono && "font-mono")}>{value}</p>
+      </div>
     </div>
   );
 }

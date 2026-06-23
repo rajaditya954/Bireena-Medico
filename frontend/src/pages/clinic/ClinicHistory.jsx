@@ -19,6 +19,8 @@ import {
 
 // Mock history data (prescriptions / medicines given to patients)
 
+const BASE_URL = import.meta.env.VITE_API_URL || "/api";
+
 const DoctorHistory = () => {
   const [history, setHistory] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -28,20 +30,26 @@ const DoctorHistory = () => {
   const [dateFilter, setDateFilter] = useState("");
 
   const fetchHistory = async () => {
-  try {
-    const res = await fetch(
-      "http://localhost:5000/api/pharmacy/history"
-    );
+    try {
+      const token = localStorage.getItem("aarogya_token");
+      const res = await fetch(
+        `${BASE_URL}/pharmacy/history`,
+        { headers: token ? { Authorization: `Bearer ${token}` } : {} }
+      );
 
-    const data = await res.json();
+      const data = await res.json();
 
-    console.log("HISTORY API:", data);
+      console.log("HISTORY API:", data);
 
-    setHistory(data.data || []);
-  } catch (error) {
-    console.error(error);
-  }
-};
+      setHistory(data?.data || []);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  useEffect(() => {
+    fetchHistory();
+  }, []);
 
   // Filter history based on search (patient name, ID, medicine, doctor)
   const filteredHistory = history.filter((item) => {
@@ -76,10 +84,6 @@ const DoctorHistory = () => {
     currentPage * rowsPerPage
   );
 
-  useEffect(() => {
-  fetchHistory();
-}, []);
-
   
 
   // Get unique dates for filter
@@ -102,10 +106,19 @@ const DoctorHistory = () => {
 
   const handlePrint = () => {
     if (selectedRecord) {
+      const patientName = selectedRecord.patientId?.fullName || "N/A";
+      const patientCode = selectedRecord.patientId?.patientId || "N/A";
+      const dateStr = selectedRecord.createdAt
+        ? new Date(selectedRecord.createdAt).toLocaleDateString("en-IN")
+        : "-";
+      const allMeds = [
+        ...(selectedRecord.medicines || []),
+        ...(selectedRecord.requestedMedicines || []),
+      ];
       const printWindow = window.open("", "_blank", "width=800,height=600");
       printWindow.document.write(`
         <html>
-          <head><title>Prescription - ${selectedRecord.patientName}</title>
+          <head><title>Prescription - ${patientName}</title>
           <style>
             body { font-family: 'Inter', sans-serif; padding: 2rem; }
             h1 { color: #06402B; }
@@ -116,23 +129,23 @@ const DoctorHistory = () => {
           </style>
           </head>
           <body>
-            <h1>Clinic Prescription</h1>
-            <p><strong>Patient:</strong> ${selectedRecord.patientName} (${selectedRecord.patientId})</p>
-            <p><strong>Date:</strong> ${selectedRecord.date} at ${selectedRecord.time}</p>
-            <p><strong>Doctor:</strong> ${selectedRecord.doctor} (${selectedRecord.specialty})</p>
+            <h1>Bireena Medico - Prescription</h1>
+            <p><strong>Patient:</strong> ${patientName} (${patientCode})</p>
+            <p><strong>Date:</strong> ${dateStr}</p>
             <h3>Medicines</h3>
             <table>
-              <thead><tr><th>Medicine</th><th>Quantity</th><th>Dosage</th><th>Frequency</th><th>Notes</th></tr></thead>
+              <thead><tr><th>Medicine</th><th>Quantity</th><th>Notes</th></tr></thead>
               <tbody>
-                ${selectedRecord.medicines.map(m => `
-                  <tr><td>${m.name}</td><td>${m.quantity}</td><td>${m.dosage}</td><td>${m.frequency}</td><td>${m.notes || "-"}</td></tr>
+                ${allMeds.map(m => `
+                  <tr><td>${m.medicineName || m.name || "N/A"}</td><td>${m.quantity || m.requestedQty || "-"}</td><td>${m.notes || "-"}</td></tr>
                 `).join("")}
               </tbody>
             </table>
-            <p><strong>Total Amount:</strong> ₹${selectedRecord.totalAmount.toFixed(2)}</p>
-            <p><strong>Payment Method:</strong> ${selectedRecord.paymentMethod.toUpperCase()}</p>
+            <p><strong>Total Amount:</strong> ₹${(selectedRecord.total || 0).toFixed(2)}</p>
+            <p><strong>Paid:</strong> ₹${(selectedRecord.amountPaid || 0).toFixed(2)}</p>
+            <p><strong>Payment Method:</strong> ${(selectedRecord.paymentMethod || "N/A").toUpperCase()}</p>
             <hr />
-            <p class="text-center text-gray-500 text-sm">Generated from Electronic Medical Record System</p>
+            <p style="text-align:center; color:#888; font-size:12px;">Generated from Bireena Medico Hospital System</p>
           </body>
         </html>
       `);
@@ -339,7 +352,7 @@ console.log("history length", history.length);
 
       {/* Modal for detailed view */}
       {selectedRecord && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={handleCloseModal}>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={handleCloseModal}>
           <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-auto shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex justify-between items-center">
               <h3 className="text-xl font-bold text-[#06402B]">Prescription Details</h3>
@@ -357,60 +370,115 @@ console.log("history length", history.length);
               <div className="border-b border-gray-200 pb-4">
                 <div className="flex items-center gap-3 mb-2">
                   <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 font-bold">
-                    {selectedRecord.patientName.charAt(0)}
+                    {selectedRecord.patientId?.fullName?.charAt(0) || "?"}
                   </div>
                   <div>
-                    <h2 className="text-xl font-bold text-gray-900">{selectedRecord.patientName}</h2>
-                    <p className="text-sm text-gray-500">Patient ID: {selectedRecord.patientId}</p>
+                    <h2 className="text-xl font-bold text-gray-900">{selectedRecord.patientId?.fullName || "N/A"}</h2>
+                    <p className="text-sm text-gray-500">Patient ID: {selectedRecord.patientId?.patientId || "N/A"}</p>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-3 text-sm mt-3">
-                  <div className="flex items-center gap-2"><Calendar className="w-4 h-4 text-gray-400" />{selectedRecord.date} at {selectedRecord.time}</div>
-                  <div className="flex items-center gap-2"><User className="w-4 h-4 text-gray-400" />{selectedRecord.doctor} ({selectedRecord.specialty})</div>
-                  <div className="flex items-center gap-2"><Phone className="w-4 h-4 text-gray-400" />{selectedRecord.mobile}</div>
-                  <div className="flex items-center gap-2"><MapPin className="w-4 h-4 text-gray-400" />{selectedRecord.address}</div>
+                  <div className="flex items-center gap-2">
+                    <Calendar className="w-4 h-4 text-gray-400" />
+                    {selectedRecord.createdAt
+                      ? new Date(selectedRecord.createdAt).toLocaleDateString("en-IN", { year: "numeric", month: "long", day: "numeric" })
+                      : "-"}
+                  </div>
+                  {selectedRecord.patientId?.phone && (
+                    <div className="flex items-center gap-2">
+                      <Phone className="w-4 h-4 text-gray-400" />
+                      {selectedRecord.patientId.phone}
+                    </div>
+                  )}
+                  {selectedRecord.patientId?.address && (
+                    <div className="flex items-center gap-2">
+                      <MapPin className="w-4 h-4 text-gray-400" />
+                      {selectedRecord.patientId.address}
+                    </div>
+                  )}
+                  {selectedRecord.paymentMethod && (
+                    <div className="flex items-center gap-2">
+                      <FileText className="w-4 h-4 text-gray-400" />
+                      Payment: <span className="capitalize bg-gray-100 px-2 py-0.5 rounded-full text-xs ml-1">{selectedRecord.paymentMethod}</span>
+                    </div>
+                  )}
                 </div>
               </div>
 
-              {/* Medicines Table */}
-              <div>
-                <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Prescribed Medicines</h4>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="text-left p-2 text-xs font-semibold">Medicine</th>
-                        <th className="text-left p-2 text-xs font-semibold">Qty</th>
-                        <th className="text-left p-2 text-xs font-semibold">Dosage</th>
-                        <th className="text-left p-2 text-xs font-semibold">Frequency</th>
-                        <th className="text-left p-2 text-xs font-semibold">Notes</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {selectedRecord.medicines.map((m, idx) => (
-                        <tr key={idx} className="border-b border-gray-50">
-                          <td className="p-2">{m.name}</td>
-                          <td className="p-2">{m.quantity}</td>
-                          <td className="p-2">{m.dosage}</td>
-                          <td className="p-2">{m.frequency}</td>
-                          <td className="p-2 text-gray-500">{m.notes || "-"}</td>
+              {/* Medicines from Inventory */}
+              {selectedRecord.medicines && selectedRecord.medicines.length > 0 && (
+                <div>
+                  <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Medicines from Inventory</h4>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="text-left p-2 text-xs font-semibold">Medicine</th>
+                          <th className="text-left p-2 text-xs font-semibold">Qty</th>
+                          <th className="text-left p-2 text-xs font-semibold">Notes</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody>
+                        {selectedRecord.medicines.map((m, idx) => (
+                          <tr key={idx} className="border-b border-gray-50">
+                            <td className="p-2 font-medium">{m.medicineName || "N/A"}</td>
+                            <td className="p-2">{m.quantity || "-"}</td>
+                            <td className="p-2 text-gray-500">{m.notes || "-"}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
-              </div>
+              )}
+
+              {/* Requested Medicines */}
+              {selectedRecord.requestedMedicines && selectedRecord.requestedMedicines.length > 0 && (
+                <div>
+                  <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Requested Medicines</h4>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="text-left p-2 text-xs font-semibold">Medicine</th>
+                          <th className="text-left p-2 text-xs font-semibold">Strength</th>
+                          <th className="text-left p-2 text-xs font-semibold">Unit</th>
+                          <th className="text-left p-2 text-xs font-semibold">Qty</th>
+                          <th className="text-left p-2 text-xs font-semibold">Notes</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {selectedRecord.requestedMedicines.map((m, idx) => (
+                          <tr key={idx} className="border-b border-gray-50">
+                            <td className="p-2 font-medium">{m.name || "N/A"}</td>
+                            <td className="p-2">{m.strength || "-"}</td>
+                            <td className="p-2">{m.unitType || "-"}</td>
+                            <td className="p-2">{m.quantity || "-"}</td>
+                            <td className="p-2 text-gray-500">{m.notes || "-"}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
 
               {/* Billing Info */}
-              <div className="border-t border-gray-100 pt-3">
+              <div className="border-t border-gray-100 pt-3 space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Total Amount:</span>
-                  <span className="font-bold text-gray-800">₹{selectedRecord.totalAmount.toFixed(2)}</span>
+                  <span className="font-bold text-gray-800">₹{(selectedRecord.total || 0).toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between text-sm mt-1">
-                  <span className="text-gray-600">Payment Method:</span>
-                  <span className="capitalize bg-gray-100 px-2 py-0.5 rounded-full text-xs">{selectedRecord.paymentMethod}</span>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Amount Paid:</span>
+                  <span className="font-semibold text-emerald-700">₹{(selectedRecord.amountPaid || 0).toFixed(2)}</span>
                 </div>
+                {selectedRecord.paymentMethod && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Payment Method:</span>
+                    <span className="capitalize bg-gray-100 px-2 py-0.5 rounded-full text-xs">{selectedRecord.paymentMethod}</span>
+                  </div>
+                )}
               </div>
             </div>
             <div className="sticky bottom-0 bg-gray-50 px-6 py-4 flex justify-end gap-3 border-t border-gray-100">

@@ -194,7 +194,11 @@ export default function PatientProfile() {
                              <div className="w-8 h-8 rounded-full bg-gray-200 border-2 border-white" />
                              <div>
                                 <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest">Attending Clinician</p>
-                                <p className="text-xs font-bold text-gray-700">Dr. {entry.doctorName || 'Senior Resident'}</p>
+                                <p className="text-xs font-bold text-gray-700">
+                                  {entry.doctorName
+                                    ? (/^dr\.?/i.test(entry.doctorName) ? entry.doctorName : `Dr. ${entry.doctorName}`)
+                                    : 'Dr. Senior Resident'}
+                                </p>
                              </div>
                           </div>
                        </div>

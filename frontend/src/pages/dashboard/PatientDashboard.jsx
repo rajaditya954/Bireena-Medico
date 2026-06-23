@@ -81,10 +81,14 @@ export default function PatientDashboard({ user }) {
                     {timeline[0]?.notes || user?.history || "No significant medical history recorded yet."}
                   </p>
                 </div>
-                <div className="p-4 bg-bg-primary rounded-2xl">
-                   <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Care Provider</p>
-                   <p className="text-sm font-bold text-primary-forest">Dr. {timeline[0]?.doctorName || "Pending Assignment"}</p>
-                </div>
+                 <div className="p-4 bg-bg-primary rounded-2xl">
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Care Provider</p>
+                    <p className="text-sm font-bold text-primary-forest">
+                      {timeline[0]?.doctorName
+                        ? (/^dr\.?/i.test(timeline[0].doctorName) ? timeline[0].doctorName : `Dr. ${timeline[0].doctorName}`)
+                        : "Pending Assignment"}
+                    </p>
+                 </div>
               </div>
             </div>
           </div>

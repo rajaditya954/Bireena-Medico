@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from "react"; import {
+import React, { useState, useEffect } from "react";
+import {
   Package,
-  DollarSign,
+  IndianRupee,
   AlertTriangle,
   Calendar,
   TrendingUp,
@@ -13,6 +14,8 @@ import React, { useState, useEffect } from "react"; import {
   ShoppingCart,
   X,
   Send,
+  Pill,
+  Trash2,
 } from "lucide-react";
 
 // Mock data for medicines //removed
@@ -38,28 +41,32 @@ const purchaseOrders = { total: 145, month: "May" };
 const salesThisMonth = { amount: 32450, month: "May" };
 
 const getStatusBadge = (status) => {
+  const normalized = status || "In Stock";
   const styles = {
     "In Stock": "bg-green-50 text-green-700 border-green-200",
     "Low Stock": "bg-amber-50 text-amber-700 border-amber-200",
     "Out of Stock": "bg-red-50 text-red-700 border-red-200",
   };
+  const style = styles[normalized] || "bg-gray-50 text-gray-700 border-gray-200";
   return (
-    <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-semibold border ${styles[status]}`}>
-      {status}
+    <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-semibold border ${style}`}>
+      {normalized}
     </span>
   );
 };
 
 const getReqStatusBadge = (status) => {
+  const normalized = status ? status.toUpperCase() : "PENDING";
   const styles = {
-    Pending: "bg-amber-50 text-amber-700 border-amber-200",
-    Approved: "bg-green-50 text-green-700 border-green-200",
-    Rejected: "bg-red-50 text-red-700 border-red-200",
-    Fulfilled: "bg-blue-50 text-blue-700 border-blue-200",
+    PENDING: "bg-amber-50 text-amber-700 border-amber-200",
+    APPROVED: "bg-green-50 text-green-700 border-green-200",
+    REJECTED: "bg-red-50 text-red-700 border-red-200",
+    FULFILLED: "bg-blue-50 text-blue-700 border-blue-200",
   };
+  const style = styles[normalized] || "bg-gray-50 text-gray-700 border-gray-200";
   return (
-    <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-semibold border ${styles[status]}`}>
-      {status}
+    <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-semibold border ${style}`}>
+      {normalized}
     </span>
   );
 };
@@ -93,6 +100,13 @@ const StatCard = ({ label, value, icon: Icon, tone = "default", button }) => {
   );
 };
 
+const BASE_URL = import.meta.env.VITE_API_URL || "/api";
+
+const getAuthHeaders = () => {
+  const token = localStorage.getItem("aarogya_token");
+  return token ? { Authorization: `Bearer ${token}` } : {};
+};
+
 export default function DistributorDashboard() {
   const [stats, setStats] = useState({
     medicines: 0,
@@ -106,74 +120,94 @@ export default function DistributorDashboard() {
   const [expiryAlerts, setExpiryAlerts] = useState([]);
   const [recentMedicines, setRecentMedicines] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [selectedMedicine, setSelectedMedicine] = useState(null);
+  const [selectedRequirement, setSelectedRequirement] = useState(null);
 
 
   const fetchRequirements = async () => {
     try {
       const response = await fetch(
-        "http://localhost:5000/api/pharmacy/requirements"
+        `${BASE_URL}/pharmacy/requirements`,
+        { headers: getAuthHeaders() }
       );
 
       const data = await response.json();
 
       console.log("Requirements:", data);
 
-      setRequirements(data.data);
+      setRequirements(data?.data || []);
     } catch (error) {
       console.error(error);
     }
   };
   const fetchStockAlerts = async () => {
-    const res = await fetch(
-      "http://localhost:5000/api/pharmacy/stock-alerts"
-    );
+    try {
+      const res = await fetch(
+        `${BASE_URL}/pharmacy/stock-alerts`,
+        { headers: getAuthHeaders() }
+      );
 
-    const data = await res.json();
+      const data = await res.json();
 
-    setStockAlerts(data.data);
+      setStockAlerts(data?.data || []);
+    } catch (error) {
+      console.error(error);
+    }
   };
   const fetchExpiryAlerts = async () => {
     try {
       const response = await fetch(
-        "http://localhost:5000/api/pharmacy/expiry-alerts"
+        `${BASE_URL}/pharmacy/expiry-alerts`,
+        { headers: getAuthHeaders() }
       );
 
       const data = await response.json();
 
-      setExpiryAlerts(data.data);
+      setExpiryAlerts(data?.data || []);
     } catch (error) {
       console.error(error);
     }
   };
   const fetchRecentMedicines = async () => {
-    const response = await fetch(
-      "http://localhost:5000/api/pharmacy/recent-medicines"
-    );
-
-    const data = await response.json();
-
-    setRecentMedicines(data.data);
-  };
-
-  const fetchCategories = async () => {
-    const response = await fetch(
-      "http://localhost:5000/api/pharmacy/categories"
-    );
-
-    const data = await response.json();
-
-    setCategories(data.data);
-  }
-
-  const fetchDashboardStats = async () => {
     try {
       const response = await fetch(
-        "http://localhost:5000/api/pharmacy/dashboard-stats"
+        `${BASE_URL}/pharmacy/recent-medicines`,
+        { headers: getAuthHeaders() }
       );
 
       const data = await response.json();
 
-      setStats(data);
+      setRecentMedicines(data?.data || []);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const fetchCategories = async () => {
+    try {
+      const response = await fetch(
+        `${BASE_URL}/pharmacy/categories`,
+        { headers: getAuthHeaders() }
+      );
+
+      const data = await response.json();
+
+      setCategories(data?.data || []);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const fetchDashboardStats = async () => {
+    try {
+      const response = await fetch(
+        `${BASE_URL}/pharmacy/dashboard-stats`,
+        { headers: getAuthHeaders() }
+      );
+
+      const data = await response.json();
+
+      if (data) setStats(data);
     } catch (error) {
       console.error(error);
     }
@@ -193,14 +227,15 @@ export default function DistributorDashboard() {
   const fetchMedicines = async () => {
     try {
       const response = await fetch(
-        "http://localhost:5000/api/pharmacy/inventory"
+        `${BASE_URL}/pharmacy/inventory`,
+        { headers: getAuthHeaders() }
       );
 
       const result = await response.json();
 
-      console.log("Inventory:", result.data.inventory);
+      console.log("Inventory:", result?.data?.inventory);
 
-      setMedicines(result.data.inventory);
+      setMedicines(result?.data?.inventory || []);
     }
     catch (error) {
       console.error(error);
@@ -285,6 +320,14 @@ export default function DistributorDashboard() {
     setNewRequirement(prev => ({ ...prev, [name]: value }));
   };
 
+  // Toast state for success messages
+  const [toastMessage, setToastMessage] = useState("");
+
+  const showToast = (msg) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(""), 3000);
+  };
+
   // Submit new requirement
   const handleSubmitRequirement = (e) => {
     e.preventDefault();
@@ -293,15 +336,15 @@ export default function DistributorDashboard() {
       return;
     }
 
-    // Create new requirement object
+    // Create new requirement object matching database schema/API field keys
     const newId = `REQ-${new Date().getFullYear()}-${String(requirements.length + 100).slice(-4)}`;
-    const today = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
     const newReq = {
-      id: newId,
-      status: "Pending",
-      items: parseInt(newRequirement.quantity),
-      date: today,
-      medicineName: newRequirement.medicineName,
+      _id: newId,
+      requirementId: newId,
+      status: "PENDING",
+      requestedQty: parseInt(newRequirement.quantity),
+      createdAt: new Date().toISOString(),
+      requestedMedicineName: newRequirement.medicineName,
       priority: newRequirement.priority,
       notes: newRequirement.notes,
     };
@@ -309,12 +352,47 @@ export default function DistributorDashboard() {
     // Add to requirements list (at the top)
     setRequirements([newReq, ...requirements]);
 
-    // Optionally, also add to mockMedicines? Not needed here; just alert success.
-    alert(`Requirement ${newId} raised successfully for ${newRequirement.medicineName} (Qty: ${newRequirement.quantity})`);
+    // Increment requirements stat card count
+    setStats(prev => ({ ...prev, requirements: prev.requirements + 1 }));
 
     // Reset form and close modal
     setNewRequirement({ medicineName: "", quantity: "", priority: "Normal", notes: "" });
     setShowRequirementModal(false);
+
+    // Show success toast
+    showToast(`Requirement for "${newReq.requestedMedicineName}" raised successfully!`);
+  };
+
+  // Delete a requirement
+  const handleDeleteRequirement = async (req) => {
+    const isLocalOnly = typeof req._id === "string" && req._id.startsWith("REQ-");
+
+    if (!isLocalOnly) {
+      // Call backend API to delete
+      try {
+        const res = await fetch(`${BASE_URL}/pharmacy/requirements/${req._id}`, {
+          method: "DELETE",
+          headers: getAuthHeaders(),
+        });
+        const data = await res.json();
+        if (!data.success) {
+          alert("Failed to delete requirement.");
+          return;
+        }
+      } catch (error) {
+        console.error("Delete requirement error:", error);
+        alert("Failed to delete requirement.");
+        return;
+      }
+    }
+
+    // Remove from local state
+    setRequirements(prev => prev.filter(r => r._id !== req._id));
+
+    // Decrement requirements stat card count
+    setStats(prev => ({ ...prev, requirements: Math.max(0, prev.requirements - 1) }));
+
+    showToast(`Requirement removed successfully.`);
   };
 
   return (
@@ -329,7 +407,7 @@ export default function DistributorDashboard() {
         {/* Stats Cards Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
           <StatCard label="Total Medicines" value={stats.medicines} icon={Package} tone="default" />
-          <StatCard label="Total Stock Value" value={`₹${stats.stockValue}`} icon={DollarSign} tone="info" />
+          <StatCard label="Total Stock Value" value={`₹${stats.stockValue}`} icon={IndianRupee} tone="info" />
           <StatCard label="Low Stock Items" value={stats.lowStock} icon={AlertTriangle} tone="warning" />
           <StatCard label="Expired Items" value={0} icon={Calendar} tone="warning" />
           <StatCard
@@ -349,7 +427,7 @@ export default function DistributorDashboard() {
         </div>
 
         {/* Tab row */}
-        <div className="flex flex-wrap gap-2 mb-6 overflow-x-auto pb-2">
+        <div className="flex flex-row overflow-x-auto gap-2 mb-6 pb-2 whitespace-nowrap scrollbar-none">
           {["All medicines", "Current inventory value", "Require attention", "Remove from stock", "Pending", "Approved", "Rejected", "Fulfilled"].map((tab) => (
             <button
               key={tab}
@@ -410,7 +488,7 @@ export default function DistributorDashboard() {
 
             {/* Medicine Table */}
             <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto w-full custom-scrollbar">
                 <table className="w-full text-sm">
                   <thead className="bg-gray-50/50 border-b border-gray-100">
                     <tr>
@@ -426,16 +504,22 @@ export default function DistributorDashboard() {
                   <tbody className="divide-y divide-gray-50">
                     {paginatedMedicines.map((med) => (
                       <tr key={med._id} className="hover:bg-gray-50/30">
-                        <td className="px-5 py-3 font-medium text-gray-800">{med.medicineId?.medicineName}</td>
-                        <td className="px-5 py-3 text-gray-500">{med.medicineId?.category}</td>
-                        <td className="px-5 py-3 text-gray-700">{med.currentStock}</td>
-                        <td className="px-5 py-3 text-gray-700">${med.medicineId?.mrp}</td>
-                        <td className="px-5 py-3"><span className={`px-2 py-1 rounded-full text-xs font-medium ${med.currentStock === 0 ? "bg-red-100 text-red-700" : med.currentStock <= med.minimumStock ? "bg-yellow-100 text-yellow-700" : "bg-green-100 text-green-700"}`}>{med.currentStock === 0 ? "Out of Stock" : med.currentStock <= med.minimumStock ? "Low Stock" : "In Stock"}
-                        </span></td>
-                        <td className="px-5 py-3 text-gray-500">{med.medicineId?.expiryDate ? new Date(med.medicineId.expiryDate).toLocaleDateString() : "N/A"}</td>
-                        <td className="px-5 py-3">
-                          <button className="text-emerald-700 hover:text-emerald-800 font-semibold text-xs flex items-center gap-1">
-                            View Details <Eye className="w-3.5 h-3.5" />
+                        <td className="px-5 py-3.5 font-medium text-gray-800 whitespace-nowrap">{med.medicineId?.medicineName}</td>
+                        <td className="px-5 py-3.5 text-gray-500">{med.medicineId?.category}</td>
+                        <td className="px-5 py-3.5 text-gray-700 font-semibold">{med.currentStock}</td>
+                        <td className="px-5 py-3.5 text-gray-700 font-semibold">₹{med.medicineId?.mrp}</td>
+                        <td className="px-5 py-3.5">
+                          <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${med.currentStock === 0 ? "bg-red-50 text-red-700 border border-red-200" : med.currentStock <= med.minimumStock ? "bg-amber-50 text-amber-700 border border-amber-200" : "bg-green-50 text-green-700 border border-green-200"}`}>
+                            {med.currentStock === 0 ? "Out of Stock" : med.currentStock <= med.minimumStock ? "Low Stock" : "In Stock"}
+                          </span>
+                        </td>
+                        <td className="px-5 py-3.5 text-gray-500 whitespace-nowrap">{med.medicineId?.expiryDate ? new Date(med.medicineId.expiryDate).toLocaleDateString("en-IN") : "N/A"}</td>
+                        <td className="px-5 py-3.5">
+                          <button
+                            onClick={() => setSelectedMedicine(med)}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg hover:bg-emerald-100 hover:text-emerald-800 transition-colors cursor-pointer"
+                          >
+                            <Eye className="w-3.5 h-3.5" /> Details
                           </button>
                         </td>
                       </tr>
@@ -471,45 +555,56 @@ export default function DistributorDashboard() {
               </div>
             </div>
 
-            {/* Inventory Overview (Requirement Requests) */}
+            {/* Recent Medicine Requirements (Requirement Requests) */}
             <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-              <div className="flex justify-between items-center mb-3">
-                <h3 className="text-left px-5 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Inventory Overview</h3>
-                <button className="text-emerald-700 text-sm font-semibold hover:underline">View all requirements →</button>
+              <div className="flex justify-between items-center border-b border-gray-100 pb-3 mb-4">
+                <h3 className="font-bold text-gray-800">Recent Medicine Requirements</h3>
+                <button className="text-emerald-700 text-xs sm:text-sm font-semibold hover:underline">View all requirements →</button>
               </div>
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto w-full custom-scrollbar">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-gray-100">
                       <th className="text-left px-5 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Medicine name</th>
                       <th className="text-left px-5 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Date</th>
-                      <th className="text-left px-5 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Items</th>
+                      <th className="text-left px-5 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Qty</th>
                       <th className="text-left px-5 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Status</th>
-                      <th className="text-left px-5 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider"></th>
+                      <th className="text-left px-5 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-50">
                     {requirements.map((req) => (
-                      <tr key={req._id}>
-                        <td className="px-5 py-3 font-medium text-gray-800">{req.medicineId?.medicineName}</td>
-
-                        <td className="text-gray-500">
-                          {req.medicineId?.createdAt
-                            ? new Date(req.medicineId.createdAt).toLocaleDateString("en-IN")
+                      <tr key={req._id} className="hover:bg-gray-50/30">
+                        <td className="px-5 py-3.5 font-medium text-gray-800 whitespace-nowrap">
+                          {req.medicineId?.medicineName || req.requestedMedicineName || "N/A"}
+                        </td>
+                        <td className="px-5 py-3.5 text-gray-500 whitespace-nowrap">
+                          {req.createdAt
+                            ? new Date(req.createdAt).toLocaleDateString("en-IN")
                             : "-"}
                         </td>
-
-                        <td className="text-gray-500">
+                        <td className="px-5 py-3.5 text-gray-700 font-semibold">
                           {req.requestedQty}
                         </td>
-
-                        <td className="bg-100 text-green-700">
+                        <td className="px-5 py-3.5">
                           {getReqStatusBadge(req.status)}
                         </td>
-                        <td className="px-5 py-3">
-                          <button className="text-emerald-700 hover:text-emerald-800 font-semibold text-xs flex items-center gap-1">
-                            View Details <Eye className="w-3.5 h-3.5" />
-                          </button>
+                        <td className="px-5 py-3.5">
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => setSelectedRequirement(req)}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg hover:bg-emerald-100 hover:text-emerald-800 transition-colors cursor-pointer"
+                            >
+                              <Eye className="w-3.5 h-3.5" /> Details
+                            </button>
+                            <button
+                              onClick={() => handleDeleteRequirement(req)}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-red-600 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 hover:text-red-700 transition-colors cursor-pointer"
+                              title="Remove requirement"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" /> Remove
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -547,9 +642,8 @@ export default function DistributorDashboard() {
                 {expiryAlerts.length === 0 ? (
                   <p className="text-sm text-gray-500">No expiry alerts to display.</p>
                 ) : (
-
-                  expiryAlerts.map((item) => (
-                    <div key={item.id} className="flex justify-between items-center border-b border-gray-50 pb-2">
+                  expiryAlerts.map((item, idx) => (
+                    <div key={item._id || item.id || idx} className="flex justify-between items-center border-b border-gray-50 pb-2">
                       <span className="text-sm font-medium text-gray-700">{item.medicineName}</span>
                       <span className="text-xs text-red-600 font-semibold">
                         {new Date(item.expiryDate).toLocaleDateString("en-IN")}
@@ -581,7 +675,7 @@ export default function DistributorDashboard() {
             <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
               <h3 className="font-bold text-gray-800 mb-3">Categories</h3>
               <div className="space-y-2">
-                <option value="all">All Categories</option>
+
                 {categories.map((cat) => (
                   <div key={cat._id} className="flex justify-between items-center">
                     <span className="text-sm text-gray-700">{cat._id}</span>
@@ -600,9 +694,9 @@ export default function DistributorDashboard() {
                 <p className="text-[10px] text-gray-400">This {purchaseOrders.month}</p>
               </div>
               <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 text-center">
-                <DollarSign className="w-5 h-5 text-emerald-600 mx-auto mb-1" />
+                <IndianRupee className="w-5 h-5 text-emerald-600 mx-auto mb-1" />
                 <p className="text-xs text-gray-500">Sales (This Month)</p>
-                <p className="text-lg font-bold text-gray-800">${salesThisMonth.amount.toLocaleString()}</p>
+                <p className="text-lg font-bold text-gray-800">₹{salesThisMonth.amount.toLocaleString()}</p>
               </div>
             </div>
           </div>
@@ -611,7 +705,7 @@ export default function DistributorDashboard() {
 
       {/* Modal for Raise New Requirement */}
       {showRequirementModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={() => setShowRequirementModal(false)}>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={() => setShowRequirementModal(false)}>
           <div className="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-auto shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex justify-between items-center">
               <h3 className="text-xl font-bold text-[#06402B]">Raise New Requirement</h3>
@@ -687,6 +781,183 @@ export default function DistributorDashboard() {
           </div>
         </div>
       )}
+
+      {/* Selected Medicine Details Modal */}
+      {selectedMedicine && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={() => setSelectedMedicine(null)}>
+          <div className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-auto shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex justify-between items-center">
+              <h3 className="text-xl font-bold text-[#06402B] flex items-center gap-2">
+                <Pill className="w-5 h-5 text-emerald-600" /> Medicine Details
+              </h3>
+              <button onClick={() => setSelectedMedicine(null)} className="p-2 text-gray-400 hover:text-gray-600 rounded-lg">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-6 space-y-6">
+              {/* Medicine Name and Code */}
+              <div>
+                <h4 className="text-2xl font-bold text-gray-900">{selectedMedicine.medicineId?.medicineName}</h4>
+                <span className="inline-block mt-1 text-xs font-mono bg-gray-100 text-gray-600 px-2 py-0.5 rounded">
+                  Code: {selectedMedicine.medicineId?.medicineCode}
+                </span>
+              </div>
+
+              {/* Info Grid */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <span className="block text-xs font-semibold text-gray-400 uppercase tracking-wider">Category</span>
+                  <span className="text-sm font-medium text-gray-900">{selectedMedicine.medicineId?.category}</span>
+                </div>
+                <div>
+                  <span className="block text-xs font-semibold text-gray-400 uppercase tracking-wider">Batch No</span>
+                  <span className="text-sm font-medium text-gray-900">{selectedMedicine.medicineId?.batchNo || "N/A"}</span>
+                </div>
+                <div>
+                  <span className="block text-xs font-semibold text-gray-400 uppercase tracking-wider">Manufacturer</span>
+                  <span className="text-sm font-medium text-gray-900">{selectedMedicine.medicineId?.manufacturer}</span>
+                </div>
+                <div>
+                  <span className="block text-xs font-semibold text-gray-400 uppercase tracking-wider">Supplier</span>
+                  <span className="text-sm font-medium text-gray-900">{selectedMedicine.supplier || "N/A"}</span>
+                </div>
+                <div>
+                  <span className="block text-xs font-semibold text-gray-400 uppercase tracking-wider">Price (MRP)</span>
+                  <span className="text-sm font-bold text-emerald-700">₹{selectedMedicine.medicineId?.mrp}</span>
+                </div>
+                <div>
+                  <span className="block text-xs font-semibold text-gray-400 uppercase tracking-wider">Expiry Date</span>
+                  <span className="text-sm font-medium text-gray-900">
+                    {selectedMedicine.medicineId?.expiryDate ? new Date(selectedMedicine.medicineId.expiryDate).toLocaleDateString() : "N/A"}
+                  </span>
+                </div>
+              </div>
+
+              <hr className="border-gray-100" />
+
+              {/* Stock Info */}
+              <div className="grid grid-cols-3 gap-4 bg-gray-50/50 p-4 rounded-xl border border-gray-100">
+                <div className="text-center">
+                  <span className="block text-xs font-semibold text-gray-400 uppercase tracking-wider">Current Stock</span>
+                  <span className="text-lg font-bold text-gray-900 mt-1 block">{selectedMedicine.currentStock}</span>
+                </div>
+                <div className="text-center border-x border-gray-200">
+                  <span className="block text-xs font-semibold text-gray-400 uppercase tracking-wider">Min Stock</span>
+                  <span className="text-lg font-bold text-gray-900 mt-1 block">{selectedMedicine.minimumStock}</span>
+                </div>
+                <div className="text-center">
+                  <span className="block text-xs font-semibold text-gray-400 uppercase tracking-wider">Stock Status</span>
+                  <div className="mt-1">{getStatusBadge(
+                    selectedMedicine.currentStock === 0 ? "Out of Stock" : selectedMedicine.currentStock <= selectedMedicine.minimumStock ? "Low Stock" : "In Stock"
+                  )}</div>
+                </div>
+              </div>
+
+              {/* Stock Value */}
+              <div className="flex justify-between items-center bg-emerald-50/50 px-5 py-3 rounded-xl border border-emerald-100">
+                <span className="text-sm font-semibold text-emerald-800">Estimated Stock Value</span>
+                <span className="text-lg font-black text-[#06402B]">
+                  ₹{((selectedMedicine.currentStock || 0) * (selectedMedicine.medicineId?.mrp || 0)).toLocaleString("en-IN")}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Selected Requirement Details Modal */}
+      {selectedRequirement && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={() => setSelectedRequirement(null)}>
+          <div className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-auto shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex justify-between items-center">
+              <h3 className="text-xl font-bold text-[#06402B] flex items-center gap-2">
+                <Calendar className="w-5 h-5 text-emerald-600" /> Requirement Details
+              </h3>
+              <button onClick={() => setSelectedRequirement(null)} className="p-2 text-gray-400 hover:text-gray-600 rounded-lg">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-6 space-y-6">
+              {/* Medicine Name and ID */}
+              <div>
+                <span className="block text-xs font-semibold text-gray-400 uppercase tracking-wider">Requested Medicine</span>
+                <h4 className="text-2xl font-bold text-gray-900">
+                  {selectedRequirement.medicineId?.medicineName || selectedRequirement.requestedMedicineName || "N/A"}
+                </h4>
+                <span className="inline-block mt-1 text-xs font-mono bg-gray-100 text-gray-600 px-2 py-0.5 rounded">
+                  Req ID: {selectedRequirement.requirementId || "N/A"}
+                </span>
+              </div>
+
+              {/* Info Grid */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <span className="block text-xs font-semibold text-gray-400 uppercase tracking-wider">Requested Quantity</span>
+                  <span className="text-sm font-bold text-gray-900">{selectedRequirement.requestedQty} units</span>
+                </div>
+                <div>
+                  <span className="block text-xs font-semibold text-gray-400 uppercase tracking-wider">Status</span>
+                  <div className="mt-0.5">{getReqStatusBadge(selectedRequirement.status)}</div>
+                </div>
+                <div>
+                  <span className="block text-xs font-semibold text-gray-400 uppercase tracking-wider">Date Raised</span>
+                  <span className="text-sm font-medium text-gray-900">
+                    {selectedRequirement.createdAt ? new Date(selectedRequirement.createdAt).toLocaleDateString("en-IN") : "-"}
+                  </span>
+                </div>
+                <div>
+                  <span className="block text-xs font-semibold text-gray-400 uppercase tracking-wider">Priority</span>
+                  <span className="text-sm font-medium text-gray-900">{selectedRequirement.priority || "Normal"}</span>
+                </div>
+              </div>
+
+              {/* Notes Section */}
+              {selectedRequirement.notes && (
+                <div>
+                  <span className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Additional Notes</span>
+                  <p className="text-sm text-gray-700 bg-gray-50 p-4 rounded-xl border border-gray-100 italic">
+                    "{selectedRequirement.notes}"
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Success Toast Notification */}
+      {toastMessage && (
+        <div className="fixed bottom-6 right-6 z-[100] animate-in fade-in slide-in-from-bottom-4">
+          <div className="bg-emerald-50 text-emerald-700 rounded-xl px-5 py-3 flex items-center gap-3 shadow-lg border border-emerald-200">
+            <div className="w-6 h-6 bg-emerald-100 rounded-full flex items-center justify-center flex-shrink-0">
+              <svg className="w-3.5 h-3.5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <span className="text-sm font-semibold">{toastMessage}</span>
+            <button onClick={() => setToastMessage("")} className="ml-2 p-1 text-emerald-400 hover:text-emerald-600 transition">
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      <style>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          height: 6px;
+          width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: rgba(6, 64, 43, 0.15);
+          border-radius: 9999px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: rgba(6, 64, 43, 0.3);
+        }
+      `}</style>
     </div>
   );
 }

@@ -142,7 +142,7 @@ export function Modal({
 }) {
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-150">
+    <div className="fixed inset-0 z-[100] grid place-items-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-150">
       <div className="w-full max-w-2xl bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden animate-in zoom-in-95 duration-150">
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
           <h3 className="font-bold text-[#0f281e]">{title}</h3>

@@ -4,6 +4,7 @@ import Medicine from "../models/Medicine.js";
 import Inventory from "../models/Inventory.js";
 import MedicineRequirement from "../models/MedicineRequirement.js";
 import History from "../models/History.js";
+import billingService from "../services/billing.service.js";
 
 
 
@@ -270,6 +271,23 @@ export const removeMedicineFromRequirement = async (req, res) => {
   }
 };
 
+export const deleteRequirement = async (req, res) => {
+  try {
+    const { id } = req.params;
+    await MedicineRequirement.findByIdAndDelete(id);
+    res.json({
+      success: true,
+      message: "Requirement deleted successfully"
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+
 export const createRequirement = async (req, res) => {
   try {
     const {
@@ -341,6 +359,70 @@ export const createRequirement = async (req, res) => {
       amountPaid: req.body.amountPaid,
     });
     console.log("History Saved");
+
+    // Calculate subtotal and build items for Billing
+    let subtotal = 0;
+    const billingItems = [];
+
+    if (medicines && Array.isArray(medicines)) {
+      for (const med of medicines) {
+        const price = med.price || 10;
+        const amount = med.quantity * price;
+        subtotal += amount;
+        billingItems.push({
+          serviceName: med.medicineName,
+          quantity: med.quantity,
+          unitPrice: price,
+          amount: amount
+        });
+      }
+    }
+
+    if (requestedMedicines && Array.isArray(requestedMedicines)) {
+      for (const med of requestedMedicines) {
+        if (!med.name || med.quantity <= 0) continue;
+        const price = med.price || 10;
+        const amount = med.quantity * price;
+        subtotal += amount;
+        billingItems.push({
+          serviceName: med.name,
+          quantity: med.quantity,
+          unitPrice: price,
+          amount: amount
+        });
+      }
+    }
+
+    const discount = req.body.discount || 0;
+    const tax = subtotal * 0.05;
+    const total = req.body.total || (subtotal + tax - discount);
+    const amountPaid = req.body.amountPaid || total;
+    const dueAmount = total - amountPaid;
+
+    if (patientId) {
+      try {
+        await billingService.createBilling({
+          patientId,
+          items: billingItems,
+          subtotal,
+          discount,
+          tax,
+          total,
+          paymentSummary: {
+            paidAmount: amountPaid,
+            dueAmount: dueAmount > 0 ? dueAmount : 0
+          },
+          paymentStatus: amountPaid >= total ? "PAID" : amountPaid > 0 ? "PENDING" : "UNPAID",
+          status: amountPaid >= total ? "paid" : "pending",
+          issuedAt: new Date(),
+          paidAt: amountPaid > 0 ? new Date() : null
+        });
+        console.log("Billing Record Saved");
+      } catch (err) {
+        console.error("Failed to create billing record:", err);
+      }
+    }
+
     res.status(201).json({
       success: true,
       data: saved
@@ -401,5 +483,23 @@ export const getHistory = async (req, res) => {
       message: error.message
     });
 
+  }
+};
+
+export const updateInventoryItem = async (req, res) => {
+  try {
+    const inventory = await pharmacyService.updateInventoryItem(req.params.id, req.body);
+    res.json(generateResponse({ inventory }, "Inventory item updated successfully"));
+  } catch (error) {
+    res.status(500).json(generateError(error.message));
+  }
+};
+
+export const deleteInventoryItem = async (req, res) => {
+  try {
+    await pharmacyService.deleteInventoryItem(req.params.id);
+    res.json(generateResponse(null, "Inventory item deleted successfully"));
+  } catch (error) {
+    res.status(500).json(generateError(error.message));
   }
 };

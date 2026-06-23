@@ -47,7 +47,10 @@ export const login = async (req, res) => {
 export const me = async (req, res) => {
   try {
     const user = await authService.getUserById(req.user.id);
-    const userJSON = user?.toSafeJSON();
+    if (!user) {
+      return res.status(401).json(generateError("User not found"));
+    }
+    const userJSON = user.toSafeJSON();
     if (userJSON && (userJSON.role === "PATIENT" || userJSON.role === "patient")) {
       const patient = await Patient.findOne({ userId: userJSON._id });
       if (patient) {

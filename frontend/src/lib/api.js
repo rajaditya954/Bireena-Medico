@@ -30,54 +30,26 @@ const axiosInstance = axios.create({
 
 // Request interceptor – attach token
 axiosInstance.interceptors.request.use(
-  async (config) => {
-    let token = getToken();
-    if (!token) {
-      const session = localStorage.getItem("medico_session");
-      if (session) {
-        try {
-          const userData = JSON.parse(session);
-          let email = "";
-          let password = "";
-          const role = userData.role;
-
-          if (role === "ADMIN") {
-            email = "admin@hospital.com";
-            password = "Admin@123";
-          } else if (role === "DOCTOR") {
-            email = "doctor@hospital.com";
-            password = "Doctor@123";
-          } else if (role === "LAB") {
-            email = "lab@hospital.com";
-            password = "Lab@1234";
-          } else if (role === "APPOINTMENT") {
-            email = "scheduler@hospital.com";
-            password = "Schedule@123";
-          } else if (role === "CLINIC") {
-            email = "dispensary@hospital.com";
-            password = "Dispense@123";
-          }
-
-          if (email && password) {
-            const response = await axios.post(`${BASE_URL}/auth/login`, { email, password });
-            token = response.data.data.token;
-            setToken(token);
-          }
-        } catch (err) {
-          console.error("Silent login in interceptor failed", err);
-        }
-      }
+  (config) => {
+    const token = getToken();
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
     }
-    if (token) config.headers.Authorization = `Bearer ${token}`;
     return config;
   },
   (error) => Promise.reject(error)
 );
 
-// Response interceptor – extract error message
+// Response interceptor – handle 401 and extract error message
 axiosInstance.interceptors.response.use(
   (response) => response,
   (error) => {
+    // If we get a 401, the token is invalid/expired – clear it and redirect to login
+    if (error.response?.status === 401) {
+      localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem("medico_session");
+      window.location.href = "/login";
+    }
     const message =
       error.response?.data?.message ||
       error.response?.data?.error ||

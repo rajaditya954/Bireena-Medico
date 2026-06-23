@@ -10,7 +10,7 @@ import {
   CheckCircle2,
   Package,
   Calendar,
-  DollarSign,
+  IndianRupee,
   Warehouse,
   Clock,
   TrendingDown,
@@ -111,6 +111,8 @@ const warehouses = ["All Warehouses", "Central Warehouse", "East Warehouse", "No
 const statuses = ["All Status", "Expiring Soon", "Expired"];
 const categories = ["All Categories", "Analgesics", "Antibiotics", "Antihistamines", "Gastrointestinal", "Respiratory"];
 
+const BASE_URL = import.meta.env.VITE_API_URL || "/api";
+
 // ==================== Main Component ====================
 export default function ExpiryItems() {
   const [items, setItems] = useState([]);
@@ -135,41 +137,39 @@ export default function ExpiryItems() {
   const totalExpiryItems = items.length;
   const totalValueAtRisk = items.reduce((sum, i) => sum + i.totalValue, 0);
 
+  const fetchExpiryItems = async () => {
+    try {
+      const token = localStorage.getItem("aarogya_token");
+      const res = await fetch(
+        `${BASE_URL}/pharmacy/inventory`,
+        { headers: token ? { Authorization: `Bearer ${token}` } : {} }
+      );
+      const result = await res.json();
+      const inventory = result?.data?.inventory || [];
+      
+      const expiryItems = inventory
+        .filter(item => item.medicineId?.expiryDate)
+        .map(item => ({
+          id: item._id,
+          medicineName: item.medicineId.medicineName,
+          batchNo: item.medicineId.batchNo || "-",
+          warehouse: item.location || "Store",
+          expiryDate: item.medicineId.expiryDate,
+          daysLeft: Math.ceil((new Date(item.medicineId.expiryDate) - new Date()) / (1000 * 60 * 60 * 24)),
+          stock: item.currentStock || 0,
+          unitPrice: item.medicineId.mrp || 0,
+          totalValue: (item.currentStock || 0) * (item.medicineId.mrp || 0),
+          status: (new Date(item.medicineId.expiryDate) - new Date()) < 0 ? "Expired" : "Expiring Soon",
+        }));
+      setItems(expiryItems);
+    } catch (err) {
+      console.error(err);
+      setItems(mockExpiryItems);
+    }
+  };
+
   useEffect(() => {
-    (async () => {
-      try {
-        const api = await import("../../lib/api");
-        const res = await api.api.listMedicines();
-        const meds = res.data?.medicines || res.data || [];
-        // Map medicines with expiry info into expiry items
-        const expiryItems = meds
-          .filter(m => m.expiryDate)
-          .map(m => ({
-            id: m._id || m.id,
-            medicineName: m.name || m.medicineName || m.genericName,
-            batchNo: m.batchNo || m.batch || "-",
-            warehouse: m.warehouse || "Main Warehouse",
-            expiryDate: m.expiryDate,
-            daysLeft: Math.ceil((new Date(m.expiryDate) - new Date()) / (1000 * 60 * 60 * 24)),
-            stock: m.currentStock || m.stock || 0,
-            unitPrice: m.mrp || m.price || 0,
-            totalValue: (m.currentStock || m.stock || 0) * (m.mrp || m.price || 0),
-            status: (new Date(m.expiryDate) - new Date()) < 0 ? "Expired" : "Expiring Soon",
-          }));
-        if (expiryItems.length) {
-          setItems(expiryItems);
-        } else {
-          setItems(mockExpiryItems);
-        }
-      } catch (err) {
-        const stored = localStorage.getItem("medico_expiry_items");
-        if (stored) setItems(JSON.parse(stored));
-        else {
-          setItems(mockExpiryItems);
-          localStorage.setItem("medico_expiry_items", JSON.stringify(mockExpiryItems));
-        }
-      }
-    })();
+    fetchExpiryItems();
   }, []);
 
   useEffect(() => {
@@ -198,32 +198,43 @@ export default function ExpiryItems() {
     setEditingItem(item);
     setEditForm({
       warehouse: item.warehouse,
-      expiryDate: item.expiryDate,
+      expiryDate: item.expiryDate ? new Date(item.expiryDate).toISOString().split('T')[0] : "",
       stock: item.stock,
       notes: item.notes || "",
     });
   };
 
-  const handleSaveEdit = () => {
-    const updatedItems = items.map(item => 
-      item.id === editingItem.id 
-        ? { 
-            ...item, 
+  const handleSaveEdit = async () => {
+    try {
+      const token = localStorage.getItem("aarogya_token");
+      const response = await fetch(
+        `${BASE_URL}/pharmacy/inventory/${editingItem.id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify({
             warehouse: editForm.warehouse,
             expiryDate: editForm.expiryDate,
             stock: parseInt(editForm.stock),
-            totalValue: parseInt(editForm.stock) * item.unitPrice,
-            notes: editForm.notes,
-            daysLeft: calculateDaysLeft(editForm.expiryDate),
-            status: calculateStatus(editForm.expiryDate),
-          }
-        : item
-    );
-    setItems(updatedItems);
-    localStorage.setItem("medico_expiry_items", JSON.stringify(updatedItems));
-    setEditingItem(null);
-    setSaveMessage({ type: "success", text: "Item updated successfully!" });
-    setTimeout(() => setSaveMessage(null), 3000);
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to update item");
+      }
+
+      await fetchExpiryItems();
+      setEditingItem(null);
+      setSaveMessage({ type: "success", text: "Item updated successfully!" });
+      setTimeout(() => setSaveMessage(null), 3000);
+    } catch (error) {
+      console.error(error);
+      alert("Error updating item: " + error.message);
+    }
   };
 
   const calculateDaysLeft = (date) => {
@@ -244,7 +255,7 @@ export default function ExpiryItems() {
     { label: "Expiring Soon", value: expiringSoon, icon: Clock, color: "text-amber-600", bg: "bg-amber-50", subtitle: "In next 30 days" },
     { label: "Expired Items", value: expiredItems, icon: AlertCircle, color: "text-red-600", bg: "bg-red-50", subtitle: "Already expired" },
     { label: "Total Expiry Items", value: totalExpiryItems, icon: Package, color: "text-blue-600", bg: "bg-blue-50", subtitle: "Expiring or expired" },
-    { label: "Total Value at Risk", value: `$${totalValueAtRisk.toFixed(2)}`, icon: DollarSign, color: "text-emerald-600", bg: "bg-emerald-50", subtitle: "Approx. value" },
+    { label: "Total Value at Risk", value: `₹${totalValueAtRisk.toFixed(2)}`, icon: IndianRupee, color: "text-emerald-600", bg: "bg-emerald-50", subtitle: "Approx. value" },
   ];
 
   return (
@@ -351,7 +362,7 @@ export default function ExpiryItems() {
                     </span>
                   </td>
                   <td className="px-6 py-4 text-sm text-slate-600">{item.stock} units</td>
-                  <td className="px-6 py-4 text-sm font-medium text-slate-700">${item.totalValue.toFixed(2)}</td>
+                  <td className="px-6 py-4 text-sm font-medium text-slate-700">₹{item.totalValue.toFixed(2)}</td>
                   <td className="px-6 py-4">
                     <span className={cn(
                       "px-2 py-1 rounded-full text-[10px] font-bold",
@@ -383,7 +394,7 @@ export default function ExpiryItems() {
 
       {/* Save Message */}
       {saveMessage && (
-        <div className="fixed bottom-6 right-6 z-50 animate-in fade-in slide-in-from-bottom-4">
+        <div className="fixed bottom-6 right-6 z-[100] animate-in fade-in slide-in-from-bottom-4">
           <div className="bg-emerald-50 text-emerald-700 rounded-xl px-4 py-3 flex items-center gap-2 shadow-lg">
             <CheckCircle2 className="w-4 h-4" />
             {saveMessage.text}
@@ -394,7 +405,7 @@ export default function ExpiryItems() {
       {/* Edit Modal (non-sticky, scrollable) */}
       <AnimatePresence>
         {editingItem && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 overflow-y-auto">
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -465,15 +476,15 @@ export default function ExpiryItems() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Unit Price (USD)</label>
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Unit Price (INR)</label>
                     <p className="text-sm font-medium text-slate-700 bg-gray-50 rounded-xl px-4 py-2.5">
-                      ${editingItem.unitPrice.toFixed(2)}
+                      ₹{editingItem.unitPrice.toFixed(2)}
                     </p>
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Total Value (USD)</label>
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Total Value (INR)</label>
                     <p className="text-sm font-bold text-primary bg-gray-50 rounded-xl px-4 py-2.5">
-                      ${(parseInt(editForm.stock || 0) * editingItem.unitPrice).toFixed(2)}
+                      ₹{(parseInt(editForm.stock || 0) * editingItem.unitPrice).toFixed(2)}
                     </p>
                   </div>
                 </div>

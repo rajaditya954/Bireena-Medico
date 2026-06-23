@@ -135,7 +135,7 @@ td{padding:7px 8px;border-bottom:1px solid #f0f0f0;font-size:12px}
 
   <div class="totals"><div class="totals-inner">
     ${(serviceMode === "both" || serviceMode === "doctor") ? `<div class="t-row"><span>Doctor Consultation</span><span>₹${(consultations.reduce((s,c)=>s+(c.amount||0),0)+followupCharges).toFixed(2)}</span></div>` : ""}
-    ${(serviceMode === "both" || serviceMode === "lab") ? `<div class="t-row"><span>Lab Tests</span><span>₹${Math.max(0,labTests.reduce((s,t)=>s+(t.price||0),0)-labDiscount).toFixed(2)}</span></div>` : ""}
+    ${(serviceMode === "both" || serviceMode === "lab") ? `<div class="t-row"><span>Lab Tests</span><span>₹${Math.max(0,labTests.reduce((s,t)=>s+Number(t.price||0),0)-labDiscount).toFixed(2)}</span></div>` : ""}
     <div class="t-row"><span>Subtotal</span><span>₹${subtotal.toFixed(2)}</span></div>
     <div class="t-row"><span>Discount</span><span>−₹${discount.toFixed(2)}</span></div>
     <div class="t-row"><span>GST (5%)</span><span>₹${tax.toFixed(2)}</span></div>
@@ -279,7 +279,7 @@ export default function BillingGenerateTab({ onBillGenerated }) {
   };
 
   const doctorTotal = consultations.reduce((s, c) => s + (c.amount || 0), 0) + followupCharges;
-  const labTotal = labTests.reduce((s, t) => s + (t.price || 0), 0) - labDiscount;
+  const labTotal = labTests.reduce((s, t) => s + Number(t.price || 0), 0) - labDiscount;
   const subtotal = doctorTotal + Math.max(0, labTotal);
   const discount = 0;
   const tax = Math.round(subtotal * 0.05 * 100) / 100;

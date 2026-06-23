@@ -462,7 +462,10 @@ export default function DoctorDashboard() {
                                   {/* Show doctor sub-tag for admin summary views */}
                                   {isAdmin && selectedDoctorId === "all" && (
                                     <span className="text-[10px] text-emerald-700 font-bold bg-emerald-50 px-1.5 py-0.5 rounded-full mt-0.5">
-                                      Dr. {apt.doctorId?.name || apt.doctorName || "General"}
+                                      {(() => {
+                                        const docName = apt.doctorId?.name || apt.doctorName || "General";
+                                        return /^dr\.?/i.test(docName) ? docName : `Dr. ${docName}`;
+                                      })()}
                                     </span>
                                   )}
                                 </div>

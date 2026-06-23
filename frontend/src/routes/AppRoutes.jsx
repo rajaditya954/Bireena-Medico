@@ -199,14 +199,6 @@ export default function AppRoutes() {
           }
         />
         <Route
-          path="/clinic/stock"
-          element={
-            <Layout>
-              <Stocks />
-            </Layout>
-          }
-        />
-        <Route
           path="/lab/add-test"
           element={
             <Layout>
@@ -312,23 +304,7 @@ export default function AppRoutes() {
             </Layout>
           }
         />
-        <Route
-          path="/clinic/add-medicine"
-          element={
-            <Layout>
-              <AddMedicine />
-            </Layout>
-          }
-        />
       </Route>
-      <Route
-        path="/clinic/expired-medicines"
-        element={
-          <Layout>
-            <ExpiredMedicine />
-          </Layout>
-        }
-      />
 
       {/* ========== DOCTOR ROUTES (Doctor + Admin) ========== */}
       <Route element={<RoleGuard allowedRoles={[Role.DOCTOR, Role.ADMIN]} />}>
@@ -553,6 +529,14 @@ export default function AppRoutes() {
           element={
             <Layout>
               <MedicineDispense />
+            </Layout>
+          }
+        />
+        <Route
+          path="/clinic/add-medicine"
+          element={
+            <Layout>
+              <AddMedicine />
             </Layout>
           }
         />

@@ -1,6 +1,6 @@
-import mongoose from "mongoose";
+import db from "../config/db-client.js";
 
-const LabTestSchema = new mongoose.Schema({
+const LabTestSchema = new db.Schema({
   testCode: { type: String, required: true, unique: true },
   testName: { type: String, required: true },
   category: { type: String },
@@ -14,4 +14,4 @@ const LabTestSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now },
 });
 
-export default mongoose.model("LabTest", LabTestSchema);
+export default db.model("LabTest", LabTestSchema);

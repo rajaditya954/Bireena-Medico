@@ -35,7 +35,7 @@ export default function TestManagementPage() {
       active: tests.filter((test) => test.status === "Active").length,
       inactive: tests.filter((test) => test.status === "Inactive").length,
       avgPrice: tests.length
-        ? Math.round(tests.reduce((sum, test) => sum + test.price, 0) / tests.length)
+        ? Math.round(tests.reduce((sum, test) => sum + Number(test.price || 0), 0) / tests.length)
         : 0,
     }),
     [tests]

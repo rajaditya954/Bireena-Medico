@@ -1,11 +1,11 @@
-import mongoose from "mongoose";
+import db from "../config/db-client.js";
 
-const QueueSchema = new mongoose.Schema(
+const QueueSchema = new db.Schema(
   {
-    appointmentId: { type: mongoose.Schema.Types.ObjectId, ref: "Appointment", required: true },
-    patientId: { type: mongoose.Schema.Types.ObjectId, ref: "Patient", required: true },
+    appointmentId: { type: db.Schema.Types.ObjectId, ref: "Appointment", required: true },
+    patientId: { type: db.Schema.Types.ObjectId, ref: "Patient", required: true },
     patientName: { type: String },
-    doctorId: { type: mongoose.Schema.Types.ObjectId, ref: "Doctor", required: true },
+    doctorId: { type: db.Schema.Types.ObjectId, ref: "Doctor", required: true },
     doctorName: { type: String },
     queueNumber: { type: Number },
     tokenNumber: { type: Number },
@@ -26,4 +26,4 @@ const QueueSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-export default mongoose.model("Queue", QueueSchema);
+export default db.model("Queue", QueueSchema);

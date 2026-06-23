@@ -17,14 +17,14 @@ API.interceptors.request.use(
           const role = userData.role;
 
           if (role === "ADMIN") {
-            email = "admin@hospital.com";
-            password = "Admin@123";
+            email = "admin.medico";
+            password = "medicouseradmin";
           } else if (role === "DOCTOR") {
             email = "doctor@hospital.com";
             password = "Doctor@123";
           } else if (role === "LAB") {
-            email = "lab@hospital.com";
-            password = "Lab@1234";
+            email = "lab.medico";
+            password = "medicouserlab";
           } else if (role === "APPOINTMENT") {
             email = "scheduler@hospital.com";
             password = "Schedule@123";

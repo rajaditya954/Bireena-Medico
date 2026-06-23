@@ -1,6 +1,15 @@
 import billingService from "../services/billing.service.js";
 import { generateResponse, generateError } from "../utils/response.js";
 
+export const getAllBillings = async (req, res) => {
+  try {
+    const billings = await billingService.getAllBillings();
+    res.json({ success: true, data: billings });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 export const createBilling = async (req, res) => {
   try {
     const billing = await billingService.createBilling(req.body);

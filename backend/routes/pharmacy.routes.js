@@ -8,6 +8,10 @@ router.post(
   "/requirements",
   pharmacyController.createRequirement
 );
+router.delete(
+  "/requirements/:id",
+  pharmacyController.deleteRequirement
+);
 
 router.get(
   "/requirements/patient/:patientId",
@@ -35,5 +39,7 @@ router.delete(
   pharmacyController.removeMedicineFromRequirement
 );
 router.put("/:id", pharmacyController.updateMedicine);
+router.put("/inventory/:id", pharmacyController.updateInventoryItem);
+router.delete("/inventory/:id", pharmacyController.deleteInventoryItem);
 
 export default router;

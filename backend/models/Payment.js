@@ -1,21 +1,21 @@
 // backend/models/Payment.js
-import mongoose from "mongoose";
+import db from "../config/db-client.js";
 
-const paymentSchema = new mongoose.Schema(
+const paymentSchema = new db.Schema(
   {
     paymentId: { type: String, unique: true, index: true },
     invoiceId: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: db.Schema.Types.ObjectId,
       ref: "Invoice",
       required: false,
     },
     bill: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: db.Schema.Types.ObjectId,
       ref: "Billing",
       required: false,
     },
     patientId: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: db.Schema.Types.ObjectId,
       ref: "Patient",
       required: true,
     },
@@ -51,4 +51,4 @@ paymentSchema.index({ patientId: 1 });
 paymentSchema.index({ invoiceId: 1 });
 paymentSchema.index({ status: 1 });
 
-export default mongoose.model("Payment", paymentSchema);
+export default db.model("Payment", paymentSchema);

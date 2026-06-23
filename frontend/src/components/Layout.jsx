@@ -145,7 +145,7 @@ export default function Layout({ children }) {
         <main className="flex-1 overflow-y-auto relative">
           {/* Decorative background leaves — bottom right */}
           <div
-            className="fixed bottom-0 right-0 w-72 h-64 pointer-events-none z-0 opacity-30"
+            className="fixed bottom-0 right-0 w-72 h-64 pointer-events-none z-[-10] opacity-30"
             aria-hidden="true"
           >
             <svg viewBox="0 0 300 260" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
@@ -159,7 +159,7 @@ export default function Layout({ children }) {
 
           {/* Decorative dots background */}
           <div
-            className="absolute inset-0 z-0 opacity-[0.03]"
+            className="absolute inset-0 z-[-10] opacity-[0.03]"
             style={{
               backgroundImage: "radial-gradient(circle, #166534 1px, transparent 1px)",
               backgroundSize: "24px 24px",
@@ -167,7 +167,7 @@ export default function Layout({ children }) {
             aria-hidden="true"
           />
 
-          <div className="relative z-10 p-6 md:p-8">
+          <div className="relative p-6 md:p-8">
             <Breadcrumbs />
             <div className="max-w-7xl mx-auto">{children}</div>
           </div>

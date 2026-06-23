@@ -34,3 +34,4 @@ coverage/
 
 # Optional: lockfiles (keep if you want reproducibility)
 # package-lock.json
+memory-db.json

@@ -59,7 +59,7 @@ function SectionTitle({ icon: Icon, title }) {
 function InvoicePreview({ bill, patient, appointment, onClose, onPrint }) {
   const status = bill.status || "pending";
   return (
-    <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-start justify-center overflow-y-auto p-6 no-print">
+    <div className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-sm flex items-start justify-center overflow-y-auto p-6 no-print">
       <div className="bg-white rounded-3xl shadow-2xl max-w-4xl w-full my-8">
         <div className="flex items-center justify-between p-6 border-b border-border/60 no-print">
           <div>

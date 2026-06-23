@@ -1,9 +1,9 @@
-import mongoose from "mongoose";
+import db from "../config/db-client.js";
 
-const HistorySchema = new mongoose.Schema(
+const HistorySchema = new db.Schema(
   {
     patientId: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: db.Schema.Types.ObjectId,
       ref: "Patient"
     },
 
@@ -22,7 +22,7 @@ const HistorySchema = new mongoose.Schema(
   }
 );
 
-export default mongoose.model(
+export default db.model(
   "History",
   HistorySchema
 );

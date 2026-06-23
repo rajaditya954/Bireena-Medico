@@ -1,8 +1,8 @@
-import mongoose from "mongoose";
+import db from "../config/db-client.js";
 
-const NotificationSchema = new mongoose.Schema(
+const NotificationSchema = new db.Schema(
   {
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+    userId: { type: db.Schema.Types.ObjectId, ref: "User", required: true },
     type: {
       type: String,
       enum: [
@@ -23,7 +23,7 @@ const NotificationSchema = new mongoose.Schema(
     },
     title: { type: String, required: true },
     message: { type: String, required: true },
-    data: mongoose.Schema.Types.Mixed,
+    data: db.Schema.Types.Mixed,
     isRead: { type: Boolean, default: false },
     readAt: Date,
     expiresAt: Date,
@@ -31,4 +31,4 @@ const NotificationSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-export default mongoose.model("Notification", NotificationSchema);
+export default db.model("Notification", NotificationSchema);

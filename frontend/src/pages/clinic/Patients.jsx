@@ -126,10 +126,18 @@ export default function AddMedicineForPatient() {
       .includes(medicineSearch.toLowerCase())
   );
 
+  const BASE_URL = import.meta.env.VITE_API_URL || "/api";
+
+  const getAuthHeaders = () => {
+    const token = localStorage.getItem("aarogya_token");
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  };
+
   const fetchMedicines = async () => {
     try {
       const res = await fetch(
-        "http://localhost:5000/api/pharmacy"
+        `${BASE_URL}/pharmacy`,
+        { headers: getAuthHeaders() }
       );
 
       const data = await res.json();
@@ -148,13 +156,14 @@ export default function AddMedicineForPatient() {
   const fetchPatients = async () => {
     try {
       const res = await fetch(
-        "http://localhost:5000/api/patients"
+        `${BASE_URL}/patients`,
+        { headers: getAuthHeaders() }
       );
 
       const data = await res.json();
       console.log(JSON.stringify(data, null, 2));
 
-      setPatients(data.data.patients || []);
+      setPatients(data?.data?.patients || []);
     } catch (err) {
       console.log(err);
     }
@@ -230,7 +239,8 @@ const handlePatientSelect = async (patient) => {
 
     // 1. Prescription Medicines
     const presRes = await fetch(
-      `http://localhost:5000/api/prescriptions/patient/${patient._id}`
+      `${BASE_URL}/prescriptions/patient/${patient._id}`,
+      { headers: getAuthHeaders() }
     );
 
     const presData = await presRes.json();
@@ -260,7 +270,8 @@ const handlePatientSelect = async (patient) => {
 
     // 2. Newly Added Medicines
     const reqRes = await fetch(
-      `http://localhost:5000/api/pharmacy/requirements/patient/${patient._id}`
+      `${BASE_URL}/pharmacy/requirements/patient/${patient._id}`,
+      { headers: getAuthHeaders() }
     );
 
     const reqData = await reqRes.json();
@@ -342,11 +353,12 @@ const handlePatientSelect = async (patient) => {
   amountPaid,
 };
     const res = await fetch(
-      "http://localhost:5000/api/pharmacy/requirements",
+      `${BASE_URL}/pharmacy/requirements`,
       {
         method: "POST",
         headers: {
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
+          ...getAuthHeaders()
         },
         body: JSON.stringify(payload)
       }

@@ -17,24 +17,6 @@ export const authService = {
   login: async (credentials) => {
     let { email, password } = credentials;
 
-    // Map mock credentials to seeded DB users
-    if (email === "admin.medico" && password === "medicouseradmin") {
-      email = "admin@hospital.com";
-      password = "Admin@123";
-    } else if (email === "doctor.medico" && password === "medicouserdoctor") {
-      email = "doctor@hospital.com";
-      password = "Doctor@123";
-    } else if (email === "lab.medico" && password === "medicouserlab") {
-      email = "lab@hospital.com";
-      password = "Lab@1234";
-    } else if (email === "appointment.medico" && password === "medicouserappointment") {
-      email = "scheduler@hospital.com";
-      password = "Schedule@123";
-    } else if (email === "clinic.medico" && password === "medicouserclinic") {
-      email = "dispensary@hospital.com";
-      password = "Dispense@123";
-    }
-
     try {
       // Call the real backend login endpoint
       const response = await axios.post(`${BASE_URL}/auth/login`, { email, password });
@@ -152,6 +134,9 @@ export const authService = {
           headers: { Authorization: `Bearer ${token}` }
         });
         const { user } = response.data.data;
+        if (!user) {
+          throw new Error("User not found in database");
+        }
         const userData = {
           id: user._id,
           name: user.name,
@@ -166,18 +151,20 @@ export const authService = {
         localStorage.setItem("medico_session", JSON.stringify(userData));
         return { user: userData };
       } catch (error) {
-        console.error("Fetch profile failed, falling back to local session", error);
+        console.error("Fetch profile failed, clearing session:", error);
+        localStorage.removeItem("medico_session");
+        localStorage.removeItem("aarogya_token");
+        throw error;
       }
     }
 
     const session = localStorage.getItem("medico_session");
 
-    if (!session) {
-      throw new Error("Unauthorized");
+    if (session) {
+      console.warn("No access token found, clearing stale session");
+      localStorage.removeItem("medico_session");
     }
 
-    return {
-      user: JSON.parse(session),
-    };
+    throw new Error("Unauthorized");
   },
 };

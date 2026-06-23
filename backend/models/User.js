@@ -1,7 +1,7 @@
-import mongoose from "mongoose";
+import db from "../config/db-client.js";
 import bcrypt from "bcryptjs";
 
-const UserSchema = new mongoose.Schema(
+const UserSchema = new db.Schema(
   {
     employeeId: { type: String, unique: true, sparse: true },
     username: { type: String, unique: true, sparse: true, lowercase: true, trim: true },
@@ -13,16 +13,21 @@ const UserSchema = new mongoose.Schema(
     role: {
       type: String,
       enum: [
-        "admin",
-        "billing",
-        "doctor",
-        "nurse",
-        "patient",
-        "lab_assistant",
-        "dispensary_staff",
-        "appointment_manager"
+        "ADMIN",
+        "BILLING",
+        "DOCTOR",
+        "NURSE",
+        "PATIENT",
+        "LAB",
+        "LAB_ASSISTANT",
+        "PHARMACY",
+        "DISPENSARY_STAFF",
+        "APPOINTMENT",
+        "APPOINTMENT_MANAGER",
+        "RECEPTIONIST"
       ],
-      default: "patient"
+      default: "PATIENT",
+      set: v => typeof v === "string" ? v.toUpperCase() : v
     },
     isActive: { type: Boolean, default: true },
     failedLoginAttempts: { type: Number, default: 0 },
@@ -30,7 +35,7 @@ const UserSchema = new mongoose.Schema(
     resetToken: { type: String, default: null },
     resetTokenExpires: { type: Date, default: null },
     lastLogin: { type: Date },
-    createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    createdBy: { type: db.Schema.Types.ObjectId, ref: "User" },
   },
   { timestamps: true }
 );
@@ -79,4 +84,4 @@ UserSchema.methods.toSafeJSON = function () {
   };
 };
 
-export default mongoose.model("User", UserSchema);
+export default db.model("User", UserSchema);

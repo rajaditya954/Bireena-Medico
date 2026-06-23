@@ -45,7 +45,7 @@ export default function DoctorDashboard({ user }) {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
             <div>
               <h1 className="text-4xl font-black text-primary-dark tracking-tighter italic">Doctor's Lounge</h1>
-              <p className="text-gray-500 font-medium">Hello Dr. {name}, you have <span className="text-primary font-black">8 tasks</span> remaining today.</p>
+              <p className="text-gray-500 font-medium">Hello {name ? (/^dr\.?/i.test(name) ? name : `Dr. ${name}`) : "Doctor"}, you have <span className="text-primary font-black">8 tasks</span> remaining today.</p>
             </div>
             <div className="flex gap-3">
                <Link to="/appointments" className="h-14 px-8 bg-primary/10 text-primary-forest rounded-2xl font-bold flex items-center gap-2 hover:bg-primary/20 transition-colors">
@@ -72,7 +72,9 @@ export default function DoctorDashboard({ user }) {
               <div className="w-24 h-24 rounded-[2rem] bg-primary/10 flex items-center justify-center text-primary-dark font-black text-3xl mb-4 border-4 border-white shadow-lg">
                 {name.split(' ').map(n => n[0]).join('')}
               </div>
-              <h3 className="text-xl font-black text-primary-dark tracking-tight mb-1">Dr. {name}</h3>
+              <h3 className="text-xl font-black text-primary-dark tracking-tight mb-1">
+                {name ? (/^dr\.?/i.test(name) ? name : `Dr. ${name}`) : "Doctor"}
+              </h3>
               <p className="text-xs font-bold text-primary-forest uppercase tracking-widest mb-6 px-4 py-1 bg-primary/10 rounded-full">
                 {user?.specializations || "General Practitioner"}
               </p>

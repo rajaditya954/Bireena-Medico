@@ -7,7 +7,7 @@ import {
   Save,
   Pill,
   Package,
-  DollarSign,
+  IndianRupee,
   Box,
   Calendar,
   Truck,
@@ -152,7 +152,7 @@ export default function AddMedicine() {
 
       await api.api.createMedicine(payload);
       setSubmitMessage({ type: "success", text: "Medicine added successfully!" });
-      setTimeout(() => navigate("/inventory/medicines"), 1200);
+      setTimeout(() => navigate("/clinic/stocks"), 1200);
     } catch (error) {
       // fallback to localStorage
       const newMedicine = {
@@ -168,7 +168,7 @@ export default function AddMedicine() {
       const existingMedicines = JSON.parse(localStorage.getItem("medico_medicines") || "[]");
       localStorage.setItem("medico_medicines", JSON.stringify([...existingMedicines, newMedicine]));
       setSubmitMessage({ type: "success", text: "Medicine added locally (offline fallback)." });
-      setTimeout(() => navigate("/inventory/medicines"), 1200);
+      setTimeout(() => navigate("/clinic/stocks"), 1200);
     } finally {
       setIsSubmitting(false);
     }
@@ -353,17 +353,17 @@ export default function AddMedicine() {
                 </h2>
               </div>
               <div className="p-6 space-y-5">
-                {/* Amount (USD) */}
+                {/* Amount (INR) */}
                 <div className="space-y-1.5">
                   <label className="text-xs font-black text-gray-400 uppercase tracking-wider">
-                    Amount (USD)
+                    Amount (INR)
                   </label>
                   <div className="relative">
-                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                     <input
                       type="number"
                       step="0.01"
-                      placeholder="e.g. 1.20"
+                      placeholder="e.g. 100"
                       className="w-full h-12 pl-9 pr-4 bg-gray-50 border-none rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-primary/20"
                       value={formData.amount}
                       onChange={(e) => handleChange("amount", e.target.value)}
@@ -387,17 +387,17 @@ export default function AddMedicine() {
                   {errors.currentStock && <p className="text-xs text-red-500">{errors.currentStock}</p>}
                 </div>
 
-                {/* MRP (USD) */}
+                {/* MRP (INR) */}
                 <div className="space-y-1.5">
                   <label className="text-xs font-black text-gray-400 uppercase tracking-wider">
-                    MRP (USD)
+                    MRP (INR)
                   </label>
                   <div className="relative">
-                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                     <input
                       type="number"
                       step="0.01"
-                      placeholder="e.g. 2.50"
+                      placeholder="e.g. 150"
                       className="w-full h-12 pl-9 pr-4 bg-gray-50 border-none rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-primary/20"
                       value={formData.mrp}
                       onChange={(e) => handleChange("mrp", e.target.value)}

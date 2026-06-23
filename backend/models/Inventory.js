@@ -1,8 +1,8 @@
-import mongoose from "mongoose";
+import db from "../config/db-client.js";
 
-const InventorySchema = new mongoose.Schema({
+const InventorySchema = new db.Schema({
   medicineId: {
-    type: mongoose.Schema.Types.ObjectId,
+    type: db.Schema.Types.ObjectId,
     ref: "Medicine",
     required: true,
   },
@@ -14,4 +14,4 @@ const InventorySchema = new mongoose.Schema({
   location: String,
 });
 
-export default mongoose.model("Inventory", InventorySchema,"inventory");
+export default db.model("Inventory", InventorySchema,"inventory");

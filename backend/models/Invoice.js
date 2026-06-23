@@ -1,10 +1,10 @@
-import mongoose from "mongoose";
+import db from "../config/db-client.js";
 
-const InvoiceSchema = new mongoose.Schema(
+const InvoiceSchema = new db.Schema(
   {
     invoiceNumber: { type: String, unique: true, required: true },
-    billingId: { type: mongoose.Schema.Types.ObjectId, ref: "Billing", required: true },
-    patientId: { type: mongoose.Schema.Types.ObjectId, ref: "Patient", required: true },
+    billingId: { type: db.Schema.Types.ObjectId, ref: "Billing", required: true },
+    patientId: { type: db.Schema.Types.ObjectId, ref: "Patient", required: true },
     amount: { type: Number, required: true },
     status: {
       type: String,
@@ -21,4 +21,4 @@ const InvoiceSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-export default mongoose.model("Invoice", InvoiceSchema);
+export default db.model("Invoice", InvoiceSchema);

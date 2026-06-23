@@ -43,9 +43,8 @@ app.use(express.urlencoded({ limit: "10mb", extended: true }));
 
 // Static files (uploaded reports)
 import path from "path";
-import { fileURLToPath } from "url";
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+const uploadDir = path.join(process.cwd(), "uploads");
+app.use("/uploads", express.static(uploadDir));
 
 // Rate limiting for login and general API
 app.use("/api/auth/login", loginLimiter);
