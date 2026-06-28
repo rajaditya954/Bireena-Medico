@@ -1,4 +1,5 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import { useLocation } from "react-router-dom";
 import {
   Search,
   Eye,
@@ -15,122 +16,72 @@ import {
   ClipboardList,
   X,
   Printer,
+  RefreshCw,
 } from "lucide-react";
-
-// Mock patient data (fixed for Alice Cooper)
-const patientInfo = {
-  id: "PAT-0001",
-  name: "Alice Cooper",
-  gender: "Female",
-  age: 34,
-  phone: "+91 98765 43210",
-  email: "alice.cooper@email.com",
-  address: "Medical District, Hyderabad",
-  lastAppointment: "12 May 2025, 09:30 AM",
-  doctor: "Dr. Michael Brown",
-  specialty: "General Physician",
-};
-
-// Mock history data (same as before)
-const initialHistory = [
-  {
-    id: 1,
-    date: "12 May 2025",
-    time: "09:30 AM",
-    type: "Rx",
-    details: "2 Medicines",
-    items: ["Amoxicillin 500mg", "Paracetamol 650mg"],
-    doctor: "Dr. Michael Brown",
-    doctorSpecialty: "General Physician",
-    note: "Take with food. Complete full course.",
-  },
-  {
-    id: 2,
-    date: "12 May 2025",
-    time: "09:30 AM",
-    type: "Lab Report",
-    details: "Complete Blood Count (CBC)",
-    items: ["Report Completed", "All values within normal range"],
-    doctor: "Dr. Michael Brown",
-    doctorSpecialty: "General Physician",
-    note: "No abnormalities detected.",
-  },
-  {
-    id: 3,
-    date: "10 May 2025",
-    time: "04:00 PM",
-    type: "Diagnosis",
-    details: "Fever & Cold",
-    items: ["Acute upper respiratory infection"],
-    doctor: "Dr. Sarah Johnson",
-    doctorSpecialty: "General Physician",
-    note: "Rest and hydration advised.",
-  },
-  {
-    id: 4,
-    date: "10 May 2025",
-    time: "04:00 PM",
-    type: "Rx",
-    details: "Prescription",
-    items: ["Cetirizine 10mg", "Paracetamol 650mg"],
-    doctor: "Dr. Sarah Johnson",
-    doctorSpecialty: "General Physician",
-    note: "Take only if fever persists.",
-  },
-  {
-    id: 5,
-    date: "28 Apr 2025",
-    time: "11:00 AM",
-    type: "Imaging Report",
-    details: "Chest X-Ray",
-    items: ["No abnormality detected"],
-    doctor: "Dr. Michael Brown",
-    doctorSpecialty: "General Physician",
-    note: "Normal chest X-ray.",
-  },
-  {
-    id: 6,
-    date: "20 Apr 2025",
-    time: "02:15 PM",
-    type: "Lab Report",
-    details: "Lipid Profile",
-    items: ["Cholesterol: 180 mg/dL", "Triglycerides: 150 mg/dL"],
-    doctor: "Dr. Michael Brown",
-    doctorSpecialty: "General Physician",
-    note: "Borderline high. Advised dietary changes.",
-  },
-  {
-    id: 7,
-    date: "15 Apr 2025",
-    time: "11:00 AM",
-    type: "Diagnosis",
-    details: "Allergic Rhinitis",
-    items: ["Seasonal allergies", "Prescribed antihistamines"],
-    doctor: "Dr. Sarah Johnson",
-    doctorSpecialty: "General Physician",
-    note: "Avoid known allergens.",
-  },
-  {
-    id: 8,
-    date: "05 Apr 2025",
-    time: "09:00 AM",
-    type: "Rx",
-    details: "Prescription",
-    items: ["Loratadine 10mg", "Nasal spray"],
-    doctor: "Dr. Sarah Johnson",
-    doctorSpecialty: "General Physician",
-    note: "Use as needed.",
-  },
-];
+import { api } from "../../lib/api";
 
 const DoctorHistory = () => {
-  const [history, setHistory] = useState(initialHistory);
-  const [searchTerm, setSearchTerm] = useState("");
+  const location = useLocation();
+  const prefillPatient = location.state?.prefillPatient || null;
+
+  const [history, setHistory] = useState([]);
+  const [doctorInfo, setDoctorInfo] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [searchTerm, setSearchTerm] = useState(prefillPatient?.name || prefillPatient?.fullName || "");
   const [typeFilter, setTypeFilter] = useState("all");
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
-  const [selectedRecord, setSelectedRecord] = useState(null); // for modal
+  const [selectedRecord, setSelectedRecord] = useState(null);
   const printRef = useRef();
+
+  useEffect(() => {
+    fetchHistory();
+  }, []);
+
+  const fetchHistory = async () => {
+    try {
+      setLoading(true);
+      setError("");
+      const res = await api.getMyHistory();
+      const data = res.data?.data || {};
+      setDoctorInfo(data.doctor || null);
+
+      // Map API data to display format
+      const mapped = (data.history || []).map((item) => {
+        const d = new Date(item.date);
+        const dateStr = d.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+        const timeStr = item.slot || d.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true });
+
+        // Determine type from status
+        let type = "Consultation";
+        if ((item.status || "").toUpperCase() === "COMPLETED") type = "Completed Visit";
+        else if ((item.status || "").toUpperCase() === "CANCELLED") type = "Cancelled";
+        else if ((item.status || "").toUpperCase() === "NO_SHOW") type = "No Show";
+        else type = "Consultation";
+
+        return {
+          id: item.id,
+          date: dateStr,
+          time: timeStr,
+          type: "Consultation",
+          details: item.reason || "General Consultation",
+          items: item.notes ? [item.notes] : [],
+          status: item.status,
+          doctor: item.doctor?.name || "Doctor",
+          doctorSpecialty: item.doctor?.specialization || "",
+          patient: item.patient || { name: "Unknown" },
+          note: item.notes || "",
+        };
+      });
+
+      setHistory(mapped);
+    } catch (err) {
+      setError(err.message || "Failed to load history");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Filter history
   const filteredHistory = history.filter((item) => {
@@ -138,30 +89,39 @@ const DoctorHistory = () => {
       item.details.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.items.some((i) => i.toLowerCase().includes(searchTerm.toLowerCase())) ||
       item.doctor.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (item.patient?.name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
       (item.note && item.note.toLowerCase().includes(searchTerm.toLowerCase()));
-    const matchesType = typeFilter === "all" || item.type === typeFilter;
+    const matchesType = typeFilter === "all" || 
+      (typeFilter === "completed" && (item.status || "").toUpperCase() === "COMPLETED") ||
+      (typeFilter === "waiting" && ["WAITING", "ARRIVED", "IN_PROGRESS"].includes((item.status || "").toUpperCase())) ||
+      (typeFilter === "cancelled" && (item.status || "").toUpperCase() === "CANCELLED") ||
+      (typeFilter === "no_show" && (item.status || "").toUpperCase() === "NO_SHOW");
     return matchesSearch && matchesType;
   });
 
   // Pagination
-  const totalPages = Math.ceil(filteredHistory.length / rowsPerPage);
+  const totalPages = Math.ceil(filteredHistory.length / rowsPerPage) || 1;
   const paginatedHistory = filteredHistory.slice(
     (currentPage - 1) * rowsPerPage,
     currentPage * rowsPerPage
   );
 
-  const getTypeStyles = (type) => {
-    switch (type) {
-      case "Rx":
-        return { icon: ClipboardList, color: "bg-emerald-100 text-emerald-700", label: "Prescription" };
-      case "Lab Report":
-        return { icon: FileText, color: "bg-blue-100 text-blue-700", label: "Lab Report" };
-      case "Diagnosis":
-        return { icon: Stethoscope, color: "bg-amber-100 text-amber-700", label: "Diagnosis" };
-      case "Imaging Report":
-        return { icon: FileImage, color: "bg-purple-100 text-purple-700", label: "Imaging Report" };
+  const getStatusStyles = (status) => {
+    const upper = (status || "").toUpperCase();
+    switch (upper) {
+      case "COMPLETED":
+        return { icon: ClipboardList, color: "bg-emerald-100 text-emerald-700", label: "Completed" };
+      case "WAITING":
+      case "ARRIVED":
+      case "IN_PROGRESS":
+      case "SCHEDULED":
+        return { icon: Stethoscope, color: "bg-amber-100 text-amber-700", label: upper.replace("_", " ") };
+      case "CANCELLED":
+        return { icon: AlertCircle, color: "bg-red-100 text-red-700", label: "Cancelled" };
+      case "NO_SHOW":
+        return { icon: FileImage, color: "bg-gray-100 text-gray-500", label: "No Show" };
       default:
-        return { icon: FileText, color: "bg-gray-100 text-gray-700", label: "Record" };
+        return { icon: FileText, color: "bg-blue-100 text-blue-700", label: "Consultation" };
     }
   };
 
@@ -201,6 +161,36 @@ const DoctorHistory = () => {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#F2F9F6] flex flex-col items-center justify-center gap-3">
+        <RefreshCw className="w-10 h-10 text-emerald-600 animate-spin" />
+        <p className="text-slate-500 font-semibold">Loading history...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-[#F2F9F6] p-8 flex items-center justify-center">
+        <div className="bg-white rounded-3xl border border-red-100 p-8 shadow-sm max-w-md w-full text-center space-y-4">
+          <AlertCircle className="w-16 h-16 text-red-500 mx-auto" />
+          <h2 className="text-xl font-bold text-slate-800">History Error</h2>
+          <p className="text-sm text-slate-500">{error}</p>
+          <button
+            onClick={fetchHistory}
+            className="px-6 py-2.5 bg-emerald-600 text-white rounded-xl text-sm font-semibold hover:bg-emerald-700 transition"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Pick first patient from history for sidebar (or empty)
+  const sidebarPatient = selectedRecord?.patient || (history.length > 0 ? history[0].patient : null);
+
   return (
     <div className="min-h-screen bg-[#F2F9F6] p-6">
       <div className="max-w-[1600px] mx-auto grid grid-cols-1 xl:grid-cols-3 gap-6">
@@ -208,7 +198,7 @@ const DoctorHistory = () => {
         <div className="xl:col-span-2 space-y-6">
           <div>
             <h1 className="text-2xl font-bold text-[#06402B] tracking-tight">History</h1>
-            <p className="text-gray-500">View and manage patient history and past prescriptions.</p>
+            <p className="text-gray-500">View and manage patient history and past consultations.</p>
           </div>
 
           {/* Search and Filters */}
@@ -217,7 +207,7 @@ const DoctorHistory = () => {
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
               <input
                 type="text"
-                placeholder="Search history by visit, diagnosis, doctor or note..."
+                placeholder="Search by patient, reason, or notes..."
                 value={searchTerm}
                 onChange={(e) => {
                   setSearchTerm(e.target.value);
@@ -234,18 +224,18 @@ const DoctorHistory = () => {
               }}
               className="h-12 px-4 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 focus:ring-2 focus:ring-emerald-500/20 outline-none"
             >
-              <option value="all">All Types</option>
-              <option value="Rx">Prescriptions (Rx)</option>
-              <option value="Lab Report">Lab Reports</option>
-              <option value="Diagnosis">Diagnosis</option>
-              <option value="Imaging Report">Imaging Reports</option>
+              <option value="all">All Statuses</option>
+              <option value="completed">Completed</option>
+              <option value="waiting">Waiting / In Progress</option>
+              <option value="cancelled">Cancelled</option>
+              <option value="no_show">No Show</option>
             </select>
           </div>
 
           {/* History Cards */}
           <div className="space-y-4">
             {paginatedHistory.map((item) => {
-              const { icon: TypeIcon, color, label } = getTypeStyles(item.type);
+              const { icon: TypeIcon, color, label } = getStatusStyles(item.status);
               return (
                 <div
                   key={item.id}
@@ -262,13 +252,13 @@ const DoctorHistory = () => {
                           <TypeIcon className="w-5 h-5" />
                         </div>
                         <div>
-                          <div className="font-bold text-gray-900">{item.type}</div>
+                          <div className="font-bold text-gray-900">{item.patient?.name || "Patient"}</div>
                           <div className="text-sm text-gray-600 font-medium">{item.details}</div>
-                          {item.items.length > 0 && (
-                            <div className="text-xs text-gray-500 mt-1">
-                              {item.items.join(", ")}
-                            </div>
-                          )}
+                          <div className="text-xs text-gray-400 mt-1">
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border ${color}`}>
+                              {label}
+                            </span>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -351,64 +341,57 @@ const DoctorHistory = () => {
           )}
         </div>
 
-        {/* Right Column - Clinical Profile Sidebar */}
+        {/* Right Column - Doctor Profile Sidebar */}
         <div className="xl:col-span-1">
           <div className="bg-white rounded-xl border border-gray-100 shadow-sm sticky top-6">
             <div className="p-6 border-b border-gray-100">
-              <h2 className="text-lg font-bold text-[#06402B]">Clinical Profile</h2>
-              <p className="text-xs text-gray-400">Digital Medical Record</p>
+              <h2 className="text-lg font-bold text-[#06402B]">Doctor Profile</h2>
+              <p className="text-xs text-gray-400">Your consultation history</p>
             </div>
             <div className="p-6">
-              <div className="flex items-center gap-4 mb-6">
-                <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 text-2xl font-bold">
-                  {patientInfo.name.split(" ").map(n => n[0]).join("")}
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold text-gray-900">{patientInfo.name}</h3>
-                  <div className="flex gap-2 text-sm text-gray-500 mt-1">
-                    <span>{patientInfo.gender}</span>
-                    <span>•</span>
-                    <span>{patientInfo.age} Years</span>
+              {doctorInfo ? (
+                <>
+                  <div className="flex items-center gap-4 mb-6">
+                    <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 text-2xl font-bold">
+                      {(doctorInfo.name || "D").split(" ").map(n => n[0]).join("")}
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold text-gray-900">Dr. {doctorInfo.name}</h3>
+                      <div className="text-sm text-emerald-600 font-medium mt-1">
+                        {doctorInfo.specialization}
+                      </div>
+                    </div>
                   </div>
-                  <p className="text-xs text-gray-400 font-mono mt-1">Patient ID: {patientInfo.id}</p>
-                </div>
-              </div>
 
-              <div className="mb-6">
-                <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Contact Information</h4>
-                <div className="space-y-2">
-                  <div className="flex items-center gap-3 text-sm">
-                    <Phone className="w-4 h-4 text-gray-400" />
-                    <span className="text-gray-700">{patientInfo.phone}</span>
+                  <div className="mb-6">
+                    <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Qualification</h4>
+                    <p className="text-sm text-gray-700">{doctorInfo.qualification || "N/A"}</p>
                   </div>
-                  <div className="flex items-center gap-3 text-sm">
-                    <Mail className="w-4 h-4 text-gray-400" />
-                    <span className="text-gray-700">{patientInfo.email}</span>
-                  </div>
-                  <div className="flex items-center gap-3 text-sm">
-                    <MapPin className="w-4 h-4 text-gray-400" />
-                    <span className="text-gray-700">{patientInfo.address}</span>
-                  </div>
-                </div>
-              </div>
 
-              <div>
-                <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Appointment Info</h4>
-                <div className="space-y-2">
-                  <div className="flex items-center gap-3 text-sm">
-                    <Calendar className="w-4 h-4 text-gray-400" />
-                    <span className="text-gray-700">{patientInfo.lastAppointment}</span>
+                  <div className="mb-6">
+                    <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Experience</h4>
+                    <p className="text-sm text-gray-700">{doctorInfo.experience ? `${doctorInfo.experience} Years` : "N/A"}</p>
                   </div>
-                  <div className="flex items-center gap-3 text-sm">
-                    <User className="w-4 h-4 text-gray-400" />
-                    <span className="text-gray-700">{patientInfo.doctor}</span>
+
+                  <div>
+                    <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Summary</h4>
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-500">Total Consultations</span>
+                        <span className="font-bold text-gray-800">{history.length}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-500">Completed</span>
+                        <span className="font-bold text-emerald-600">
+                          {history.filter(h => (h.status || "").toUpperCase() === "COMPLETED").length}
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-3 text-sm">
-                    <AlertCircle className="w-4 h-4 text-gray-400" />
-                    <span className="text-gray-700">{patientInfo.specialty}</span>
-                  </div>
-                </div>
-              </div>
+                </>
+              ) : (
+                <p className="text-gray-400 text-center py-4">No doctor info available.</p>
+              )}
             </div>
           </div>
         </div>
@@ -439,10 +422,10 @@ const DoctorHistory = () => {
               {/* Header */}
               <div className="border-b border-gray-200 pb-4">
                 <div className="flex items-center gap-3 mb-2">
-                  <div className={`p-2 rounded-xl ${getTypeStyles(selectedRecord.type).color}`}>
-                    {React.createElement(getTypeStyles(selectedRecord.type).icon, { className: "w-6 h-6" })}
+                  <div className={`p-2 rounded-xl ${getStatusStyles(selectedRecord.status).color}`}>
+                    {React.createElement(getStatusStyles(selectedRecord.status).icon, { className: "w-6 h-6" })}
                   </div>
-                  <span className="text-sm font-semibold text-gray-500">{getTypeStyles(selectedRecord.type).label}</span>
+                  <span className="text-sm font-semibold text-gray-500">{getStatusStyles(selectedRecord.status).label}</span>
                 </div>
                 <h2 className="text-2xl font-bold text-gray-900">{selectedRecord.details}</h2>
                 <div className="flex gap-4 mt-2 text-sm text-gray-500">
@@ -452,19 +435,14 @@ const DoctorHistory = () => {
 
               {/* Details */}
               <div className="space-y-4">
-                <div>
-                  <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Items / Findings</h4>
-                  <ul className="list-disc list-inside space-y-1 text-gray-700">
-                    {selectedRecord.items.map((item, idx) => (
-                      <li key={idx}>{item}</li>
-                    ))}
-                  </ul>
-                </div>
-
-                {selectedRecord.note && (
+                {selectedRecord.items.length > 0 && (
                   <div>
-                    <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Clinical Notes</h4>
-                    <p className="text-gray-700 bg-gray-50 p-3 rounded-lg">{selectedRecord.note}</p>
+                    <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Notes</h4>
+                    <ul className="list-disc list-inside space-y-1 text-gray-700">
+                      {selectedRecord.items.map((item, idx) => (
+                        <li key={idx}>{item}</li>
+                      ))}
+                    </ul>
                   </div>
                 )}
 
@@ -476,8 +454,12 @@ const DoctorHistory = () => {
                   </div>
                   <div>
                     <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Patient</h4>
-                    <p className="font-medium text-gray-800">{patientInfo.name}</p>
-                    <p className="text-sm text-gray-500">ID: {patientInfo.id}</p>
+                    <p className="font-medium text-gray-800">{selectedRecord.patient?.name || "Unknown"}</p>
+                    {selectedRecord.patient?.age && (
+                      <p className="text-sm text-gray-500">
+                        {selectedRecord.patient.age} Y, {selectedRecord.patient.gender || ""}
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>

@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
+import { useNavigate } from "react-router-dom";
 import { 
   Search, 
   Filter, 
@@ -16,7 +17,9 @@ import {
   Heart,
   FileText,
   ShieldAlert,
-  Activity
+  Activity,
+  History,
+  Pill
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { createPortal } from "react-dom";
@@ -24,12 +27,28 @@ import { cn } from "../../lib/utils";
 import { api } from "../../lib/api";
 import toast, { Toaster } from "react-hot-toast";
 import { format } from "date-fns";
+import { AuthContext } from "../../context/AuthContext";
 
 const statusStyles = {
   "New Patient": "bg-blue-50 text-blue-700 border-blue-200",
+  "No Appointment": "bg-gray-50 text-gray-500 border-gray-200",
   Completed: "bg-green-50 text-green-700 border-green-200",
   Upcoming: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  Scheduled: "bg-blue-50 text-blue-700 border-blue-200",
+  Waiting: "bg-amber-50 text-amber-700 border-amber-200",
+  Arrived: "bg-blue-50 text-blue-700 border-blue-200",
+  "In Progress": "bg-indigo-50 text-indigo-700 border-indigo-200",
+  Cancelled: "bg-red-50 text-red-700 border-red-200",
+  "No Show": "bg-gray-100 text-gray-500 border-gray-300",
 };
+
+function formatStatus(status) {
+  if (!status) return "New Patient";
+  const lower = status.toLowerCase();
+  if (lower === "in-progress" || lower === "in_progress") return "In Progress";
+  if (lower === "no-show" || lower === "no_show") return "No Show";
+  return status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
+}
 
 function StatusBadge({ status }) {
   return (
@@ -47,6 +66,10 @@ const MARITAL_STATUSES = ["Single", "Married", "Divorced", "Widowed"];
 const GENDERS = ["Male", "Female", "Other"];
 
 export default function PatientList() {
+  const navigate = useNavigate();
+  const { user } = useContext(AuthContext);
+  const isDoctor = user?.role === "doctor" || user?.role === "DOCTOR";
+
   const [patients, setPatients] = useState([]);
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -84,9 +107,14 @@ export default function PatientList() {
   const fetchData = async () => {
     try {
       setLoading(true);
+      // Doctor portal: only fetch patients and appointments linked to this doctor
+      const patientsPromise = isDoctor ? api.getMyPatients() : api.getPatients();
+      const appointmentsPromise = isDoctor
+        ? api.getMyAppointments({ history: "true" })
+        : api.getAppointments({ history: "true" });
       const [resPatients, resAppointments] = await Promise.all([
-        api.getPatients(),
-        api.getAppointments({ history: "true" })
+        patientsPromise,
+        appointmentsPromise
       ]);
 
       const patientData = resPatients.data?.data || [];
@@ -197,22 +225,36 @@ export default function PatientList() {
 
       // Sort appointments chronologically
       const sorted = pApts.sort((a, b) => {
-        const dateA = new Date(a.date + "T" + (a.scheduledTime || "00:00"));
-        const dateB = new Date(b.date + "T" + (b.scheduledTime || "00:00"));
+        const dateA = new Date(a.date + "T" + (a.scheduledTime || a.slot || "00:00"));
+        const dateB = new Date(b.date + "T" + (b.scheduledTime || b.slot || "00:00"));
         return dateA - dateB;
       });
 
-      const past = sorted.filter(a => new Date(a.date + "T" + (a.scheduledTime || "00:00")) <= now);
-      const future = sorted.filter(a => new Date(a.date + "T" + (a.scheduledTime || "00:00")) > now);
+      const past = sorted.filter(a => new Date(a.date + "T" + (a.scheduledTime || a.slot || "00:00")) <= now);
+      const future = sorted.filter(a => new Date(a.date + "T" + (a.scheduledTime || a.slot || "00:00")) > now);
 
       const lastApt = past.length > 0 ? past[past.length - 1] : null;
       const nextApt = future.length > 0 ? future[0] : null;
 
+      // Find the single appointment date for doctor view (most recent one or upcoming)
+      const sortedNewestFirst = [...pApts].sort((a, b) => new Date(b.appointmentDate || b.date) - new Date(a.appointmentDate || a.date));
+      const latestApt = sortedNewestFirst[0] || null;
+
+      let status = "New Patient";
+      if (latestApt) {
+        status = formatStatus(latestApt.status);
+      } else if (!isDoctor) {
+        status = nextApt ? "Upcoming" : (lastApt ? "Completed" : "New Patient");
+      }
+
+      const appointmentDateStr = latestApt ? `${format(new Date(latestApt.appointmentDate || latestApt.date), "dd MMM yyyy")} (${latestApt.slot || latestApt.scheduledTime || "Walk-in"})` : "—";
+
       return {
         ...p,
-        lastAppointment: lastApt ? `${format(new Date(lastApt.date), "dd MMM yyyy")} (${lastApt.scheduledTime || "Walk-in"})` : "—",
-        nextAppointment: nextApt ? `${format(new Date(nextApt.date), "dd MMM yyyy")} (${nextApt.scheduledTime || "Walk-in"})` : "—",
-        status: nextApt ? "Upcoming" : (lastApt ? "Completed" : "New Patient")
+        lastAppointment: lastApt ? `${format(new Date(lastApt.date), "dd MMM yyyy")} (${lastApt.scheduledTime || lastApt.slot || "Walk-in"})` : "—",
+        nextAppointment: nextApt ? `${format(new Date(nextApt.date), "dd MMM yyyy")} (${nextApt.scheduledTime || nextApt.slot || "Walk-in"})` : "—",
+        appointmentDate: appointmentDateStr,
+        status: status
       };
     });
 
@@ -252,8 +294,12 @@ export default function PatientList() {
 
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-[#06402B] tracking-tight">Patients Management</h1>
-        <p className="text-gray-500 text-sm mt-1">Manage and update records for all registered patients.</p>
+        <h1 className="text-3xl font-bold text-[#06402B] tracking-tight">{isDoctor ? "My Patients" : "Patients Management"}</h1>
+        <p className="text-gray-500 text-sm mt-1">
+          {isDoctor
+            ? "View and manage records for patients you have consulted."
+            : "Manage and update records for all registered patients."}
+        </p>
       </div>
 
       {/* Main Card */}
@@ -354,8 +400,14 @@ export default function PatientList() {
                     <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-gray-400 whitespace-nowrap">Patient Name</th>
                     <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-gray-400 whitespace-nowrap">Age/Gender</th>
                     <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-gray-400 whitespace-nowrap">Phone</th>
-                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-gray-400 whitespace-nowrap">Last Appointment</th>
-                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-gray-400 whitespace-nowrap">Next Appointment</th>
+                    {isDoctor ? (
+                      <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-gray-400 whitespace-nowrap">Appointment Date</th>
+                    ) : (
+                      <>
+                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-gray-400 whitespace-nowrap">Last Appointment</th>
+                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-gray-400 whitespace-nowrap">Next Appointment</th>
+                      </>
+                    )}
                     <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-gray-400 whitespace-nowrap">Status</th>
                     <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-gray-400 text-right whitespace-nowrap">Actions</th>
                   </tr>
@@ -385,26 +437,62 @@ export default function PatientList() {
                           <Phone className="w-3 h-3" /> {patient.phone}
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">
-                        <div className="flex items-center gap-1">
-                          <Calendar className="w-3 h-3 text-gray-400" />
-                          {patient.lastAppointment}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">
-                        <div className="flex items-center gap-1">
-                          <Calendar className="w-3 h-3 text-gray-400" />
-                          {patient.nextAppointment}
-                        </div>
-                      </td>
+                      {isDoctor ? (
+                        <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">
+                          <div className="flex items-center gap-1">
+                            <Calendar className="w-3 h-3 text-gray-400" />
+                            {patient.appointmentDate}
+                          </div>
+                        </td>
+                      ) : (
+                        <>
+                          <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">
+                            <div className="flex items-center gap-1">
+                              <Calendar className="w-3 h-3 text-gray-400" />
+                              {patient.lastAppointment}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">
+                            <div className="flex items-center gap-1">
+                              <Calendar className="w-3 h-3 text-gray-400" />
+                              {patient.nextAppointment}
+                            </div>
+                          </td>
+                        </>
+                      )}
                       <td className="px-6 py-4 whitespace-nowrap">
                         <StatusBadge status={patient.status} />
                       </td>
                       <td className="px-6 py-4 text-right whitespace-nowrap">
-                        <div className="flex items-center justify-end gap-1">
+                        <div className="flex items-center justify-end gap-1.5">
+                          {isDoctor && (
+                            <>
+                              <button
+                                onClick={() => navigate("/doctor/prescriptions", { state: { prefillPatient: patient } })}
+                                className="p-2 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all cursor-pointer"
+                                title="Add Prescription"
+                              >
+                                <Pill className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => navigate("/doctor/reports", { state: { prefillPatient: patient } })}
+                                className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all cursor-pointer"
+                                title="Reports"
+                              >
+                                <FileText className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => navigate("/doctor/history", { state: { prefillPatient: patient } })}
+                                className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all cursor-pointer"
+                                title="Patient History"
+                              >
+                                <History className="w-4 h-4" />
+                              </button>
+                            </>
+                          )}
                           <button
                             onClick={() => handleEditClick(patient)}
-                            className="p-2 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all"
+                            className="p-2 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all cursor-pointer"
                             title="Edit Details"
                           >
                             <Edit className="w-4 h-4" />

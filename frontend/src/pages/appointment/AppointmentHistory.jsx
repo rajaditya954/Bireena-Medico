@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Calendar, Search, Clock, User, Loader2,
   CheckCircle, XCircle, ChevronLeft, ChevronRight, ChevronDown,
-  Stethoscope, FlaskConical, RefreshCw, Filter, X, Activity
+  Stethoscope, FlaskConical, RefreshCw, Filter, X, Activity, Receipt
 } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { format } from "date-fns";
@@ -18,6 +19,7 @@ const TABS = [
 ];
 
 export default function AppointmentHistory() {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("all");
   const [appointments, setAppointments] = useState([]);
   const [doctors, setDoctors] = useState([]);
@@ -306,9 +308,10 @@ export default function AppointmentHistory() {
               <div className="col-span-2">Date / Time</div>
               <div className="col-span-1">Token</div>
               <div className="col-span-3">Patient</div>
-              <div className="col-span-3">Doctor / Consultant</div>
+              <div className="col-span-2">Doctor / Consultant</div>
               <div className="col-span-1">Type</div>
-              <div className="col-span-2 text-right">Status</div>
+              <div className="col-span-1">Status</div>
+              <div className="col-span-2 text-right">Actions</div>
             </div>
           )}
 
@@ -358,7 +361,7 @@ export default function AppointmentHistory() {
                     </div>
 
                     {/* Doctor */}
-                    <div className="col-span-3 flex items-center gap-2 min-w-0">
+                    <div className="col-span-2 flex items-center gap-2 min-w-0">
                       {a.consultantType === "lab"
                         ? <FlaskConical className="w-4 h-4 text-purple-500 shrink-0" />
                         : <Stethoscope className="w-4 h-4 text-[#0F5C3A] shrink-0" />}
@@ -373,8 +376,24 @@ export default function AppointmentHistory() {
                     </div>
 
                     {/* Status */}
-                    <div className="col-span-2 text-right">
+                    <div className="col-span-1">
                       {getStatusBadge(a.status)}
+                    </div>
+
+                    {/* Action */}
+                    <div className="col-span-2 text-right">
+                      <button
+                        onClick={() => navigate("/appointment/billing", {
+                          state: {
+                            prefillAppointment: a,
+                            autoGenerateBill: true,
+                          }
+                        })}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-500 text-white rounded-lg text-xs font-bold hover:bg-amber-600 transition-all shadow-sm active:scale-95 cursor-pointer"
+                      >
+                        <Receipt className="w-3.5 h-3.5" />
+                        Generate Bill
+                      </button>
                     </div>
                   </div>
                 ))}
@@ -438,6 +457,22 @@ export default function AppointmentHistory() {
                       <span className="font-bold text-gray-600 capitalize bg-gray-50 px-2 py-0.5 rounded-md">
                         {a.type || a.appointmentType || "walk-in"}
                       </span>
+                    </div>
+
+                    {/* Generate Bill Button (Mobile View) */}
+                    <div className="pt-2 border-t border-gray-50 flex justify-end">
+                      <button
+                        onClick={() => navigate("/appointment/billing", {
+                          state: {
+                            prefillAppointment: a,
+                            autoGenerateBill: true,
+                          }
+                        })}
+                        className="w-full sm:w-auto px-3.5 py-1.5 bg-amber-500 text-white rounded-lg text-xs font-bold hover:bg-amber-600 transition flex items-center justify-center gap-1.5 shadow-sm active:scale-95 cursor-pointer"
+                      >
+                        <Receipt className="w-3.5 h-3.5" />
+                        Generate Bill
+                      </button>
                     </div>
                   </div>
                 ))}

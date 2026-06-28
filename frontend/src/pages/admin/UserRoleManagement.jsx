@@ -230,7 +230,7 @@ export default function UserAdd() {
                       <select className="w-24 h-11 px-2 bg-gray-50 rounded-xl text-sm" value={basicInfo.mobileCode} onChange={e => handleBasicChange("mobileCode", e.target.value)}>
                         <option value="+91">+91 (IND)</option><option value="+1">+1 (USA)</option><option value="+44">+44 (UK)</option>
                       </select>
-                      <input type="tel" placeholder="Enter mobile number" className="flex-1 h-11 px-4 bg-gray-50 rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-primary/20" value={basicInfo.mobile} onChange={e => handleBasicChange("mobile", e.target.value)} required />
+                      <input type="tel" placeholder="Enter mobile number" className="flex-1 min-w-0 h-11 px-4 bg-gray-50 rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-primary/20" value={basicInfo.mobile} onChange={e => handleBasicChange("mobile", e.target.value)} required />
                     </div>
                   </div>
                   <div className="space-y-1">

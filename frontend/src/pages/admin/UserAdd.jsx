@@ -300,7 +300,7 @@ export default function AddNewUser() {
                   <input
                     type="tel"
                     placeholder="Enter mobile number"
-                    className="flex-1 h-12 px-4 bg-gray-50 border-none rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-primary/20"
+                    className="flex-1 min-w-0 h-12 px-4 bg-gray-50 border-none rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-primary/20"
                     value={formData.mobile}
                     onChange={(e) => handleChange("mobile", e.target.value)}
                   />

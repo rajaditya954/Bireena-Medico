@@ -47,7 +47,7 @@ export default function Sidebar({ user, isSidebarOpen, handleLogout }) {
         return [
           { name: "Doctor Dashboard", path: "/doctor/dashboard", icon: LayoutDashboard },
           {
-            name: "All Patients", path: "/doctor/patients", icon: Users
+            name: "My Patients", path: "/doctor/patients", icon: Users
           },
           {
             name: "Patient", path: "/doctor/patients", icon: Users,

@@ -50,6 +50,33 @@ export const getMyDashboard = async (req, res) => {
         doctor = await doctorService.getDoctorById(requestDoctorId);
       } else {
         doctor = await doctorService.getDoctorByUserId(req.user?.id);
+
+        if (!doctor && (req.user?.role === "DOCTOR" || req.user?.role === "doctor")) {
+          try {
+            const userRecord = await User.findById(req.user.id);
+            if (userRecord) {
+              const doctorCode = `DOC${String(Math.floor(100 + Math.random() * 900))}`;
+              doctor = await Doctor.create({
+                userId: userRecord._id,
+                doctorCode,
+                name: userRecord.name,
+                specialization: "General Medicine",
+                consultantType: "doctor",
+                qualification: "MBBS",
+                description: "Default doctor profile.",
+                registrationNumber: `REG-${Date.now()}`,
+                experience: 0,
+                consultationFee: "0",
+                roomNumber: "TBD",
+                schedule: [],
+                isVerified: true
+              });
+              console.log(`Created default doctor profile for ${userRecord.name} (user ID: ${userRecord._id}) on the fly.`);
+            }
+          } catch (err) {
+            console.error("Failed to auto-create doctor profile on-the-fly:", err);
+          }
+        }
       }
 
       if (!doctor) {
@@ -62,54 +89,6 @@ export const getMyDashboard = async (req, res) => {
         doctorId: doctor._id,
         appointmentDate: { $gte: startOfDay, $lte: endOfDay }
       });
-
-      // Handle auto-seeding mock appointments for development if empty
-      if (appointments.length === 0) {
-        try {
-          const Patient = (await import("../models/Patient.js")).default;
-          const Appointment = (await import("../models/Appointment.js")).default;
-          const patients = await Patient.find({}).limit(8);
-          if (patients.length > 0) {
-            const mockAptsData = [
-              { slot: "11:00", status: "WAITING", reason: "Chest discomfort", notes: "Routine checkup" },
-              { slot: "09:30", status: "ARRIVED", reason: "Fever & Cold", notes: "Fever and cold follow up" },
-              { slot: "10:00", status: "IN_PROGRESS", reason: "Gastritis", notes: "Severe gastric distress" },
-              { slot: "08:30", status: "completed", reason: "High Blood Pressure", notes: "Hypertension checkup" },
-              { slot: "09:00", status: "completed", reason: "Seasonal Allergy", notes: "Allergy symptoms" },
-              { slot: "11:30", status: "scheduled", reason: "General Exam", notes: "Routine checkup" },
-              { slot: "12:00", status: "scheduled", reason: "Consultation", notes: "Follow-up consultation" },
-              { slot: "12:30", status: "NO_SHOW", reason: "Migraine Follow Up", notes: "Patient did not attend appointment" }
-            ];
-
-            for (let i = 0; i < mockAptsData.length; i++) {
-              const patient = patients[i % patients.length];
-              const aptData = mockAptsData[i];
-              const appointmentId = `APT${Date.now().toString().slice(-4)}${i}`;
-
-              await Appointment.create({
-                appointmentId,
-                patientId: patient._id,
-                doctorId: doctor._id,
-                appointmentDate: new Date(),
-                appointmentType: "WALK_IN",
-                priority: "NORMAL",
-                tokenNumber: 10 + i,
-                slot: aptData.slot,
-                status: aptData.status,
-                reason: aptData.reason,
-                notes: aptData.notes
-              });
-            }
-
-            appointments = await appointmentService.getAllAppointments({
-              doctorId: doctor._id,
-              appointmentDate: { $gte: startOfDay, $lte: endOfDay }
-            });
-          }
-        } catch (seedErr) {
-          console.error("Error dynamically seeding dashboard appointments:", seedErr);
-        }
-      }
     }
 
     // Calculate stats
@@ -122,8 +101,8 @@ export const getMyDashboard = async (req, res) => {
     let todayRevenue = 0;
     appointments.forEach(a => {
       if (["completed", "COMPLETED"].includes(a.status)) {
-        const fee = a.doctorId?.consultationFee || doctor.consultationFee || 500;
-        todayRevenue += fee;
+        const fee = Number(a.doctorId?.consultationFee || doctor.consultationFee || 500);
+        todayRevenue += isNaN(fee) ? 500 : fee;
       }
     });
 
@@ -313,6 +292,277 @@ export const getDoctorsBySpecialization = async (req, res) => {
       consultationFee: d.consultationFee,
     }));
     res.json(generateResponse(mapped, "Doctors fetched successfully"));
+  } catch (error) {
+    res.status(500).json(generateError(error.message));
+  }
+};
+
+// ==================== DOCTOR-SPECIFIC PORTAL ENDPOINTS ====================
+
+/**
+ * Helper: resolves the Doctor record for the logged-in user.
+ * Returns null if not found (caller should 404).
+ */
+async function _resolveDoctorForUser(req) {
+  const Doctor = (await import("../models/Doctor.js")).default;
+  const isAdmin = req.user?.role === "admin" || req.user?.role === "ADMIN";
+  if (isAdmin && req.query.doctorId && req.query.doctorId !== "all") {
+    return doctorService.getDoctorById(req.query.doctorId);
+  }
+  return doctorService.getDoctorByUserId(req.user?.id);
+}
+
+/**
+ * GET /api/doctors/my-patients
+ * Returns patients who have had appointments with this doctor.
+ */
+export const getMyPatients = async (req, res) => {
+  try {
+    const doctor = await _resolveDoctorForUser(req);
+    if (!doctor) {
+      return res.status(404).json(generateError("No doctor profile found for your account."));
+    }
+
+    const Appointment = (await import("../models/Appointment.js")).default;
+    const Patient = (await import("../models/Patient.js")).default;
+
+    // Find all unique patient IDs from this doctor's appointments
+    const appointments = await Appointment.find({ doctorId: doctor._id })
+      .select("patientId")
+      .lean();
+
+    const patientIdSet = [...new Set(appointments.map(a => a.patientId?.toString()).filter(Boolean))];
+
+    const patients = await Patient.find({ _id: { $in: patientIdSet } }).sort({ createdAt: -1 });
+
+    const mapped = patients.map(p => ({
+      id: p._id,
+      _id: p._id,
+      name: p.fullName,
+      fullName: p.fullName,
+      patientId: p.patientId || p._id,
+      age: p.age,
+      gender: p.gender,
+      phone: p.phone,
+      email: p.email,
+      dob: p.dob,
+      bloodGroup: p.bloodGroup,
+      maritalStatus: p.maritalStatus,
+      address: p.address,
+      city: p.city,
+      state: p.state,
+      pincode: p.pincode,
+      referredBy: p.referredBy,
+      allergies: p.allergies || [],
+      chronicDiseases: p.chronicDiseases || [],
+      medicalHistory: p.medicalHistory || [],
+      emergencyContact: p.emergencyContact || { name: "", relation: "", phone: "" },
+      insuranceInfo: p.insuranceInfo || { provider: "", policyNumber: "" },
+    }));
+
+    res.json(generateResponse(mapped, "Doctor-specific patients fetched successfully"));
+  } catch (error) {
+    res.status(500).json(generateError(error.message));
+  }
+};
+
+/**
+ * GET /api/doctors/my-history
+ * Returns this doctor's appointment history (all dates, sorted newest first).
+ */
+export const getMyHistory = async (req, res) => {
+  try {
+    const doctor = await _resolveDoctorForUser(req);
+    if (!doctor) {
+      return res.status(404).json(generateError("No doctor profile found for your account."));
+    }
+
+    const appointments = await appointmentService.getAllAppointments({
+      doctorId: doctor._id,
+    });
+
+    // Sort newest first
+    appointments.sort((a, b) => new Date(b.appointmentDate) - new Date(a.appointmentDate));
+
+    const history = appointments.map(apt => ({
+      id: apt._id,
+      date: apt.appointmentDate,
+      slot: apt.slot,
+      status: apt.status,
+      reason: apt.reason || "Consultation",
+      notes: apt.notes || "",
+      patient: apt.patientId ? {
+        id: apt.patientId._id,
+        name: apt.patientId.fullName,
+        age: apt.patientId.age,
+        gender: apt.patientId.gender,
+        phone: apt.patientId.phone,
+        email: apt.patientId.email,
+      } : { name: apt.patientName || "Unknown" },
+      doctor: {
+        id: doctor._id,
+        name: doctor.name,
+        specialization: doctor.specialization,
+      },
+    }));
+
+    res.json(generateResponse({
+      doctor: {
+        id: doctor._id,
+        name: doctor.name,
+        specialization: doctor.specialization,
+        qualification: doctor.qualification,
+        experience: doctor.experience,
+      },
+      history
+    }, "Doctor history fetched successfully"));
+  } catch (error) {
+    res.status(500).json(generateError(error.message));
+  }
+};
+
+/**
+ * GET /api/doctors/my-prescriptions
+ * Returns prescriptions created by this doctor.
+ */
+export const getMyPrescriptions = async (req, res) => {
+  try {
+    const doctor = await _resolveDoctorForUser(req);
+    if (!doctor) {
+      return res.status(404).json(generateError("No doctor profile found for your account."));
+    }
+
+    const Prescription = (await import("../models/Prescription.js")).default;
+
+    const prescriptions = await Prescription.find({ doctorId: doctor._id })
+      .populate("patientId")
+      .populate("appointmentId")
+      .sort({ createdAt: -1 });
+
+    const mapped = prescriptions.map(p => ({
+      id: p._id,
+      prescriptionId: p.prescriptionId,
+      diagnosis: p.diagnosis,
+      symptoms: p.symptoms || [],
+      medicines: p.medicines || [],
+      advice: p.advice,
+      followUpDate: p.followUpDate,
+      notes: p.notes,
+      isActive: p.isActive,
+      createdAt: p.createdAt,
+      patient: p.patientId ? {
+        id: p.patientId._id,
+        name: p.patientId.fullName,
+        age: p.patientId.age,
+        gender: p.patientId.gender,
+        phone: p.patientId.phone,
+      } : null,
+      appointment: p.appointmentId ? {
+        id: p.appointmentId._id,
+        date: p.appointmentId.appointmentDate,
+        slot: p.appointmentId.slot,
+        reason: p.appointmentId.reason,
+      } : null,
+    }));
+
+    res.json(generateResponse({
+      doctor: {
+        id: doctor._id,
+        name: doctor.name,
+        specialization: doctor.specialization,
+      },
+      prescriptions: mapped
+    }, "Doctor prescriptions fetched successfully"));
+  } catch (error) {
+    res.status(500).json(generateError(error.message));
+  }
+};
+
+/**
+ * GET /api/doctors/my-reports
+ * Returns lab reports ordered by this doctor.
+ */
+export const getMyReports = async (req, res) => {
+  try {
+    const doctor = await _resolveDoctorForUser(req);
+    if (!doctor) {
+      return res.status(404).json(generateError("No doctor profile found for your account."));
+    }
+
+    const LabReport = (await import("../models/LabReport.js")).default;
+
+    const reports = await LabReport.find({ doctorId: doctor._id })
+      .populate("patientId")
+      .populate("tests")
+      .sort({ createdAt: -1 });
+
+    const mapped = reports.map(r => ({
+      id: r._id,
+      reportId: r.reportId,
+      status: r.status,
+      sampleDate: r.sampleDate,
+      reportDate: r.reportDate,
+      findings: r.findings,
+      remarks: r.remarks,
+      reportFile: r.reportFile,
+      createdAt: r.createdAt,
+      tests: (r.tests || []).map(t => ({
+        id: t._id,
+        testName: t.testName || t.name,
+        category: t.category,
+      })),
+      patient: r.patientId ? {
+        id: r.patientId._id,
+        name: r.patientId.fullName,
+        age: r.patientId.age,
+        gender: r.patientId.gender,
+        phone: r.patientId.phone,
+      } : null,
+    }));
+
+    res.json(generateResponse({
+      doctor: {
+        id: doctor._id,
+        name: doctor.name,
+        specialization: doctor.specialization,
+      },
+      reports: mapped
+    }, "Doctor reports fetched successfully"));
+  } catch (error) {
+    res.status(500).json(generateError(error.message));
+  }
+};
+
+/**
+ * GET /api/doctors/my-appointments
+ * Returns all appointments for this doctor (optionally filtered by date or history mode).
+ */
+export const getMyAppointments = async (req, res) => {
+  try {
+    const doctor = await _resolveDoctorForUser(req);
+    if (!doctor) {
+      return res.status(404).json(generateError("No doctor profile found for your account."));
+    }
+
+    const { date, history } = req.query;
+
+    let query = { doctorId: doctor._id };
+
+    // If history=true, return all appointments (no date filter)
+    // Otherwise, filter by the given date (or today)
+    if (history !== "true" && date !== "all") {
+      const dateStr = date || new Date().toISOString().split("T")[0];
+      const [year, month, day] = dateStr.split("-").map(Number);
+      const startOfDay = new Date(year, month - 1, day);
+      startOfDay.setHours(0, 0, 0, 0);
+      const endOfDay = new Date(year, month - 1, day);
+      endOfDay.setHours(23, 59, 59, 999);
+      query.appointmentDate = { $gte: startOfDay, $lte: endOfDay };
+    }
+
+    const appointments = await appointmentService.getAllAppointments(query);
+
+    res.json(generateResponse(appointments, "Doctor-specific appointments fetched successfully"));
   } catch (error) {
     res.status(500).json(generateError(error.message));
   }

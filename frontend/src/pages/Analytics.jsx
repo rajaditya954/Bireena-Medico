@@ -74,7 +74,7 @@ export default function Analytics() {
         <div className="bg-white p-10 rounded-[3.5rem] border border-gray-100 shadow-sm">
            <h3 className="text-xl font-bold text-[#06402B] mb-8 tracking-tight">Revenue Trends</h3>
            <div className="h-[400px] relative w-full">
-              <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+              <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0} initialDimension={{ width: 1, height: 1 }}>
                  <AreaChart data={DATA}>
                     <defs>
                       <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
@@ -96,7 +96,7 @@ export default function Analytics() {
            <h3 className="text-xl font-bold text-[#06402B] mb-8 tracking-tight">Department Traffic</h3>
            <div className="h-[400px] flex items-center justify-between gap-4">
               <div className="flex-1 h-full min-w-0 relative">
-                 <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+                 <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0} initialDimension={{ width: 1, height: 1 }}>
                     <PieChart>
                        <Pie
                           data={PIE_DATA}

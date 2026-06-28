@@ -113,6 +113,13 @@ export const api = {
   updateDoctor: (id, data) => axiosInstance.put(`/doctors/${id}`, data),
   getDoctorDashboard: (params) => axiosInstance.get("/doctors/dashboard", { params }),
 
+  // Doctor-specific portal endpoints
+  getMyPatients: (params) => axiosInstance.get("/doctors/my-patients", { params }),
+  getMyAppointments: (params) => axiosInstance.get("/doctors/my-appointments", { params }),
+  getMyHistory: (params) => axiosInstance.get("/doctors/my-history", { params }),
+  getMyPrescriptions: (params) => axiosInstance.get("/doctors/my-prescriptions", { params }),
+  getMyReports: (params) => axiosInstance.get("/doctors/my-reports", { params }),
+
   // ==================== LABORATORY ====================
   getLabTests: (params) => axiosInstance.get("/laboratory/tests", { params }),
   createLabTest: (data) => axiosInstance.post("/laboratory/tests", data),

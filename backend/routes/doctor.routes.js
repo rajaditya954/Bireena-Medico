@@ -6,6 +6,13 @@ const router = express.Router();
 
 router.get("/dashboard", authenticateToken, doctorController.getMyDashboard);
 
+// Doctor-specific portal endpoints (must come before /:id)
+router.get("/my-patients", authenticateToken, doctorController.getMyPatients);
+router.get("/my-appointments", authenticateToken, doctorController.getMyAppointments);
+router.get("/my-history", authenticateToken, doctorController.getMyHistory);
+router.get("/my-prescriptions", authenticateToken, doctorController.getMyPrescriptions);
+router.get("/my-reports", authenticateToken, doctorController.getMyReports);
+
 router.get("/", doctorController.getAllDoctors);
 router.get("/:id", doctorController.getDoctorById);
 router.post("/", doctorController.createDoctor);

@@ -1,4 +1,5 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import { useLocation } from "react-router-dom";
 import {
   Search,
   Eye,
@@ -14,97 +15,22 @@ import {
   X,
   Printer,
   FilePlus,
+  RefreshCw,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-
-// Mock data for prescribed reports (extended with findings & notes)
-const initialReports = [
-  {
-    id: 1,
-    testName: "CBC",
-    fullName: "Complete Blood Count (CBC) Lab Report",
-    category: "Hematology",
-    prescribedOn: "12 May 2025 09:30 AM",
-    status: "Pending",
-    findings: "Hemoglobin 14.2 g/dL, WBC 7.5 x10^3/µL, Platelets 250 x10^3/µL",
-    notes: "All values within normal reference range.",
-    resultStatus: "Normal",
-    testDate: "12 May 2025",
-    attachments: [],
-  },
-  {
-    id: 2,
-    testName: "LFT",
-    fullName: "Liver Function Test (LFT) Lab Report",
-    category: "Biochemistry",
-    prescribedOn: "12 May 2025 09:30 AM",
-    status: "Pending",
-    findings: "ALT 32 U/L, AST 28 U/L, ALP 85 U/L, Total Bilirubin 0.8 mg/dL",
-    notes: "Liver enzymes within normal limits.",
-    resultStatus: "Normal",
-    testDate: "12 May 2025",
-    attachments: [],
-  },
-  {
-    id: 3,
-    testName: "X-RAY",
-    fullName: "Chest X-Ray Imaging",
-    category: "Radiology",
-    prescribedOn: "12 May 2025 09:30 AM",
-    status: "Completed",
-    findings: "No cardiomegaly. Lungs are clear. No pleural effusion.",
-    notes: "Normal chest X-ray.",
-    resultStatus: "Normal",
-    testDate: "11 May 2025",
-    attachments: [{ name: "xray_result.pdf", url: "#" }],
-  },
-  {
-    id: 4,
-    testName: "ECG",
-    fullName: "Electrocardiogram (ECG) Cardiology",
-    category: "Cardiology",
-    prescribedOn: "12 May 2025 09:30 AM",
-    status: "Completed",
-    findings: "Normal sinus rhythm. Rate 72 bpm. No ischemic changes.",
-    notes: "ECG normal.",
-    resultStatus: "Normal",
-    testDate: "12 May 2025",
-    attachments: [],
-  },
-  {
-    id: 5,
-    testName: "UR",
-    fullName: "Urine Routine Examination Lab Report",
-    category: "Microbiology",
-    prescribedOn: "12 May 2025 09:30 AM",
-    status: "In Progress",
-    findings: "Pending culture sensitivity.",
-    notes: "Awaiting final report.",
-    resultStatus: "Pending",
-    testDate: "12 May 2025",
-    attachments: [],
-  },
-];
-
-// Patient profile (same as before)
-const patientInfo = {
-  id: "PAT-0001",
-  name: "Alice Cooper",
-  gender: "Female",
-  age: 34,
-  phone: "+91 98765 43210",
-  email: "alice.cooper@email.com",
-  address: "Medical District, Hyderabad",
-  lastAppointment: "12 May 2025, 09:30 AM",
-  doctor: "Dr. Michael Brown",
-  specialty: "General Physician",
-};
+import { api } from "../../lib/api";
 
 const DoctorReports = () => {
-  const [reports, setReports] = useState(initialReports);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedReport, setSelectedReport] = useState(null);     // for report detail modal
-  const [showIssueModal, setShowIssueModal] = useState(false);    // for issue report modal
+  const location = useLocation();
+  const prefillPatient = location.state?.prefillPatient || null;
+
+  const [reports, setReports] = useState([]);
+  const [doctorInfo, setDoctorInfo] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [searchTerm, setSearchTerm] = useState(prefillPatient?.name || prefillPatient?.fullName || "");
+  const [selectedReport, setSelectedReport] = useState(null);
+  const [showIssueModal, setShowIssueModal] = useState(false);
   const [issueForm, setIssueForm] = useState({
     reportType: "",
     testDate: new Date().toISOString().split("T")[0],
@@ -115,22 +41,56 @@ const DoctorReports = () => {
   const [findingsChars, setFindingsChars] = useState(0);
   const printRef = useRef();
 
-  // Filter reports based on search
+  useEffect(() => {
+    fetchReports();
+  }, []);
+
+  const fetchReports = async () => {
+    try {
+      setLoading(true);
+      setError("");
+      const res = await api.getMyReports();
+      const data = res.data?.data || {};
+      setDoctorInfo(data.doctor || null);
+
+      const mapped = (data.reports || []).map((r) => ({
+        id: r.id,
+        reportId: r.reportId,
+        testName: (r.tests && r.tests.length > 0) ? r.tests[0].testName : "Lab Test",
+        fullName: (r.tests && r.tests.length > 0) ? `${r.tests[0].testName} Lab Report` : "Lab Report",
+        category: (r.tests && r.tests.length > 0) ? r.tests[0].category || "General" : "General",
+        prescribedOn: r.createdAt ? new Date(r.createdAt).toLocaleString("en-IN", {
+          day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit"
+        }) : "—",
+        status: r.status || "PENDING",
+        findings: r.findings || "",
+        remarks: r.remarks || "",
+        reportFile: r.reportFile,
+        sampleDate: r.sampleDate,
+        reportDate: r.reportDate,
+        patient: r.patient,
+        attachments: r.reportFile ? [{ name: r.reportFile, url: r.reportFile }] : [],
+      }));
+
+      setReports(mapped);
+    } catch (err) {
+      setError(err.message || "Failed to load reports");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Filter reports
   const filteredReports = reports.filter(
     (r) =>
       r.testName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       r.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      r.category.toLowerCase().includes(searchTerm.toLowerCase())
+      r.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (r.patient?.name || "").toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // ---------- Report Detail Modal ----------
-  const handleViewReport = (report) => {
-    setSelectedReport(report);
-  };
-
-  const closeDetailModal = () => {
-    setSelectedReport(null);
-  };
+  const handleViewReport = (report) => setSelectedReport(report);
+  const closeDetailModal = () => setSelectedReport(null);
 
   const handlePrintReport = () => {
     if (printRef.current) {
@@ -153,64 +113,76 @@ const DoctorReports = () => {
     }
   };
 
-  // ---------- Issue Report Modal ----------
-  const handleIssueChange = (field, value) => {
-    setIssueForm({ ...issueForm, [field]: value });
-  };
-
+  const handleIssueChange = (field, value) => setIssueForm({ ...issueForm, [field]: value });
   const handleFindingsChange = (e) => {
     const val = e.target.value;
     setIssueForm({ ...issueForm, findings: val });
     setFindingsChars(val.length);
   };
-
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
-    if (file && file.size <= 10 * 1024 * 1024) {
-      setUploadedFile(file);
-    } else {
-      alert("File size should be less than 10MB");
-    }
+    if (file && file.size <= 10 * 1024 * 1024) setUploadedFile(file);
+    else alert("File size should be less than 10MB");
   };
 
   const handleSubmitIssue = (e) => {
     e.preventDefault();
-    // Simulate API call
     const newReport = {
-      id: reports.length + 1,
+      id: `temp-${Date.now()}`,
+      reportId: `NEW-${Date.now()}`,
       testName: issueForm.reportType.split(" ")[0],
       fullName: issueForm.reportType,
       category: "General",
-      prescribedOn: new Date().toLocaleString("en-GB", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }),
-      status: "Pending",
+      prescribedOn: new Date().toLocaleString("en-IN", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }),
+      status: "PENDING",
       findings: issueForm.findings,
-      notes: "",
-      resultStatus: issueForm.resultStatus,
-      testDate: issueForm.testDate,
+      remarks: "",
+      patient: null,
       attachments: uploadedFile ? [{ name: uploadedFile.name, url: "#" }] : [],
     };
     setReports([newReport, ...reports]);
     alert(`Report issued for ${issueForm.reportType || "selected test"}`);
-    setIssueForm({
-      reportType: "",
-      testDate: new Date().toISOString().split("T")[0],
-      resultStatus: "",
-      findings: "",
-    });
+    setIssueForm({ reportType: "", testDate: new Date().toISOString().split("T")[0], resultStatus: "", findings: "" });
     setUploadedFile(null);
     setFindingsChars(0);
     setShowIssueModal(false);
   };
 
-  // Status badge styling
   const getStatusBadge = (status) => {
+    const upper = (status || "").toUpperCase();
     const styles = {
-      Pending: "bg-amber-50 text-amber-700 border-amber-200",
-      Completed: "bg-green-50 text-green-700 border-green-200",
-      "In Progress": "bg-blue-50 text-blue-700 border-blue-200",
+      PENDING: "bg-amber-50 text-amber-700 border-amber-200",
+      COMPLETED: "bg-green-50 text-green-700 border-green-200",
+      APPROVED: "bg-green-50 text-green-700 border-green-200",
+      IN_PROGRESS: "bg-blue-50 text-blue-700 border-blue-200",
+      CANCELLED: "bg-red-50 text-red-700 border-red-200",
     };
-    return styles[status] || "bg-gray-50 text-gray-600 border-gray-200";
+    return styles[upper] || "bg-gray-50 text-gray-600 border-gray-200";
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#F2F9F6] flex flex-col items-center justify-center gap-3">
+        <RefreshCw className="w-10 h-10 text-emerald-600 animate-spin" />
+        <p className="text-slate-500 font-semibold">Loading reports...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-[#F2F9F6] p-8 flex items-center justify-center">
+        <div className="bg-white rounded-3xl border border-red-100 p-8 shadow-sm max-w-md w-full text-center space-y-4">
+          <AlertCircle className="w-16 h-16 text-red-500 mx-auto" />
+          <h2 className="text-xl font-bold text-slate-800">Reports Error</h2>
+          <p className="text-sm text-slate-500">{error}</p>
+          <button onClick={fetchReports} className="px-6 py-2.5 bg-emerald-600 text-white rounded-xl text-sm font-semibold hover:bg-emerald-700 transition">
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#F2F9F6] p-6">
@@ -235,14 +207,14 @@ const DoctorReports = () => {
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
             <input
               type="text"
-              placeholder="Search reports by name or test type..."
+              placeholder="Search reports by name, test type, or patient..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full h-12 pl-12 pr-4 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-300 outline-none"
             />
           </div>
 
-          {/* Prescribed Reports Table */}
+          {/* Reports Table */}
           <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-100">
               <h2 className="text-base font-bold text-[#06402B]">Prescribed Reports</h2>
@@ -252,7 +224,7 @@ const DoctorReports = () => {
                 <thead className="bg-gray-50/50 border-b border-gray-100">
                   <tr>
                     <th className="text-left px-6 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Report / Test Name</th>
-                    <th className="text-left px-6 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Category</th>
+                    <th className="text-left px-6 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Patient</th>
                     <th className="text-left px-6 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Prescribed On</th>
                     <th className="text-left px-6 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Status</th>
                     <th className="text-left px-6 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Actions</th>
@@ -267,7 +239,7 @@ const DoctorReports = () => {
                           <div className="text-xs text-gray-400 mt-0.5">{report.fullName}</div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-gray-600">{report.category}</td>
+                      <td className="px-6 py-4 text-gray-600">{report.patient?.name || "—"}</td>
                       <td className="px-6 py-4 text-gray-500 whitespace-nowrap">{report.prescribedOn}</td>
                       <td className="px-6 py-4">
                         <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-semibold border ${getStatusBadge(report.status)}`}>
@@ -275,67 +247,68 @@ const DoctorReports = () => {
                         </span>
                        </td>
                       <td className="px-6 py-4">
-                        {report.status === "Pending" ? (
-                          <button
-                            onClick={(e) => { e.stopPropagation(); handleViewReport(report); }}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 text-white text-xs font-semibold rounded-lg hover:bg-emerald-700 transition"
-                          >
-                            <PlusCircle className="w-3.5 h-3.5" /> Add Result
-                          </button>
-                        ) : (
-                          <button
-                            onClick={(e) => { e.stopPropagation(); handleViewReport(report); }}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 text-gray-700 text-xs font-semibold rounded-lg hover:bg-gray-200 transition"
-                          >
-                            <Eye className="w-3.5 h-3.5" /> View Result
-                          </button>
-                        )}
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleViewReport(report); }}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 text-gray-700 text-xs font-semibold rounded-lg hover:bg-gray-200 transition"
+                        >
+                          <Eye className="w-3.5 h-3.5" /> View
+                        </button>
                        </td>
                      </tr>
                   ))}
                 </tbody>
               </table>
               {filteredReports.length === 0 && (
-                <div className="p-12 text-center text-gray-400">No reports found</div>
+                <div className="p-12 text-center text-gray-400">No reports found for your account.</div>
               )}
             </div>
           </div>
         </div>
 
-        {/* Right Column - Clinical Profile (unchanged) */}
+        {/* Right Column - Doctor Profile */}
         <div className="xl:col-span-1">
           <div className="bg-white rounded-xl border border-gray-100 shadow-sm sticky top-6">
             <div className="p-6 border-b border-gray-100">
-              <h2 className="text-lg font-bold text-[#06402B]">Clinical Profile</h2>
-              <p className="text-xs text-gray-400">Digital Medical Record</p>
+              <h2 className="text-lg font-bold text-[#06402B]">Doctor Profile</h2>
+              <p className="text-xs text-gray-400">Your reports overview</p>
             </div>
             <div className="p-6">
-              <div className="flex items-center gap-4 mb-6">
-                <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 text-2xl font-bold">AC</div>
-                <div>
-                  <h3 className="text-xl font-bold text-gray-900">{patientInfo.name}</h3>
-                  <div className="flex gap-2 text-sm text-gray-500 mt-1">
-                    <span>{patientInfo.gender}</span>•<span>{patientInfo.age} Years</span>
+              {doctorInfo ? (
+                <>
+                  <div className="flex items-center gap-4 mb-6">
+                    <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 text-2xl font-bold">
+                      {(doctorInfo.name || "D").split(" ").map(n => n[0]).join("")}
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold text-gray-900">Dr. {doctorInfo.name}</h3>
+                      <div className="text-sm text-emerald-600 font-medium mt-1">{doctorInfo.specialization}</div>
+                    </div>
                   </div>
-                  <p className="text-xs text-gray-400 font-mono mt-1">Patient ID: {patientInfo.id}</p>
-                </div>
-              </div>
-              <div className="mb-6">
-                <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Contact Information</h4>
-                <div className="space-y-2">
-                  <div className="flex items-center gap-3 text-sm"><Phone className="w-4 h-4 text-gray-400" /><span>{patientInfo.phone}</span></div>
-                  <div className="flex items-center gap-3 text-sm"><Mail className="w-4 h-4 text-gray-400" /><span>{patientInfo.email}</span></div>
-                  <div className="flex items-center gap-3 text-sm"><MapPin className="w-4 h-4 text-gray-400" /><span>{patientInfo.address}</span></div>
-                </div>
-              </div>
-              <div>
-                <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Appointment Info</h4>
-                <div className="space-y-2">
-                  <div className="flex items-center gap-3 text-sm"><Calendar className="w-4 h-4 text-gray-400" /><span>{patientInfo.lastAppointment}</span></div>
-                  <div className="flex items-center gap-3 text-sm"><User className="w-4 h-4 text-gray-400" /><span>{patientInfo.doctor}</span></div>
-                  <div className="flex items-center gap-3 text-sm"><AlertCircle className="w-4 h-4 text-gray-400" /><span>{patientInfo.specialty}</span></div>
-                </div>
-              </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Reports Summary</h4>
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-500">Total Reports</span>
+                        <span className="font-bold text-gray-800">{reports.length}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-500">Completed</span>
+                        <span className="font-bold text-emerald-600">
+                          {reports.filter(r => ["COMPLETED", "APPROVED"].includes((r.status || "").toUpperCase())).length}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-500">Pending</span>
+                        <span className="font-bold text-amber-600">
+                          {reports.filter(r => (r.status || "").toUpperCase() === "PENDING").length}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <p className="text-gray-400 text-center py-4">No doctor info available.</p>
+              )}
             </div>
           </div>
         </div>
@@ -377,18 +350,18 @@ const DoctorReports = () => {
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div><span className="text-xs font-bold text-gray-400 uppercase">Prescribed On</span><p className="text-gray-800">{selectedReport.prescribedOn}</p></div>
-                  <div><span className="text-xs font-bold text-gray-400 uppercase">Test Date</span><p className="text-gray-800">{selectedReport.testDate || "—"}</p></div>
+                  <div><span className="text-xs font-bold text-gray-400 uppercase">Patient</span><p className="text-gray-800">{selectedReport.patient?.name || "—"}</p></div>
                   <div><span className="text-xs font-bold text-gray-400 uppercase">Status</span><p><span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-semibold border ${getStatusBadge(selectedReport.status)}`}>{selectedReport.status}</span></p></div>
-                  <div><span className="text-xs font-bold text-gray-400 uppercase">Result Status</span><p className="text-gray-800">{selectedReport.resultStatus || "—"}</p></div>
+                  <div><span className="text-xs font-bold text-gray-400 uppercase">Report ID</span><p className="text-gray-800">{selectedReport.reportId || "—"}</p></div>
                 </div>
                 <div>
                   <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Findings / Result</h4>
                   <div className="bg-gray-50 p-3 rounded-lg text-gray-700 whitespace-pre-wrap">{selectedReport.findings || "No findings entered."}</div>
                 </div>
-                {selectedReport.notes && (
+                {selectedReport.remarks && (
                   <div>
-                    <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Clinical Notes</h4>
-                    <p className="text-gray-700">{selectedReport.notes}</p>
+                    <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Remarks</h4>
+                    <p className="text-gray-700">{selectedReport.remarks}</p>
                   </div>
                 )}
                 {selectedReport.attachments?.length > 0 && (

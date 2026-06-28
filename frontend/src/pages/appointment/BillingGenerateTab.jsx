@@ -160,7 +160,7 @@ td{padding:7px 8px;border-bottom:1px solid #f0f0f0;font-size:12px}
 }
 
 // ─── Component ───────────────────────────────────────────────────────────────
-export default function BillingGenerateTab({ onBillGenerated }) {
+export default function BillingGenerateTab({ onBillGenerated, prefillAppointment }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [patientSearch, setPatientSearch] = useState("");
   const [patients, setPatients] = useState([]);
@@ -188,6 +188,60 @@ export default function BillingGenerateTab({ onBillGenerated }) {
       .then(r => setAppointments(r.data?.data || []))
       .catch(() => setAppointments([]));
   }, []);
+
+  // ── Auto-prefill from appointment booking ────────────────────
+  useEffect(() => {
+    if (prefillAppointment && !selectedApt) {
+      // Build the appointment object for the billing form
+      const apt = {
+        _id: prefillAppointment._id || prefillAppointment.id,
+        patientId: prefillAppointment.patientId,
+        patientName: prefillAppointment.patientName,
+        patientPhone: prefillAppointment.patientPhone || "",
+        doctorId: prefillAppointment.doctorId,
+        doctorName: prefillAppointment.doctorName,
+        date: prefillAppointment.date,
+        scheduledTime: prefillAppointment.scheduledTime || "Walk-in",
+        type: prefillAppointment.type || "walk-in",
+        status: prefillAppointment.status || "scheduled",
+        tokenNumber: prefillAppointment.tokenNumber,
+      };
+
+      setSelectedApt(apt);
+      setSelectedPatient({
+        id: apt.patientId?._id || apt.patientId,
+        _id: apt.patientId?._id || apt.patientId,
+        name: apt.patientName,
+        phone: apt.patientPhone,
+      });
+
+      // Pre-fill consultation fee with doctor name
+      const doctorName = apt.doctorName || "Doctor";
+      // Try to match doctor from the list to get their fee
+      const matchedDoctor = DOCTORS_LIST.find(
+        d => d.name.toLowerCase().includes(doctorName.toLowerCase()) ||
+             doctorName.toLowerCase().includes(d.name.toLowerCase().replace("dr. ", ""))
+      );
+      const consultationFee = matchedDoctor?.fee || 500;
+      const consultationType = matchedDoctor?.type || "General Checkup";
+
+      setConsultations([{
+        name: "Consultation Fee",
+        doctor: doctorName,
+        type: consultationType,
+        amount: consultationFee,
+      }]);
+      setServiceMode("doctor");
+      setLabTests([]);
+      setLabDiscount(0);
+      setFollowupCharges(0);
+      setNotes("");
+      setPayReceived("");
+      setPayMethod("Cash");
+      setPaymentStatus("pending");
+      setPaymentMessage("");
+    }
+  }, [prefillAppointment]);
 
   // ── Patient search ─────────────────────────────────────────
   useEffect(() => {

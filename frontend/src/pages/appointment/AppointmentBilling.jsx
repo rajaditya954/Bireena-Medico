@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { 
   Search, Download, Filter, ChevronLeft, ChevronRight, X, Printer, Calendar, FileText,
   CreditCard, Smartphone, Banknote, Wallet, ShieldCheck, Eye, RefreshCw
@@ -47,7 +48,11 @@ const MOCK_REFUNDS = [
 ];
 
 export default function AppointmentBilling() {
-  const [activeTab, setActiveTab] = useState("Payments");
+  const location = useLocation();
+  const prefillAppointment = location.state?.prefillAppointment || null;
+  const autoGenerateBill = location.state?.autoGenerateBill || false;
+
+  const [activeTab, setActiveTab] = useState(autoGenerateBill ? "Generate Bill" : "Payments");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedItem, setSelectedItem] = useState(null);
 
@@ -145,7 +150,10 @@ export default function AppointmentBilling() {
       {/* Content */}
       <div className="mt-4">
         {activeTab === "Generate Bill" && (
-          <BillingGenerateTab onBillGenerated={() => setActiveTab("All Bills")} />
+          <BillingGenerateTab
+            onBillGenerated={() => setActiveTab("All Bills")}
+            prefillAppointment={prefillAppointment}
+          />
         )}
 
         {/* --- ALL BILLS --- */}
