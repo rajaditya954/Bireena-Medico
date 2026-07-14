@@ -39,16 +39,41 @@ app.use((req, res, next) => {
   logger.debug(`${req.method} ${req.path}`, { body: req.body, query: req.query });
   next();
 });
-app.use(cors({ 
+
+// --- CORS CONFIGURATION ---
+const allowedOrigins = [
+  process.env.FRONTEND_URL,
+  ...(process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(",").map(s => s.trim()) : []),
+  "https://bireena-medico-theta.vercel.app",
+  "http://localhost:5173",
+  "http://localhost:5174",
+  "http://localhost:5175",
+  "http://localhost:3000",
+  "http://localhost:8080",
+].filter(Boolean); // Remove undefined/null entries
+
+const corsOptions = {
   origin: (origin, callback) => {
-    if (!origin || config.corsOrigin.includes("*") || config.corsOrigin.includes(origin)) {
-      callback(null, origin || true);
-    } else {
-      callback(new Error("Not allowed by CORS"));
+    // Allow requests with no origin (mobile apps, curl, Postman, server-to-server)
+    if (!origin) return callback(null, true);
+    // Allow if origin is in the allowed list, or if wildcard is configured
+    if (allowedOrigins.includes("*") || allowedOrigins.includes(origin)) {
+      return callback(null, origin);
     }
+    return callback(new Error("Not allowed by CORS"));
   },
-  credentials: true 
-}));
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+  credentials: true,
+  optionsSuccessStatus: 200,
+  maxAge: 86400, // Cache preflight for 24 hours
+};
+
+app.use(cors(corsOptions));
+
+// Explicit preflight handler for ALL routes
+app.options("*", cors(corsOptions));
+
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ limit: "10mb", extended: true }));
 
