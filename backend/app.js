@@ -39,7 +39,16 @@ app.use((req, res, next) => {
   logger.debug(`${req.method} ${req.path}`, { body: req.body, query: req.query });
   next();
 });
-app.use(cors({ origin: config.corsOrigin, credentials: true }));
+app.use(cors({ 
+  origin: (origin, callback) => {
+    if (!origin || config.corsOrigin.includes("*") || config.corsOrigin.includes(origin)) {
+      callback(null, origin || true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  credentials: true 
+}));
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ limit: "10mb", extended: true }));
 
