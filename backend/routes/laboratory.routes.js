@@ -18,6 +18,8 @@ router.get("/reports/patient/:patientId", laboratoryController.getReportsByPatie
 router.put("/reports/:id/status", laboratoryController.updateReportStatus);
 router.put("/reports/:id", uploadLabReport.single("reportFile"), laboratoryController.updateReport);
 router.put("/reports/:id/approve", laboratoryController.approveReport);
+router.put("/reports/:id/verify", laboratoryController.verifyReport);
+router.put("/reports/:id/release", laboratoryController.releaseReport);
 router.delete("/reports/:id", laboratoryController.deleteReport);
 
 // Document extraction

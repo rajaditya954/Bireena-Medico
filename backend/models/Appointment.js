@@ -30,6 +30,7 @@ const AppointmentSchema = new db.Schema(
     notes: { type: String },
     reason: { type: String },
     createdBy: { type: String },
+    isReminder: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

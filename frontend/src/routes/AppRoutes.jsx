@@ -8,6 +8,32 @@ import Login from "../pages/auth/Login";
 
 import { Role } from "../types";
 
+// Super Admin Pages
+import SuperAdminLogin from "../pages/superadmin/SuperAdminLogin";
+import SuperAdminDashboard from "../pages/superadmin/SuperAdminDashboard";
+import HospitalManagement from "../pages/superadmin/HospitalManagement";
+import HospitalDetail from "../pages/superadmin/HospitalDetail";
+
+function SuperAdminGuard({ children }) {
+  const session = localStorage.getItem("medico_session");
+  const token = localStorage.getItem("aarogya_token");
+  
+  if (!session || !token) {
+    return <Navigate to="/superadmin/login" replace />;
+  }
+  
+  try {
+    const user = JSON.parse(session);
+    if (user.role !== "SUPER_ADMIN") {
+      return <Navigate to="/unauthorized" replace />;
+    }
+  } catch (e) {
+    return <Navigate to="/superadmin/login" replace />;
+  }
+  
+  return children;
+}
+
 /* ===================================================== */
 /* COMMON PAGES */
 /* ===================================================== */
@@ -541,6 +567,33 @@ export default function AppRoutes() {
           }
         />
       </Route>
+
+      {/* ========== SUPER ADMIN ROUTES ========== */}
+      <Route path="/superadmin/login" element={<SuperAdminLogin />} />
+      <Route
+        path="/superadmin/dashboard"
+        element={
+          <SuperAdminGuard>
+            <SuperAdminDashboard />
+          </SuperAdminGuard>
+        }
+      />
+      <Route
+        path="/superadmin/hospitals"
+        element={
+          <SuperAdminGuard>
+            <HospitalManagement />
+          </SuperAdminGuard>
+        }
+      />
+      <Route
+        path="/superadmin/hospitals/:id"
+        element={
+          <SuperAdminGuard>
+            <HospitalDetail />
+          </SuperAdminGuard>
+        }
+      />
 
       {/* ========== UNAUTHORIZED ========== */}
       <Route

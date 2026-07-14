@@ -69,9 +69,9 @@ export default function LabReportsPage() {
     const today = new Date().toISOString().split('T')[0];
     return {
       total: allReports.length,
-      today: allReports.filter((r) => r.sampleDate === today).length,
-      pending: allReports.filter((r) => r.status === "Pending").length,
-      completed: allReports.filter((r) => r.status === "Completed").length,
+      samplesReceived: allReports.filter((r) => ["Sample Received", "In Testing", "In Progress"].includes(r.status)).length,
+      inTesting: allReports.filter((r) => ["In Testing", "In Progress"].includes(r.status)).length,
+      completedToday: allReports.filter((r) => r.status === "Completed" && r.reportDate === today).length,
     };
   }, [allReports]);
 
@@ -228,10 +228,10 @@ export default function LabReportsPage() {
       />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <StatCard label="Total Reports" value={stats.total} icon={<FileText className="size-5" />} hint="All-time records" trend={{ value: "+12%", direction: "up" }} />
-        <StatCard label="Reports Today" value={stats.today} icon={<Clock className="size-5" />} tone="info" hint="Samples collected today" />
-        <StatCard label="Pending" value={stats.pending} icon={<AlertCircle className="size-5" />} tone="warning" hint="Awaiting processing" />
-        <StatCard label="Completed" value={stats.completed} icon={<CheckCircle2 className="size-5" />} tone="success" hint="Released to patient" trend={{ value: "98% SLA", direction: "up" }} />
+        <StatCard label="Total Reports" value={stats.total} icon={<FileText className="size-5" />} hint="All-time records" />
+        <StatCard label="Samples Received" value={stats.samplesReceived} icon={<Clock className="size-5" />} tone="info" hint="Awaiting testing" />
+        <StatCard label="In Testing" value={stats.inTesting} icon={<AlertCircle className="size-5" />} tone="warning" hint="Tests in progress" />
+        <StatCard label="Completed Today" value={stats.completedToday} icon={<CheckCircle2 className="size-5" />} tone="success" hint="Released to patients" />
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-[1fr_380px] gap-6">

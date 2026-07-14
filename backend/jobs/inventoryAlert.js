@@ -5,14 +5,16 @@ export const inventoryAlertJob = async () => {
   try {
     logger.info("Running inventory alert job...");
     
-    const lowStockItems = await Inventory.find({
-      quantity: { $lte: "$minimumThreshold" },
-    }).populate("medicineId");
+    const inventoryItems = await Inventory.find().populate("medicineId");
+    const lowStockItems = inventoryItems.filter(
+      item => (item.currentStock || 0) <= (item.minimumStock || 0)
+    );
 
     for (const item of lowStockItems) {
-      logger.warn(`Low stock alert: ${item.medicineId.name}`, {
-        currentStock: item.quantity,
-        minimumThreshold: item.minimumThreshold,
+      const medicineName = item.medicineId?.medicineName || "Unknown Medicine";
+      logger.warn(`Low stock alert: ${medicineName}`, {
+        currentStock: item.currentStock,
+        minimumStock: item.minimumStock,
       });
       
       // Here you could send alerts to admins

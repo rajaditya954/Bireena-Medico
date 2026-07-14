@@ -49,6 +49,18 @@ export const reportsStore = {
     emit();
     return report;
   },
+  async verify(id, verifierName) {
+    const report = await labApi.verifyReport(id, verifierName);
+    state = state.map((r) => (r._raw?._id === id ? report : r));
+    emit();
+    return report;
+  },
+  async release(id) {
+    const report = await labApi.releaseReport(id);
+    state = state.map((r) => (r._raw?._id === id ? report : r));
+    emit();
+    return report;
+  },
   async update(id, formData) {
     const report = await labApi.updateReport(id, formData);
     state = state.map((r) => (r._raw?._id === id ? report : r));
@@ -59,6 +71,20 @@ export const reportsStore = {
     await labApi.deleteReport(id);
     state = state.filter((r) => r._raw?._id !== id);
     emit();
+  },
+  async updateBulkStatus(ids, status, remarks) {
+    const results = [];
+    for (const id of ids) {
+      try {
+        const report = await labApi.updateReportStatus(id, status, remarks);
+        results.push(report);
+      } catch (e) {
+        console.error(`Failed to update report ${id}:`, e);
+      }
+    }
+    // Refresh all after bulk update
+    await reportsStore.fetchAll();
+    return results;
   },
 };
 

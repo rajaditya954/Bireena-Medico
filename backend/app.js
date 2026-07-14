@@ -29,6 +29,8 @@ import reportRoutes from "./routes/report.routes.js";
 import analyticsRoutes from "./routes/analytics.routes.js";
 import historyRoutes from "./routes/history.routes.js";
 
+import superadminRoutes from "./routes/superadmin.routes.js";
+
 const app = express();
 
 // --- MIDDLEWARE ---
@@ -70,6 +72,9 @@ app.get("/api/health", (req, res) => {
 
 // Auth routes (register/login)
 app.use("/api/auth", authRoutes);
+
+// Super Admin routes (login is public, other actions verify superadmin token internally)
+app.use("/api/superadmin", superadminRoutes);
 
 // Admin compatibility route alias
 app.post(

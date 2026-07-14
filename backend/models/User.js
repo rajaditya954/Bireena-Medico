@@ -81,6 +81,7 @@ UserSchema.methods.toSafeJSON = function () {
     lastLogin: this.lastLogin,
     createdAt: this.createdAt,
     updatedAt: this.updatedAt,
+    hospitalId: this.hospital_id,
   };
 };
 

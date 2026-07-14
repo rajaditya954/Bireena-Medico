@@ -235,7 +235,6 @@ export default function AddAppointment({ isEmbedded = false }) {
             {[
               { id: "doctor", label: "Doctor", icon: Stethoscope },
               { id: "lab", label: "Lab Consultant", icon: FlaskConical },
-              { id: "both", label: "Both", icon: User },
             ].map((t) => (
               <button
                 key={t.id}

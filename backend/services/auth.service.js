@@ -4,7 +4,7 @@ import { config } from "../config/env.js";
 import crypto from "crypto";
 
 class AuthService {
-  async register(name, email, password, role = "PATIENT", phone = null) {
+  async register(name, email, password, role = "PATIENT", phone = null, hospitalId = null) {
     const existingUser = await User.findOne({ email: email.toLowerCase() });
     if (existingUser) {
       throw new Error("Email already registered");
@@ -16,6 +16,7 @@ class AuthService {
       phone,
       role: role.toUpperCase(),
       isActive: true,
+      hospital_id: hospitalId
     });
     
     await user.setPassword(password);
@@ -64,7 +65,7 @@ class AuthService {
 
   signToken(user) {
     return jwt.sign(
-      { id: user._id, role: user.role, email: user.email },
+      { id: user._id, role: user.role, email: user.email, hospitalId: user.hospital_id },
       config.jwtSecret,
       { expiresIn: config.jwtExpire }
     );

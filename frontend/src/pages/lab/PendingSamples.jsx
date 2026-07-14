@@ -17,7 +17,9 @@ const PendingSamples = () => {
     try {
       setLoading(true);
       const reports = await labApi.getReports();
-      const pending = reports.filter(r => r.status === "Pending" || r.status === "In Progress");
+      const pending = reports.filter(r => 
+        ["Pending", "Requested", "Sample Collected", "Sample Received", "In Testing", "In Progress", "Report Ready", "Uploaded"].includes(r.status)
+      );
       setSamples(pending.map(r => ({
         _id: r._raw?._id || r.id,
         sampleId: r.id,

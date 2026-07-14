@@ -48,12 +48,35 @@ export function StatusBadge({ status }) {
     Cancelled: "bg-red-100 text-red-800",
     Active: "bg-[#d1f4e0] text-[#0f281e]",
     Inactive: "bg-gray-100 text-gray-800",
+    // New workflow statuses
+    Requested: "bg-violet-100 text-violet-800",
+    "Sample Collected": "bg-amber-100 text-amber-800",
+    "Sample Received": "bg-cyan-100 text-cyan-800",
+    "In Testing": "bg-indigo-100 text-indigo-800",
+    "Report Ready": "bg-teal-100 text-teal-800",
+    Uploaded: "bg-sky-100 text-sky-800",
+    Verified: "bg-emerald-100 text-emerald-800",
   };
   return (
     <span
       className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${map[status] ?? "bg-gray-100 text-gray-800"}`}
     >
       {status}
+    </span>
+  );
+}
+
+export function PriorityBadge({ priority }) {
+  if (!priority || priority === "Normal") return null;
+  const map = {
+    Urgent: "bg-amber-100 text-amber-800 border-amber-200",
+    STAT: "bg-red-100 text-red-700 border-red-200",
+  };
+  return (
+    <span
+      className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border ${map[priority] ?? "bg-gray-100 text-gray-700 border-gray-200"}`}
+    >
+      {priority === "STAT" ? "⚡ STAT" : `↑ ${priority}`}
     </span>
   );
 }

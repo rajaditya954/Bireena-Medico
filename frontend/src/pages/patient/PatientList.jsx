@@ -236,24 +236,23 @@ export default function PatientList() {
       const lastApt = past.length > 0 ? past[past.length - 1] : null;
       const nextApt = future.length > 0 ? future[0] : null;
 
-      // Find the single appointment date for doctor view (most recent one or upcoming)
-      const sortedNewestFirst = [...pApts].sort((a, b) => new Date(b.appointmentDate || b.date) - new Date(a.appointmentDate || a.date));
-      const latestApt = sortedNewestFirst[0] || null;
+      // Find the single appointment date (upcoming if exists, otherwise the most recent past one)
+      const activeApt = nextApt || lastApt;
 
       let status = "New Patient";
-      if (latestApt) {
-        status = formatStatus(latestApt.status);
-      } else if (!isDoctor) {
-        status = nextApt ? "Upcoming" : (lastApt ? "Completed" : "New Patient");
+      if (activeApt) {
+        status = formatStatus(activeApt.status);
       }
 
-      const appointmentDateStr = latestApt ? `${format(new Date(latestApt.appointmentDate || latestApt.date), "dd MMM yyyy")} (${latestApt.slot || latestApt.scheduledTime || "Walk-in"})` : "—";
+      const appointmentDateStr = activeApt ? `${format(new Date(activeApt.appointmentDate || activeApt.date), "dd MMM yyyy")} (${activeApt.slot || activeApt.scheduledTime || "Walk-in"})` : "—";
+      const doctorName = activeApt?.doctorName || activeApt?.doctorId?.name || "";
 
       return {
         ...p,
         lastAppointment: lastApt ? `${format(new Date(lastApt.date), "dd MMM yyyy")} (${lastApt.scheduledTime || lastApt.slot || "Walk-in"})` : "—",
         nextAppointment: nextApt ? `${format(new Date(nextApt.date), "dd MMM yyyy")} (${nextApt.scheduledTime || nextApt.slot || "Walk-in"})` : "—",
         appointmentDate: appointmentDateStr,
+        doctorName: doctorName,
         status: status
       };
     });
@@ -400,14 +399,8 @@ export default function PatientList() {
                     <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-gray-400 whitespace-nowrap">Patient Name</th>
                     <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-gray-400 whitespace-nowrap">Age/Gender</th>
                     <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-gray-400 whitespace-nowrap">Phone</th>
-                    {isDoctor ? (
-                      <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-gray-400 whitespace-nowrap">Appointment Date</th>
-                    ) : (
-                      <>
-                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-gray-400 whitespace-nowrap">Last Appointment</th>
-                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-gray-400 whitespace-nowrap">Next Appointment</th>
-                      </>
-                    )}
+                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-gray-400 whitespace-nowrap">Date of Appointment</th>
+                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-gray-400 whitespace-nowrap">Doctor</th>
                     <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-gray-400 whitespace-nowrap">Status</th>
                     <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-gray-400 text-right whitespace-nowrap">Actions</th>
                   </tr>
@@ -416,7 +409,19 @@ export default function PatientList() {
                   {filteredPatients.map((patient) => (
                     <tr key={patient._id || patient.id} className="hover:bg-gray-50/30 transition-colors group">
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="font-mono text-xs font-bold text-gray-500">{patient.patientId || patient._id || patient.id}</span>
+                        <span className="font-mono text-xs font-bold text-gray-500 bg-gray-50 px-2.5 py-1 rounded-lg border border-gray-100">
+                          {(() => {
+                            const rawId = patient.patientId || "";
+                            if (rawId && rawId.length <= 8 && !rawId.includes("-")) {
+                              return rawId;
+                            }
+                            const dbId = patient._id || patient.id || "";
+                            if (dbId && dbId.length >= 6) {
+                              return `PAT-${dbId.slice(-6).toUpperCase()}`;
+                            }
+                            return rawId || "—";
+                          })()}
+                        </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center gap-3">
@@ -437,29 +442,22 @@ export default function PatientList() {
                           <Phone className="w-3 h-3" /> {patient.phone}
                         </div>
                       </td>
-                      {isDoctor ? (
-                        <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">
-                          <div className="flex items-center gap-1">
-                            <Calendar className="w-3 h-3 text-gray-400" />
-                            {patient.appointmentDate}
-                          </div>
-                        </td>
-                      ) : (
-                        <>
-                          <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">
-                            <div className="flex items-center gap-1">
-                              <Calendar className="w-3 h-3 text-gray-400" />
-                              {patient.lastAppointment}
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">
-                            <div className="flex items-center gap-1">
-                              <Calendar className="w-3 h-3 text-gray-400" />
-                              {patient.nextAppointment}
-                            </div>
-                          </td>
-                        </>
-                      )}
+                      <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">
+                        <div className="flex items-center gap-1">
+                          <Calendar className="w-3 h-3 text-gray-400" />
+                          {patient.appointmentDate}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">
+                        <div className="flex items-center gap-1">
+                          {patient.doctorName ? (
+                            <>
+                              <User className="w-3 h-3 text-gray-400" />
+                              <span>{patient.doctorName}</span>
+                            </>
+                          ) : null}
+                        </div>
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <StatusBadge status={patient.status} />
                       </td>

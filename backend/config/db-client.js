@@ -55,36 +55,67 @@ const tableMap = {
   "MedicineDistribution": "medicine_distributions",
   "MedicineRequirement": "medicine_requirements",
   "AuditLog": "audit_logs",
-  "RefreshToken": "refresh_tokens"
+  "RefreshToken": "refresh_tokens",
+  "Hospital": "hospitals",
+  "SaasAdmin": "saas_admins"
 };
 
 const tableColumns = {
-  "users": ["_id", "employeeId", "username", "name", "email", "passwordHash", "phone", "profileImage", "role", "isActive", "failedLoginAttempts", "lockedUntil", "resetToken", "resetTokenExpires", "lastLogin", "createdBy", "createdAt", "updatedAt"],
-  "patients": ["_id", "userId", "patientId", "fullName", "dob", "age", "gender", "bloodGroup", "maritalStatus", "phone", "alternatePhone", "email", "address", "city", "state", "pincode", "occupation", "referredBy", "allergies", "chronicDiseases", "medicalHistory", "emergencyContact", "insuranceInfo", "createdAt", "updatedAt"],
-  "doctors": ["_id", "userId", "doctorCode", "name", "specialization", "consultantType", "qualification", "description", "qualifications", "registrationNumber", "experience", "consultationFee", "roomNumber", "schedule", "clinic", "isVerified", "rating", "totalConsultations", "createdAt", "updatedAt"],
-  "appointments": ["_id", "appointmentId", "patientId", "patientName", "patientPhone", "doctorId", "doctorName", "appointmentDate", "date", "appointmentType", "type", "consultantType", "priority", "tokenNumber", "slot", "slotId", "status", "notes", "reason", "createdBy", "createdAt", "updatedAt"],
-  "queues": ["_id", "appointmentId", "patientId", "patientName", "doctorId", "doctorName", "queueNumber", "tokenNumber", "type", "scheduledTime", "priority", "currentPosition", "status", "date", "estimatedWaitTime", "calledAt", "completedAt", "createdAt", "updatedAt"],
-  "notifications": ["_id", "userId", "type", "title", "message", "data", "isRead", "readAt", "expiresAt", "createdAt", "updatedAt"],
-  "prescriptions": ["_id", "prescriptionId", "appointmentId", "patientId", "doctorId", "diagnosis", "symptoms", "medicines", "advice", "followUpDate", "notes", "fileUrl", "isActive", "createdAt", "updatedAt"],
-  "lab_tests": ["_id", "testCode", "testName", "category", "sampleType", "method", "tat", "description", "price", "normalRange", "isActive", "createdAt", "updatedAt"],
-  "lab_reports": ["_id", "reportId", "patientId", "doctorId", "appointmentId", "technicianId", "tests", "status", "sampleDate", "reportDate", "reportFile", "findings", "remarks", "history", "createdAt", "updatedAt"],
-  "billing": ["_id", "invoiceNumber", "billingId", "patientId", "appointmentId", "items", "subtotal", "discount", "tax", "total", "paymentSummary", "paymentStatus", "status", "issuedAt", "paidAt", "notes", "dueDate", "createdAt", "updatedAt"],
-  "payments": ["_id", "paymentId", "invoiceId", "bill", "patientId", "amount", "paymentMethod", "status", "transactionId", "razorpayPaymentId", "razorpayOrderId", "signature", "paymentDate", "completedAt", "failureReason", "notes", "createdAt", "updatedAt"],
-  "inventory": ["_id", "medicineId", "currentStock", "minimumStock", "reorderLevel", "supplier", "stockValue", "location", "createdAt", "updatedAt"],
-  "invoices": ["_id", "invoiceNumber", "billingId", "patientId", "amount", "status", "invoiceDate", "generatedAt", "dueDate", "invoicePdf", "pdfUrl", "notes", "createdAt", "updatedAt"],
-  "history": ["_id", "patientId", "medicines", "requestedMedicines", "total", "paymentMethod", "amountPaid", "createdAt", "updatedAt"],
-  "roles": ["_id", "name", "permissions", "description", "createdAt", "updatedAt"],
-  "services": ["_id", "name", "description", "category", "price", "duration", "icon", "isActive", "serviceItems", "createdAt", "updatedAt"],
-  "patient_histories": ["_id", "patientId", "doctorId", "appointmentId", "diagnosis", "notes", "createdAt", "updatedAt"],
-  "medicines": ["_id", "medicineCode", "medicineName", "category", "manufacturer", "mrp", "unit", "expiryDate", "batchNo", "createdAt"],
-  "medicine_distributions": ["_id", "distributionId", "patientId", "prescriptionId", "medicineId", "quantity", "items", "totalAmount", "distributedBy", "distributedAt", "notes", "createdAt", "updatedAt"],
-  "medicine_requirements": ["_id", "requirementId", "patientId", "medicineId", "requestedMedicineName", "strength", "unitType", "requestedQty", "approvedQty", "status", "requestedBy", "approvedBy", "notes", "createdAt", "updatedAt"],
-  "audit_logs": ["_id", "userId", "action", "resource", "resourceId", "oldValues", "newValues", "ipAddress", "userAgent", "status", "errorMessage", "createdAt", "updatedAt"],
-  "refresh_tokens": ["_id", "userId", "token", "expiresAt", "isRevoked", "createdAt", "updatedAt"]
+  "users": ["_id", "employeeId", "username", "name", "email", "passwordHash", "phone", "profileImage", "role", "isActive", "failedLoginAttempts", "lockedUntil", "resetToken", "resetTokenExpires", "lastLogin", "createdBy", "createdAt", "updatedAt", "hospital_id"],
+  "patients": ["_id", "userId", "patientId", "fullName", "dob", "age", "gender", "bloodGroup", "maritalStatus", "phone", "alternatePhone", "email", "address", "city", "state", "pincode", "occupation", "referredBy", "allergies", "chronicDiseases", "medicalHistory", "emergencyContact", "insuranceInfo", "createdAt", "updatedAt", "hospital_id"],
+  "doctors": ["_id", "userId", "doctorCode", "name", "specialization", "consultantType", "qualification", "description", "qualifications", "registrationNumber", "experience", "consultationFee", "roomNumber", "schedule", "clinic", "isVerified", "rating", "totalConsultations", "createdAt", "updatedAt", "hospital_id"],
+  "appointments": ["_id", "appointmentId", "patientId", "patientName", "patientPhone", "doctorId", "doctorName", "appointmentDate", "date", "appointmentType", "type", "consultantType", "priority", "tokenNumber", "slot", "slotId", "status", "notes", "reason", "createdBy", "isReminder", "createdAt", "updatedAt", "hospital_id"],
+  "queues": ["_id", "appointmentId", "patientId", "patientName", "doctorId", "doctorName", "queueNumber", "tokenNumber", "type", "scheduledTime", "priority", "currentPosition", "status", "date", "estimatedWaitTime", "calledAt", "completedAt", "createdAt", "updatedAt", "hospital_id"],
+  "notifications": ["_id", "userId", "type", "title", "message", "data", "isRead", "readAt", "expiresAt", "createdAt", "updatedAt", "hospital_id"],
+  "prescriptions": ["_id", "prescriptionId", "appointmentId", "patientId", "doctorId", "diagnosis", "symptoms", "medicines", "advice", "followUpDate", "notes", "fileUrl", "isActive", "createdAt", "updatedAt", "hospital_id"],
+  "lab_tests": ["_id", "testCode", "testName", "category", "sampleType", "method", "tat", "description", "price", "normalRange", "isActive", "createdAt", "updatedAt", "hospital_id"],
+  "lab_reports": ["_id", "reportId", "patientId", "doctorId", "appointmentId", "technicianId", "tests", "status", "sampleDate", "reportDate", "reportFile", "findings", "remarks", "history", "createdAt", "updatedAt", "hospital_id"],
+  "billing": ["_id", "invoiceNumber", "billingId", "patientId", "appointmentId", "items", "subtotal", "discount", "tax", "total", "paymentSummary", "paymentStatus", "status", "issuedAt", "paidAt", "notes", "dueDate", "createdAt", "updatedAt", "hospital_id"],
+  "payments": ["_id", "paymentId", "invoiceId", "bill", "patientId", "amount", "paymentMethod", "status", "transactionId", "razorpayPaymentId", "razorpayOrderId", "signature", "paymentDate", "completedAt", "failureReason", "notes", "createdAt", "updatedAt", "hospital_id"],
+  "inventory": ["_id", "medicineId", "currentStock", "minimumStock", "reorderLevel", "supplier", "stockValue", "location", "createdAt", "updatedAt", "hospital_id"],
+  "invoices": ["_id", "invoiceNumber", "billingId", "patientId", "amount", "status", "invoiceDate", "generatedAt", "dueDate", "invoicePdf", "pdfUrl", "notes", "createdAt", "updatedAt", "hospital_id"],
+  "history": ["_id", "patientId", "medicines", "requestedMedicines", "total", "paymentMethod", "amountPaid", "createdAt", "updatedAt", "hospital_id"],
+  "roles": ["_id", "name", "permissions", "description", "createdAt", "updatedAt", "hospital_id"],
+  "services": ["_id", "name", "description", "category", "price", "duration", "icon", "isActive", "serviceItems", "createdAt", "updatedAt", "hospital_id"],
+  "patient_histories": ["_id", "patientId", "doctorId", "appointmentId", "diagnosis", "notes", "createdAt", "updatedAt", "hospital_id"],
+  "medicines": ["_id", "medicineCode", "medicineName", "category", "manufacturer", "mrp", "unit", "expiryDate", "batchNo", "createdAt", "hospital_id"],
+  "medicine_distributions": ["_id", "distributionId", "patientId", "prescriptionId", "medicineId", "quantity", "items", "totalAmount", "distributedBy", "distributedAt", "notes", "createdAt", "updatedAt", "hospital_id"],
+  "medicine_requirements": ["_id", "requirementId", "patientId", "medicineId", "requestedMedicineName", "strength", "unitType", "requestedQty", "approvedQty", "status", "requestedBy", "approvedBy", "notes", "createdAt", "updatedAt", "hospital_id"],
+  "audit_logs": ["_id", "userId", "action", "resource", "resourceId", "oldValues", "newValues", "ipAddress", "userAgent", "status", "errorMessage", "createdAt", "updatedAt", "hospital_id"],
+  "refresh_tokens": ["_id", "userId", "token", "expiresAt", "isRevoked", "createdAt", "updatedAt"],
+  "hospitals": ["_id", "name", "slug", "address", "city", "state", "pincode", "phone", "email", "logo", "subscriptionPlan", "subscriptionStatus", "subscriptionExpiresAt", "maxUsers", "isActive", "settings", "createdAt", "updatedAt"],
+  "saas_admins": ["_id", "name", "email", "passwordHash", "isActive", "lastLogin", "createdAt", "updatedAt"]
 };
 
 // Registered models registry
 const registeredModels = {};
+
+// ============================================================
+// MULTI-TENANT CONTEXT
+// ============================================================
+
+// Tables that require tenant scoping (all except refresh_tokens, hospitals, saas_admins)
+const tenantScopedTables = new Set([
+  "users", "patients", "doctors", "appointments", "queues", "notifications",
+  "prescriptions", "lab_tests", "lab_reports", "billing", "payments", "inventory",
+  "invoices", "history", "roles", "services", "patient_histories", "medicines",
+  "medicine_distributions", "medicine_requirements", "audit_logs"
+]);
+
+// Global tenant context — set per-request by middleware
+let _currentTenantId = null;
+
+export function setTenantContext(hospitalId) {
+  _currentTenantId = hospitalId || null;
+}
+
+export function clearTenantContext() {
+  _currentTenantId = null;
+}
+
+export function getTenantContext() {
+  return _currentTenantId;
+}
 
 function generateObjectId() {
   return [...Array(24)].map(() => Math.floor(Math.random() * 16).toString(16)).join("");
@@ -126,6 +157,30 @@ function deleteNestedValue(obj, path) {
   delete current[parts[parts.length - 1]];
 }
 
+// Helper to compare values including dates and strings
+function compareValues(aVal, bVal, operator) {
+  let a = aVal;
+  let b = bVal;
+
+  if (a instanceof Date || b instanceof Date) {
+    a = a ? new Date(a).getTime() : 0;
+    b = b ? new Date(b).getTime() : 0;
+  } else if (typeof a === "string" && typeof b === "string") {
+    const isIsoA = a.includes("T") && !isNaN(Date.parse(a));
+    const isIsoB = b.includes("T") && !isNaN(Date.parse(b));
+    if (isIsoA && isIsoB) {
+      a = new Date(a).getTime();
+      b = new Date(b).getTime();
+    }
+  }
+
+  if (operator === "$gt") return a > b;
+  if (operator === "$gte") return a >= b;
+  if (operator === "$lt") return a < b;
+  if (operator === "$lte") return a <= b;
+  return false;
+}
+
 // MongoDB filter matcher in JS
 function matchQuery(doc, query) {
   if (!query) return true;
@@ -155,13 +210,13 @@ function matchQuery(doc, query) {
             if (docVal === opVal) return false;
           }
         } else if (op === "$gt") {
-          if (!(docVal > opVal)) return false;
+          if (!compareValues(docVal, opVal, "$gt")) return false;
         } else if (op === "$gte") {
-          if (!(docVal >= opVal)) return false;
+          if (!compareValues(docVal, opVal, "$gte")) return false;
         } else if (op === "$lt") {
-          if (!(docVal < opVal)) return false;
+          if (!compareValues(docVal, opVal, "$lt")) return false;
         } else if (op === "$lte") {
-          if (!(docVal <= opVal)) return false;
+          if (!compareValues(docVal, opVal, "$lte")) return false;
         } else if (op === "$in") {
           if (!Array.isArray(opVal)) return false;
           const docList = Array.isArray(docVal) ? docVal : [docVal];
@@ -301,14 +356,22 @@ async function populateDoc(doc, path) {
 async function dbSelect(tableName) {
   if (useMemory) {
     loadMemoryDb();
-    return memoryDb[tableName] || [];
+    let rows = memoryDb[tableName] || [];
+    // Apply tenant scoping in memory mode
+    if (_currentTenantId && tenantScopedTables.has(tableName)) {
+      rows = rows.filter(r => r.hospital_id === _currentTenantId);
+    }
+    return rows;
   }
   try {
-    const res = await pool.query(`SELECT * FROM ${tableName}`);
+    // Apply tenant scoping via WHERE clause if tenant context is set
+    let res;
+    if (_currentTenantId && tenantScopedTables.has(tableName)) {
+      res = await pool.query(`SELECT * FROM ${tableName} WHERE "hospital_id" = $1`, [_currentTenantId]);
+    } else {
+      res = await pool.query(`SELECT * FROM ${tableName}`);
+    }
     return res.rows.map(row => {
-      // Postgres returns timestamp fields as Date objects. Mongoose returns them as Date objects.
-      // Other JSON fields are parsed as JS objects.
-      // Make sure we convert fields accordingly if needed.
       return { ...row };
     });
   } catch (err) {
@@ -319,6 +382,11 @@ async function dbSelect(tableName) {
 }
 
 async function dbSave(tableName, doc) {
+  // Auto-inject hospital_id from tenant context if not already set
+  if (_currentTenantId && tenantScopedTables.has(tableName) && !doc.hospital_id) {
+    doc.hospital_id = _currentTenantId;
+  }
+
   if (useMemory) {
     loadMemoryDb();
     if (!memoryDb[tableName]) memoryDb[tableName] = [];
@@ -335,7 +403,7 @@ async function dbSave(tableName, doc) {
     "allergies", "chronicDiseases", "medicalHistory", "emergencyContact", "insuranceInfo",
     "qualifications", "schedule", "clinic", "data", "symptoms", "medicines", "tests",
     "history", "items", "paymentSummary", "requestedMedicines", "permissions",
-    "serviceItems", "resourceId", "oldValues", "newValues"
+    "serviceItems", "resourceId", "oldValues", "newValues", "settings"
   ]);
 
   const columns = tableColumns[tableName];
@@ -386,7 +454,12 @@ async function dbDelete(tableName, id) {
     return;
   }
   try {
-    await pool.query(`DELETE FROM ${tableName} WHERE _id = $1`, [id]);
+    // Scope delete by tenant for safety
+    if (_currentTenantId && tenantScopedTables.has(tableName)) {
+      await pool.query(`DELETE FROM ${tableName} WHERE _id = $1 AND "hospital_id" = $2`, [id, _currentTenantId]);
+    } else {
+      await pool.query(`DELETE FROM ${tableName} WHERE _id = $1`, [id]);
+    }
   } catch (err) {
     console.error(`[DbClient] dbDelete error on table ${tableName}:`, err.message);
   }
@@ -632,6 +705,66 @@ class Model {
     return new Query(this, query, "find");
   }
 
+  async aggregate(pipeline) {
+    const tableName = tableMap[this.modelName];
+    let results = await dbSelect(tableName);
+
+    for (const stage of pipeline) {
+      if (stage.$match) {
+        results = results.filter(doc => matchQuery(doc, stage.$match));
+      } else if (stage.$group) {
+        const groupKey = stage.$group._id;
+        const groups = {};
+
+        for (const doc of results) {
+          let keyVal;
+          if (groupKey === null) {
+            keyVal = null;
+          } else if (typeof groupKey === "string" && groupKey.startsWith("$")) {
+            keyVal = getNestedValue(doc, groupKey.slice(1));
+          } else {
+            keyVal = groupKey;
+          }
+
+          const stringKey = String(keyVal);
+          if (!groups[stringKey]) {
+            groups[stringKey] = {
+              _id: keyVal,
+              _docs: []
+            };
+          }
+          groups[stringKey]._docs.push(doc);
+        }
+
+        const groupedResults = [];
+        for (const sKey in groups) {
+          const group = groups[sKey];
+          const groupDoc = { _id: group._id };
+
+          for (const accKey in stage.$group) {
+            if (accKey === "_id") continue;
+            const accExpr = stage.$group[accKey];
+            
+            if (accExpr.$sum) {
+              let sum = 0;
+              const sumExpr = accExpr.$sum;
+              if (typeof sumExpr === "number") {
+                sum = group._docs.length * sumExpr;
+              } else if (typeof sumExpr === "string" && sumExpr.startsWith("$")) {
+                const fieldName = sumExpr.slice(1);
+                sum = group._docs.reduce((s, d) => s + (Number(getNestedValue(d, fieldName)) || 0), 0);
+              }
+              groupDoc[accKey] = sum;
+            }
+          }
+          groupedResults.push(groupDoc);
+        }
+        results = groupedResults;
+      }
+    }
+    return results;
+  }
+
   findOne(query = {}) {
     return new Query(this, query, "findOne");
   }
@@ -737,7 +870,7 @@ const dbClient = {
       try {
         pool = new pg.Pool({ 
           connectionString: dbUrl,
-          connectionTimeoutMillis: 2000,
+          connectionTimeoutMillis: 10000,
           ssl: {
             rejectUnauthorized: false
           }
@@ -749,8 +882,6 @@ const dbClient = {
         
         // Load schema sql and sync tables
         try {
-          const fs = await import("fs");
-          const path = await import("path");
           let sqlPath = path.resolve(process.cwd(), "config/schema.sql");
           if (!fs.existsSync(sqlPath)) {
             sqlPath = path.resolve(process.cwd(), "backend/config/schema.sql");
@@ -758,6 +889,8 @@ const dbClient = {
           if (fs.existsSync(sqlPath)) {
             const sql = fs.readFileSync(sqlPath, "utf8");
             await pool.query(sql);
+            // Dynamic schema update for appointments
+            await pool.query('ALTER TABLE appointments ADD COLUMN IF NOT EXISTS "isReminder" BOOLEAN DEFAULT FALSE;');
             console.log("🔄 PostgreSQL tables checked/initialized successfully");
           }
         } catch (err) {

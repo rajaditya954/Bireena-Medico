@@ -98,6 +98,29 @@ class AppointmentService {
       .populate("patientId")
       .populate("doctorId");
   }
+
+  async sendReminderNotification(appointmentId) {
+    const appointment = await this.getAppointmentById(appointmentId);
+    if (!appointment) return;
+
+    try {
+      const { default: notificationService } = await import("./notification.service.js");
+      const patientUserId = appointment.patientId?.userId || appointment.patientId?._id;
+      if (patientUserId) {
+        await notificationService.createNotification(
+          patientUserId,
+          "appointment_reminder",
+          "Appointment Reminder",
+          `Friendly reminder: You have an appointment with ${appointment.doctorName || "your doctor"} tomorrow at ${appointment.slot || "scheduled time"}.`,
+          { appointmentId: appointment._id }
+        );
+      }
+    } catch (err) {
+      console.error("Failed to send reminder notification:", err.message);
+    }
+
+    await Appointment.findByIdAndUpdate(appointmentId, { isReminder: true });
+  }
 }
 
 export default new AppointmentService();

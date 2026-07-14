@@ -12,18 +12,34 @@ export const getDashboardMetrics = async (req, res) => {
     const Prescription = (await import("../models/Prescription.js")).default;
     const Payment = (await import("../models/Payment.js")).default;
     const Billing = (await import("../models/Billing.js")).default;
-    const Service = (await import("../models/Service.js")).default;
 
-    // ── Core counts ──
-    const [totalPatients, totalDoctors, totalUsers, totalAppointments] = await Promise.all([
-      Patient.countDocuments(),
-      Doctor.countDocuments(),
-      User.countDocuments(),
-      Appointment.countDocuments(),
+    // Fetch all collections in parallel to minimize round-trips and avoid N+1 queries.
+    const [
+      allPatients,
+      doctors,
+      allUsers,
+      allAppointments,
+      allLabReports,
+      allPayments,
+      allBillings,
+      totalPrescriptions,
+    ] = await Promise.all([
+      Patient.find({}),
+      Doctor.find({}),
+      User.find({}),
+      Appointment.find({}),
+      LabReport.find({}),
+      Payment.find({ status: { $in: ["success", "SUCCESS"] } }),
+      Billing.find({}),
+      Prescription.countDocuments(),
     ]);
 
+    const totalPatients = allPatients.length;
+    const totalDoctors = doctors.length;
+    const totalUsers = allUsers.length;
+    const totalAppointments = allAppointments.length;
+
     // ── Appointment status breakdown ──
-    const allAppointments = await Appointment.find({});
     const completedAppointments = allAppointments.filter(a =>
       ["completed", "COMPLETED"].includes(a.status)
     ).length;
@@ -37,11 +53,7 @@ export const getDashboardMetrics = async (req, res) => {
       ["no-show", "NO_SHOW"].includes(a.status)
     ).length;
 
-    // ── Prescriptions count ──
-    const totalPrescriptions = await Prescription.countDocuments();
-
     // ── Lab reports by status ──
-    const allLabReports = await LabReport.find({});
     const labCompleted = allLabReports.filter(r =>
       ["COMPLETED", "APPROVED", "completed", "approved"].includes(r.status)
     ).length;
@@ -54,11 +66,9 @@ export const getDashboardMetrics = async (req, res) => {
     const totalLabReports = allLabReports.length;
 
     // ── Revenue from payments ──
-    const allPayments = await Payment.find({ status: { $in: ["success", "SUCCESS"] } });
     const totalRevenue = allPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
 
     // ── Revenue breakdown from billings ──
-    const allBillings = await Billing.find({});
     let consultationRevenue = 0;
     let labRevenue = 0;
     let pharmacyRevenue = 0;
@@ -77,23 +87,21 @@ export const getDashboardMetrics = async (req, res) => {
       });
     });
 
-    // ── Top doctors by appointments ──
-    const doctors = await Doctor.find({}).populate("userId");
-    const doctorsWithCounts = await Promise.all(
-      doctors.map(async (doc) => {
-        const aptCount = await Appointment.countDocuments({ doctorId: doc._id });
-        return {
-          name: doc.name,
-          specialty: doc.specialization,
-          appointments: aptCount,
-        };
-      })
-    );
+    // ── Top doctors by appointments (calculated in-memory to avoid N+1 count calls) ──
+    const doctorsWithCounts = doctors.map((doc) => {
+      const aptCount = allAppointments.filter(a => 
+        String(a.doctorId?._id || a.doctorId || "") === String(doc._id)
+      ).length;
+      return {
+        name: doc.name,
+        specialty: doc.specialization,
+        appointments: aptCount,
+      };
+    });
     doctorsWithCounts.sort((a, b) => b.appointments - a.appointments);
     const topDoctors = doctorsWithCounts.slice(0, 10);
 
     // ── Patient demographics (gender) ──
-    const allPatients = await Patient.find({});
     let maleCount = 0, femaleCount = 0, otherCount = 0;
     allPatients.forEach(p => {
       const g = (p.gender || "").toLowerCase();
@@ -103,32 +111,36 @@ export const getDashboardMetrics = async (req, res) => {
     });
 
     // ── Staff by role ──
-    const allUsers = await User.find({});
     const staffByRole = {};
     allUsers.forEach(u => {
       const role = (u.role || "other").toLowerCase();
       staffByRole[role] = (staffByRole[role] || 0) + 1;
     });
 
-    // ── Recent activity (last 10 appointments) ──
-    const recentAppointments = await Appointment.find({})
-      .sort({ createdAt: -1 })
-      .limit(10)
-      .populate("patientId")
-      .populate("doctorId");
+    // ── Recent activity (last 10 appointments mapped in-memory to avoid sequential populates) ──
+    const recentAppointments = [...allAppointments]
+      .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
+      .slice(0, 10);
 
-    const recentActivity = recentAppointments.map(apt => ({
-      activity: `Appointment ${apt.status || "Scheduled"}`,
-      details: `${apt.patientId?.fullName || "Patient"} - ${apt.reason || "General Checkup"}`,
-      by: apt.doctorId?.name || "Doctor",
-      dateTime: apt.createdAt
-        ? new Date(apt.createdAt).toLocaleDateString("en-IN", {
-            day: "2-digit", month: "short", year: "numeric",
-          }) + ", " + new Date(apt.createdAt).toLocaleTimeString("en-US", {
-            hour: "2-digit", minute: "2-digit",
-          })
-        : "N/A",
-    }));
+    const recentActivity = recentAppointments.map(apt => {
+      const patientIdStr = String(apt.patientId?._id || apt.patientId || "");
+      const doctorIdStr = String(apt.doctorId?._id || apt.doctorId || "");
+      const patient = allPatients.find(p => String(p._id) === patientIdStr);
+      const doctor = doctors.find(d => String(d._id) === doctorIdStr);
+
+      return {
+        activity: `Appointment ${apt.status || "Scheduled"}`,
+        details: `${patient?.fullName || "Patient"} - ${apt.reason || "General Checkup"}`,
+        by: doctor?.name || "Doctor",
+        dateTime: apt.createdAt
+          ? new Date(apt.createdAt).toLocaleDateString("en-IN", {
+              day: "2-digit", month: "short", year: "numeric",
+            }) + ", " + new Date(apt.createdAt).toLocaleTimeString("en-US", {
+              hour: "2-digit", minute: "2-digit",
+            })
+          : "N/A",
+      };
+    });
 
     // ── Weekly appointment trend (last 8 days) ──
     const appointmentsTrend = [];

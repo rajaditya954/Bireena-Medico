@@ -33,21 +33,63 @@ function calcAge(dob) {
   return age;
 }
 
+const STATUS_DISPLAY = {
+  PENDING: "Pending",
+  REQUESTED: "Requested",
+  SAMPLE_COLLECTED: "Sample Collected",
+  SAMPLE_RECEIVED: "Sample Received",
+  IN_TESTING: "In Testing",
+  IN_PROGRESS: "In Progress",
+  READY: "Report Ready",
+  UPLOADED: "Uploaded",
+  VERIFIED: "Verified",
+  APPROVED: "Completed",
+  COMPLETED: "Completed",
+  CANCELLED: "Cancelled",
+};
+
+const PRIORITY_DISPLAY = {
+  NORMAL: "Normal",
+  URGENT: "Urgent",
+  STAT: "STAT",
+};
+
 function formatStatus(status) {
-  const map = {
-    PENDING: "Pending",
-    IN_PROGRESS: "In Progress",
-    COMPLETED: "Completed",
-    APPROVED: "Completed",
-    CANCELLED: "Cancelled",
-  };
-  return map[status] || status;
+  return STATUS_DISPLAY[status] || status;
+}
+
+function formatPriority(priority) {
+  return PRIORITY_DISPLAY[priority] || priority || "Normal";
 }
 
 function transformReport(r) {
   const patient = r.patientId || {};
   const doctor = r.doctorId || {};
   const firstTest = r.tests?.[0] || {};
+
+  // Build attachments array from both legacy reportFile and new attachments array
+  let attachments = [];
+  if (r.attachments && r.attachments.length > 0) {
+    attachments = r.attachments.map((a) => ({
+      originalName: a.originalName || a.filename || "report-file",
+      filename: a.filename,
+      mimetype: a.mimetype || "application/pdf",
+      size: a.size || 0,
+      path: a.path?.startsWith("http") ? a.path : `${API_ORIGIN}${a.path}`,
+      category: a.category || "Report",
+      uploadedAt: a.uploadedAt,
+    }));
+  } else if (r.reportFile) {
+    attachments = [{
+      originalName: "report-file",
+      filename: r.reportFile,
+      mimetype: r.reportFile.endsWith(".pdf") ? "application/pdf" : "image/png",
+      size: 0,
+      path: r.reportFile.startsWith("http") ? r.reportFile : `${API_ORIGIN}${r.reportFile}`,
+      category: "Report",
+      uploadedAt: r.createdAt,
+    }];
+  }
 
   return {
     id: r.reportId || r._id,
@@ -62,21 +104,32 @@ function transformReport(r) {
     sampleDate: r.sampleDate ? new Date(r.sampleDate).toISOString().split("T")[0] : "",
     reportDate: r.reportDate ? new Date(r.reportDate).toISOString().split("T")[0] : "",
     status: formatStatus(r.status),
+    rawStatus: r.status,
     notes: r.findings || r.remarks || "",
+    // New metadata fields
+    sampleId: r.sampleId || "",
+    sampleCollectionTime: r.sampleCollectionTime ? new Date(r.sampleCollectionTime).toLocaleString() : "",
+    sampleType: r.sampleType || "",
+    department: r.department || "",
+    priority: formatPriority(r.priority),
+    rawPriority: r.priority || "NORMAL",
+    uploadedBy: r.uploadedBy || "",
+    uploadedTime: r.uploadedTime ? new Date(r.uploadedTime).toLocaleString() : "",
+    reportVersion: r.reportVersion || 1,
+    verifierName: r.verifierName || "",
+    verificationTimestamp: r.verificationTimestamp ? new Date(r.verificationTimestamp).toLocaleString() : "",
+    // History
     history: (r.history && r.history.length > 0)
-      ? r.history.map((h) => ({ date: new Date(h.date).toLocaleString(), event: h.event }))
+      ? r.history.map((h) => ({
+          date: new Date(h.date).toLocaleString(),
+          event: h.event,
+          by: h.by || "",
+        }))
       : [
           r.sampleDate && { date: new Date(r.sampleDate).toLocaleString(), event: "Sample collected" },
           r.reportDate && { date: new Date(r.reportDate).toLocaleString(), event: "Report completed" },
         ].filter(Boolean),
-    attachments: r.reportFile ? [{
-      originalName: "report-file",
-      filename: r.reportFile,
-      mimetype: r.reportFile.endsWith(".pdf") ? "application/pdf" : "image/png",
-      size: 0,
-      path: r.reportFile.startsWith("http") ? r.reportFile : `${API_ORIGIN}${r.reportFile}`,
-      uploadedAt: r.createdAt,
-    }] : [],
+    attachments,
     _raw: r,
   };
 }
@@ -125,7 +178,14 @@ export const labApi = {
   async updateReportStatus(id, status, remarks) {
     const statusMap = {
       "Pending": "PENDING",
+      "Requested": "REQUESTED",
+      "Sample Collected": "SAMPLE_COLLECTED",
+      "Sample Received": "SAMPLE_RECEIVED",
+      "In Testing": "IN_TESTING",
       "In Progress": "IN_PROGRESS",
+      "Report Ready": "READY",
+      "Uploaded": "UPLOADED",
+      "Verified": "VERIFIED",
       "Completed": "COMPLETED",
       "Cancelled": "CANCELLED",
     };
@@ -138,6 +198,19 @@ export const labApi = {
 
   async approveReport(id) {
     const data = await request(`/laboratory/reports/${id}/approve`, { method: "PUT" });
+    return transformReport(data.data?.report || data.data);
+  },
+
+  async verifyReport(id, verifierName) {
+    const data = await request(`/laboratory/reports/${id}/verify`, {
+      method: "PUT",
+      body: JSON.stringify({ verifierName }),
+    });
+    return transformReport(data.data?.report || data.data);
+  },
+
+  async releaseReport(id) {
+    const data = await request(`/laboratory/reports/${id}/release`, { method: "PUT" });
     return transformReport(data.data?.report || data.data);
   },
 

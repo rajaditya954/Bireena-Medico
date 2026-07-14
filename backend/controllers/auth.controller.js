@@ -4,13 +4,14 @@ import Patient from "../models/Patient.js";
 
 export const register = async (req, res) => {
   try {
-    const { name, email, password, phone, role } = req.body;
+    const { name, email, password, phone, role, hospitalId } = req.body;
 
     if (!name || !email || !password) {
       return res.status(400).json(generateError("name, email, and password are required"));
     }
 
-    const result = await authService.register(name, email, password, role || "PATIENT", phone);
+    const defaultHospitalId = hospitalId || "000000000000000000000000";
+    const result = await authService.register(name, email, password, role || "PATIENT", phone, defaultHospitalId);
     if (result.user && (result.user.role === "PATIENT" || result.user.role === "patient")) {
       const patient = await Patient.findOne({ userId: result.user._id });
       if (patient) {
@@ -79,7 +80,9 @@ export const createUser = async (req, res) => {
       return res.status(400).json(generateError("name, email, password, and role are required"));
     }
 
-    const result = await authService.register(name, email, password, role, phone);
+    // Created staff users inherit the hospital ID of the admin creator
+    const creatorHospitalId = req.user?.hospitalId || "000000000000000000000000";
+    const result = await authService.register(name, email, password, role, phone, creatorHospitalId);
     res.status(201).json(generateResponse(result, "User created successfully by admin"));
   } catch (error) {
     res.status(400).json(generateError(error.message));

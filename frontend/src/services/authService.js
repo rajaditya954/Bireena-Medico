@@ -5,12 +5,13 @@ const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
 const mapRole = (backendRole) => {
   const r = (backendRole || "").toLowerCase();
+  if (r === "super_admin") return "SUPER_ADMIN";
   if (r === "admin") return "ADMIN";
   if (r === "doctor") return "DOCTOR";
   if (r === "lab_assistant" || r === "lab") return "LAB";
   if (r === "appointment_manager" || r === "appointment") return "APPOINTMENT";
   if (r === "dispensary_staff" || r === "clinic") return "CLINIC";
-  return backendRole.toUpperCase();
+  return (backendRole || "").toUpperCase();
 };
 
 export const authService = {
@@ -31,6 +32,7 @@ export const authService = {
         name: user.name,
         email: user.email,
         role: mapRole(user.role), // Map role to uppercase/frontend format
+        hospitalId: user.hospitalId,
         phone: user.phone,
         specializations: user.specializations || [],
         degrees: user.degrees || [],
@@ -60,6 +62,7 @@ export const authService = {
         name: mockUser.name,
         email: mockUser.email,
         role: mockUser.role,
+        hospitalId: mockUser.hospitalId || null,
         phone: mockUser.phone,
         specializations: mockUser.specializations || [],
         degrees: mockUser.degrees || [],
@@ -82,6 +85,7 @@ export const authService = {
         name: user.name,
         email: user.email,
         role: mapRole(user.role),
+        hospitalId: user.hospitalId,
         phone: user.phone,
         specializations: user.specializations || [],
         degrees: user.degrees || [],
@@ -102,6 +106,7 @@ export const authService = {
       const newUser = {
         ...userData,
         id: `REG-${Date.now().toString().slice(-4)}`,
+        hospitalId: null,
       };
 
       registeredUsers.push(newUser);
@@ -142,6 +147,7 @@ export const authService = {
           name: user.name,
           email: user.email,
           role: mapRole(user.role),
+          hospitalId: user.hospitalId,
           phone: user.phone,
           specializations: user.specializations || [],
           degrees: user.degrees || [],

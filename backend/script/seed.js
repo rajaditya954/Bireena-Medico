@@ -21,12 +21,17 @@ import Service from "../models/Service.js";
 import PatientHistory from "../models/PatientHistory.js";
 import MedicineRequirement from "../models/MedicineRequirement.js";
 import MedicineDistribution from "../models/MedicineDistribution.js";
+import Hospital from "../models/Hospital.js";
+import SaasAdmin from "../models/SaasAdmin.js";
+import { setTenantContext } from "../config/db-client.js";
 
 const seed = async () => {
   await connectDB(config.mongoUri);
 
   console.log("Cleaning previous seed data...");
   await Promise.all([
+    Hospital.deleteMany(),
+    SaasAdmin.deleteMany(),
     Role.deleteMany(),
     User.deleteMany(),
     Patient.deleteMany(),
@@ -58,6 +63,26 @@ const seed = async () => {
   } catch (err) {
     console.log("⚠️ Index synchronization warning:", err.message);
   }
+
+  console.log("Creating default hospital and Super Admin...");
+  const defaultHospitalId = "000000000000000000000000";
+  
+  const defaultHospital = await Hospital.create({
+    _id: defaultHospitalId,
+    name: "Default Hospital",
+    slug: "default-hospital",
+    email: "admin@medico.com",
+    isActive: true,
+    settings: {
+      adminEmail: "admin@medico.com",
+      adminPassword: "medicouseradmin",
+      adminName: "Admin User",
+      adminPhone: "9876543210"
+    }
+  });
+
+  // Set tenant context so all following scoped records are assigned to the default hospital
+  setTenantContext(defaultHospitalId);
 
   const roles = [
     { name: "admin", permissions: ["ALL"] },
@@ -105,6 +130,30 @@ const seed = async () => {
   await labAssistantUser.setPassword("medicouserlab");
   await labAssistantUser.save();
 
+  const labAssistantUser2 = new User({
+    employeeId: "EMP007",
+    name: "Lab Assistant Two",
+    username: "lab2.medico",
+    email: "lab2@medico.com",
+    phone: "9988776656",
+    role: "lab_assistant",
+    isActive: true,
+  });
+  await labAssistantUser2.setPassword("medicouserlab");
+  await labAssistantUser2.save();
+
+  const labAssistantUser3 = new User({
+    employeeId: "EMP008",
+    name: "Lab Assistant Three",
+    username: "lab3.medico",
+    email: "lab3@medico.com",
+    phone: "9988776657",
+    role: "lab_assistant",
+    isActive: true,
+  });
+  await labAssistantUser3.setPassword("medicouserlab");
+  await labAssistantUser3.save();
+
   const dispensaryUser = new User({
     employeeId: "EMP004",
     name: "Dispensary Staff",
@@ -116,6 +165,28 @@ const seed = async () => {
   await dispensaryUser.setPassword("Dispense@123");
   await dispensaryUser.save();
 
+  const dispensaryUser2 = new User({
+    employeeId: "EMP012",
+    name: "Dispensary Staff Two",
+    email: "dispensary2@hospital.com",
+    phone: "9988554412",
+    role: "dispensary_staff",
+    isActive: true,
+  });
+  await dispensaryUser2.setPassword("Dispense@123");
+  await dispensaryUser2.save();
+
+  const dispensaryUser3 = new User({
+    employeeId: "EMP013",
+    name: "Dispensary Staff Three",
+    email: "dispensary3@hospital.com",
+    phone: "9988554413",
+    role: "dispensary_staff",
+    isActive: true,
+  });
+  await dispensaryUser3.setPassword("Dispense@123");
+  await dispensaryUser3.save();
+
   const appointmentManagerUser = new User({
     employeeId: "EMP005",
     name: "Appointment Manager",
@@ -126,6 +197,28 @@ const seed = async () => {
   });
   await appointmentManagerUser.setPassword("Schedule@123");
   await appointmentManagerUser.save();
+
+  const appointmentManagerUser2 = new User({
+    employeeId: "EMP014",
+    name: "Appointment Manager Two",
+    email: "scheduler2@hospital.com",
+    phone: "9977553312",
+    role: "appointment_manager",
+    isActive: true,
+  });
+  await appointmentManagerUser2.setPassword("Schedule@123");
+  await appointmentManagerUser2.save();
+
+  const appointmentManagerUser3 = new User({
+    employeeId: "EMP015",
+    name: "Appointment Manager Three",
+    email: "scheduler3@hospital.com",
+    phone: "9977553313",
+    role: "appointment_manager",
+    isActive: true,
+  });
+  await appointmentManagerUser3.setPassword("Schedule@123");
+  await appointmentManagerUser3.save();
 
   const patientUser = new User({
     name: "Rahul Verma",
@@ -219,6 +312,76 @@ const seed = async () => {
     ],
     clinic: {
       name: "Bireena Lab",
+      address: "15 Medical Lane",
+      phone: "9876501234",
+    },
+    isVerified: true,
+  });
+
+  const doctorUser3 = new User({
+    employeeId: "EMP010",
+    name: "Dr. Amit Verma",
+    email: "amit.verma@hospital.com",
+    phone: "9999999992",
+    role: "doctor",
+    isActive: true,
+  });
+  await doctorUser3.setPassword("Doctor@123");
+  await doctorUser3.save();
+
+  const doctor3 = await Doctor.create({
+    userId: doctorUser3._id,
+    doctorCode: "DOC003",
+    name: "Dr. Amit Verma",
+    specialization: "Pediatrics",
+    consultantType: "doctor",
+    qualification: "MBBS, MD Pediatrics",
+    qualifications: ["MBBS", "MD"],
+    registrationNumber: "MP123458",
+    experience: 10,
+    consultationFee: 400,
+    roomNumber: "103",
+    schedule: [
+      { day: "Tuesday", startTime: "09:00", endTime: "17:00", isAvailable: true },
+      { day: "Thursday", startTime: "09:00", endTime: "17:00", isAvailable: true },
+    ],
+    clinic: {
+      name: "Bireena Hospital",
+      address: "15 Medical Lane",
+      phone: "9876501234",
+    },
+    isVerified: true,
+  });
+
+  const doctorUser4 = new User({
+    employeeId: "EMP011",
+    name: "Dr. Priya Iyer",
+    email: "priya.iyer@hospital.com",
+    phone: "9999999993",
+    role: "doctor",
+    isActive: true,
+  });
+  await doctorUser4.setPassword("Doctor@123");
+  await doctorUser4.save();
+
+  const doctor4 = await Doctor.create({
+    userId: doctorUser4._id,
+    doctorCode: "DOC004",
+    name: "Dr. Priya Iyer",
+    specialization: "Dermatology",
+    consultantType: "doctor",
+    qualification: "MBBS, DVD",
+    qualifications: ["MBBS", "DVD"],
+    registrationNumber: "MP123459",
+    experience: 7,
+    consultationFee: 450,
+    roomNumber: "104",
+    schedule: [
+      { day: "Friday", startTime: "10:00", endTime: "18:00", isAvailable: true },
+      { day: "Saturday", startTime: "10:00", endTime: "15:00", isAvailable: true },
+    ],
+    clinic: {
+      name: "Bireena Hospital",
       address: "15 Medical Lane",
       phone: "9876501234",
     },
@@ -454,6 +617,56 @@ const seed = async () => {
     city: "Bhopal",
     state: "Madhya Pradesh",
     pincode: "462001",
+  });
+
+  const patient4User = new User({
+    name: "Anjali Sharma",
+    email: "anjali@hospital.com",
+    phone: "9876543213",
+    role: "patient",
+    isActive: true,
+  });
+  await patient4User.setPassword("Patient@123");
+  await patient4User.save();
+
+  const patient4 = await Patient.create({
+    userId: patient4User._id,
+    patientId: "PAT004",
+    fullName: "Anjali Sharma",
+    dob: new Date("1993-11-05"),
+    gender: "Female",
+    bloodGroup: "O-",
+    phone: "9876543213",
+    email: "anjali.sharma@example.com",
+    address: "12 Pine View Street",
+    city: "Indore",
+    state: "Madhya Pradesh",
+    pincode: "452003",
+  });
+
+  const patient5User = new User({
+    name: "Vikram Malhotra",
+    email: "vikram@hospital.com",
+    phone: "9876543214",
+    role: "patient",
+    isActive: true,
+  });
+  await patient5User.setPassword("Patient@123");
+  await patient5User.save();
+
+  const patient5 = await Patient.create({
+    userId: patient5User._id,
+    patientId: "PAT005",
+    fullName: "Vikram Malhotra",
+    dob: new Date("1982-04-12"),
+    gender: "Male",
+    bloodGroup: "AB+",
+    phone: "9876543214",
+    email: "vikram.malhotra@example.com",
+    address: "99 Ring Road",
+    city: "Bhopal",
+    state: "Madhya Pradesh",
+    pincode: "462002",
   });
 
   await LabReport.insertMany([
