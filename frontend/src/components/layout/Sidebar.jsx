@@ -26,7 +26,7 @@ import {
 import { cn } from "../../lib/utils";
 import { Role } from "../../types";
 
-const logoBireena = "/src/assets/logo.png";
+const logoBireena = "/logo.png";
 
 export default function Sidebar({ user, isSidebarOpen, handleLogout }) {
   const location = useLocation();

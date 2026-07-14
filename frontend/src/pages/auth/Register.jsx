@@ -6,7 +6,7 @@ import { Button } from "../../components/common/Button";
 import AnimatedBackground from "../../components/ui/AnimatedBackground";
 import { authService } from "../../services/authService";
 import { cn } from "../../lib/utils";
-const logoBireena = "/src/assets/logo.png";
+const logoBireena = "/logo.png";
 
 export default function Register() {
   const [step, setStep] = useState(1);

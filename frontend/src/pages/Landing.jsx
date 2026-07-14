@@ -270,7 +270,7 @@ function Navbar() {
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <img
-            src="src\assets\logo.png"
+            src="/logo.png"
             alt="Bireena Health"
             style={{ height: 55, width: "auto", objectFit: "contain" }}
             onError={(e) => { e.target.style.display = "none"; e.target.parentElement.innerHTML = '<div style="width:48px;height:48px;background:linear-gradient(135deg,#10b981,#059669);border-radius:14px;display:flex;align-items:center;justify-content:center;"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7 7-7z"/></svg></div>'; }}

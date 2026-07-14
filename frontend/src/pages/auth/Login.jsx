@@ -18,7 +18,7 @@ import {
 import { useAuth } from "../../hooks/useAuth";
 import "./Login.css";
 
-const logoBireena = "/src/assets/logo.png";
+const logoBireena = "/logo.png";
 
 const ROLES = [
   { key: "Admin",                   label: "Admin Portal",        icon: ShieldCheck },
