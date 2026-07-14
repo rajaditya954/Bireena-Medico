@@ -3,7 +3,7 @@ import Appointment from "../models/Appointment.js";
 import { generateResponse, generateError } from "../utils/response.js";
 
 
-import Patient from "../models/patient.js";
+import Patient from "../models/Patient.js";
 
 export const getPatients = async (req,res)=>{
   const patients = await Patient.find().sort({createdAt:-1});
