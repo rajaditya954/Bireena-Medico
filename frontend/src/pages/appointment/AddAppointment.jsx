@@ -217,7 +217,7 @@ export default function AddAppointment({ isEmbedded = false }) {
         </div>
       )}
 
-      <div className="apt-card space-y-8 p-6 lg:p-8">
+      <div className="apt-card space-y-6 sm:space-y-8 p-4 sm:p-6 lg:p-8">
         
         {/* Embedded Header */}
         {isEmbedded && (
@@ -231,7 +231,7 @@ export default function AddAppointment({ isEmbedded = false }) {
           <label className="block text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-3">
             Consultant Type
           </label>
-          <div className="flex gap-3">
+          <div className="flex gap-3 flex-wrap">
             {[
               { id: "doctor", label: "Doctor", icon: Stethoscope },
               { id: "lab", label: "Lab Consultant", icon: FlaskConical },
@@ -295,7 +295,7 @@ export default function AddAppointment({ isEmbedded = false }) {
                   <X className="w-4 h-4 text-gray-400" />
                 </button>
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <input
                   className="apt-input py-2 text-xs font-medium animate-fadeIn"
                   placeholder="Full Name *"
@@ -439,7 +439,7 @@ export default function AddAppointment({ isEmbedded = false }) {
         {/* Priority */}
         <div>
           <label className="block text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-3">Priority</label>
-          <div className="flex gap-3">
+          <div className="flex gap-3 flex-wrap">
             {[
               { id: "normal", label: "Normal", color: "border-gray-200 text-gray-600", active: "border-[#0F5C3A] bg-emerald-50 text-[#0F5C3A]" },
               { id: "urgent", label: "Urgent", color: "border-gray-200 text-gray-600", active: "border-amber-500 bg-amber-50 text-amber-700" },
@@ -473,7 +473,7 @@ export default function AddAppointment({ isEmbedded = false }) {
         </div>
 
         {/* Submit */}
-        <div className="flex gap-3 pt-2">
+        <div className="flex flex-col sm:flex-row gap-3 pt-2">
           <button
             onClick={handleBooking}
             disabled={bookingLoading || !bookingPatient || !bookingDoctor}

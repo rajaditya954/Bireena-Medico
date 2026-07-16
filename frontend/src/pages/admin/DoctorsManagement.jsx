@@ -374,7 +374,7 @@ export default function DoctorsManagement() {
                     const user = unconfiguredUsers.find(u => u._id === e.target.value);
                     if (user) handleStartAllot(user);
                   }}
-                  className="h-12 pl-4 pr-10 bg-gradient-to-r from-emerald-600 to-teal-600 text-white border-none rounded-2xl text-xs font-bold outline-none cursor-pointer hover:from-emerald-700 hover:to-teal-700 transition-all shadow-md shadow-emerald-500/15 appearance-none min-w-[240px]"
+                  className="h-12 pl-4 pr-10 bg-gradient-to-r from-emerald-600 to-teal-600 text-white border-none rounded-2xl text-xs font-bold outline-none cursor-pointer hover:from-emerald-700 hover:to-teal-700 transition-all shadow-md shadow-emerald-500/15 appearance-none w-full sm:min-w-[240px] sm:w-auto"
                 >
                   <option value="" disabled className="text-gray-800 bg-white">
                     + Configure New Doctor...

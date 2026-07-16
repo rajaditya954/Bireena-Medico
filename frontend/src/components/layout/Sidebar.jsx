@@ -158,14 +158,14 @@ export default function Sidebar({ user, isSidebarOpen, handleLogout }) {
   return (
     <aside
       className={cn(
-        "w-64 h-screen flex flex-col flex-shrink-0 transition-all duration-300 z-50",
+        "w-[280px] sm:w-64 h-screen flex flex-col flex-shrink-0 transition-all duration-300 z-50",
         "fixed md:relative",
         isSidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
       )}
       style={{ backgroundColor: "#1a3c2e" }}
     >
       {/* LOGO */}
-      <div className="h-20 flex items-center gap-3 px-6 border-b border-gray-100">
+      <div className="h-14 sm:h-16 md:h-20 flex items-center gap-3 px-4 sm:px-6 border-b border-gray-100">
 
         <img
           src={logoBireena}
@@ -288,7 +288,7 @@ export default function Sidebar({ user, isSidebarOpen, handleLogout }) {
 
       {/* Decorative leaf/nature bottom */}
       <div
-        className="absolute bottom-16 left-0 right-0 h-32 pointer-events-none overflow-hidden opacity-20"
+        className="absolute bottom-16 left-0 right-0 h-32 pointer-events-none overflow-hidden opacity-20 hidden md:block"
         aria-hidden="true"
       >
         <svg viewBox="0 0 256 128" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full">

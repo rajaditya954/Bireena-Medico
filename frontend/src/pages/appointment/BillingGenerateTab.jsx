@@ -514,7 +514,7 @@ export default function BillingGenerateTab({ onBillGenerated, prefillAppointment
             <span className="text-sm font-bold text-[#0A3E2A]">Appointment Details</span>
             <span className="px-2 py-0.5 bg-emerald-100 text-[#0F5C3A] text-xs font-bold rounded">{selectedApt._id?.slice(-8)}</span>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 text-sm">
             <div><span className="text-xs text-gray-400 block">Patient</span><span className="font-bold">{selectedApt.patientName}</span></div>
             <div><span className="text-xs text-gray-400 block">Age / Gender</span><span className="font-bold">—</span></div>
             <div><span className="text-xs text-gray-400 block">Mobile</span><span className="font-bold">{selectedApt.patientPhone || "—"}</span></div>
@@ -529,9 +529,9 @@ export default function BillingGenerateTab({ onBillGenerated, prefillAppointment
         {/* Left: Services */}
         <div className="lg:col-span-3 space-y-4">
           <div className="bg-white border border-gray-200 rounded-xl p-4 space-y-4">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <span className="text-sm font-bold text-[#0A3E2A]">Services</span>
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap">
                 {[{ id: "both", label: "Both (Doctor + Lab)" }, { id: "doctor", label: "Only Doctor" }, { id: "lab", label: "Only Lab" }].map(m => (
                   <button key={m.id} onClick={() => setServiceMode(m.id)} className={cn("px-3 py-1.5 rounded-full text-xs font-bold border transition", serviceMode === m.id ? "bg-emerald-50 border-[#0F5C3A] text-[#0F5C3A]" : "border-gray-200 text-gray-500")}>{m.label}</button>
                 ))}

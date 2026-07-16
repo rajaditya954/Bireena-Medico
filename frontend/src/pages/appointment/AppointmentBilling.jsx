@@ -158,8 +158,8 @@ export default function AppointmentBilling() {
 
         {/* --- ALL BILLS --- */}
         {activeTab === "All Bills" && (
-          <div className="flex gap-6 relative items-start">
-            <div className={cn("flex-1 space-y-6 transition-all", selectedItem ? "w-2/3" : "w-full")}>
+          <div className="flex flex-col xl:flex-row gap-6 relative items-start">
+            <div className={cn("flex-1 space-y-6 transition-all w-full", selectedItem ? "xl:w-2/3" : "w-full")}>
               
               <div className="flex flex-wrap gap-3 items-center">
                 <div className="relative flex-1 min-w-[250px]">
@@ -180,7 +180,7 @@ export default function AppointmentBilling() {
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
                 <div className="border border-gray-100 rounded-xl p-4 bg-white flex flex-col shadow-sm">
                   <div className="flex items-center gap-2 mb-2"><div className="w-8 h-8 rounded-lg bg-blue-500 text-white flex items-center justify-center"><FileText className="w-4 h-4" /></div><p className="text-[11px] text-gray-500 font-bold uppercase tracking-wider">Total Bills</p></div>
                   <p className="font-black text-lg text-gray-900 leading-none">₹ 1,25,680.50</p><p className="text-[10px] text-gray-400 mt-1">48 Bills</p>
@@ -235,7 +235,7 @@ export default function AppointmentBilling() {
             </div>
 
             {selectedItem && (
-              <div className="w-[380px] flex-shrink-0 bg-white border border-gray-200 rounded-xl p-5 sticky top-4 max-h-[calc(100vh-100px)] overflow-y-auto shadow-sm">
+              <div className="w-full xl:w-[380px] flex-shrink-0 bg-white border border-gray-200 rounded-xl p-5 sticky top-4 max-h-[calc(100vh-100px)] overflow-y-auto shadow-sm">
                 <div className="flex items-center justify-between mb-4"><h3 className="font-bold text-[#0A3E2A]">Bill Details</h3><button onClick={() => setSelectedItem(null)} className="p-1 text-gray-400 hover:text-gray-700 transition"><X className="w-4 h-4" /></button></div>
                 <div className="mb-5">{renderStatusBadge(selectedItem.status)}</div>
                 <div className="space-y-3 text-[11px]">
@@ -272,8 +272,8 @@ export default function AppointmentBilling() {
 
         {/* --- PAYMENTS --- */}
         {activeTab === "Payments" && (
-          <div className="flex gap-6 relative items-start">
-            <div className={cn("flex-1 space-y-6 transition-all", selectedItem ? "w-2/3" : "w-full")}>
+          <div className="flex flex-col xl:flex-row gap-6 relative items-start">
+            <div className={cn("flex-1 space-y-6 transition-all w-full", selectedItem ? "xl:w-2/3" : "w-full")}>
               
               <div className="flex flex-wrap gap-3 items-center">
                 <div className="relative flex-1 min-w-[250px]">
@@ -351,7 +351,7 @@ export default function AppointmentBilling() {
             </div>
 
             {selectedItem && (
-              <div className="w-[380px] flex-shrink-0 bg-white border border-gray-200 rounded-xl p-5 sticky top-4 max-h-[calc(100vh-100px)] overflow-y-auto shadow-sm">
+              <div className="w-full xl:w-[380px] flex-shrink-0 bg-white border border-gray-200 rounded-xl p-5 sticky top-4 max-h-[calc(100vh-100px)] overflow-y-auto shadow-sm">
                 <div className="flex items-center justify-between mb-4"><h3 className="font-bold text-[#0A3E2A]">Payment Details</h3><button onClick={() => setSelectedItem(null)} className="p-1 text-gray-400 hover:text-gray-700 transition"><X className="w-4 h-4" /></button></div>
                 <div className="mb-5 flex items-center gap-3">
                   <span className="font-black text-[#0F5C3A]">{selectedItem.id}</span>
@@ -393,8 +393,8 @@ export default function AppointmentBilling() {
 
         {/* --- REFUNDS --- */}
         {activeTab === "Refunds" && (
-          <div className="flex gap-6 relative items-start">
-            <div className={cn("flex-1 space-y-6 transition-all", selectedItem ? "w-2/3" : "w-full")}>
+          <div className="flex flex-col xl:flex-row gap-6 relative items-start">
+            <div className={cn("flex-1 space-y-6 transition-all w-full", selectedItem ? "xl:w-2/3" : "w-full")}>
               
               <div className="flex flex-wrap gap-3 items-center">
                 <div className="relative flex-1 min-w-[250px]">
@@ -415,7 +415,7 @@ export default function AppointmentBilling() {
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
                 <div className="border border-gray-100 rounded-xl p-4 bg-white flex flex-col shadow-sm">
                   <div className="flex items-center gap-2 mb-2"><div className="w-8 h-8 rounded-lg bg-emerald-500 text-white flex items-center justify-center"><RefreshCw className="w-4 h-4" /></div><p className="text-[11px] text-gray-500 font-bold uppercase tracking-wider">Total Refunds</p></div>
                   <p className="font-black text-lg text-gray-900 leading-none">₹ 18,450.00</p><p className="text-[10px] text-gray-400 mt-1">All Time</p>
@@ -472,7 +472,7 @@ export default function AppointmentBilling() {
             </div>
 
             {selectedItem && (
-              <div className="w-[380px] flex-shrink-0 bg-white border border-gray-200 rounded-xl p-5 sticky top-4 max-h-[calc(100vh-100px)] overflow-y-auto shadow-sm">
+              <div className="w-full xl:w-[380px] flex-shrink-0 bg-white border border-gray-200 rounded-xl p-5 sticky top-4 max-h-[calc(100vh-100px)] overflow-y-auto shadow-sm">
                 <div className="flex items-center justify-between mb-4"><h3 className="font-bold text-[#0A3E2A]">Refund Details</h3><button onClick={() => setSelectedItem(null)} className="p-1 text-gray-400 hover:text-gray-700 transition"><X className="w-4 h-4" /></button></div>
                 <div className="mb-5 flex flex-col gap-2">
                   <div className="w-fit">{renderStatusBadge(selectedItem.status)}</div>

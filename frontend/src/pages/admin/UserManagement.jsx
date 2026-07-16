@@ -268,7 +268,7 @@ export default function UserManagement() {
       </div>
 
       {/* ───── Metrics ───── */}
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         {metricsCards.map((stat, i) => (
           <motion.div
             key={i}
@@ -437,7 +437,7 @@ export default function UserManagement() {
 
                               {/* Actions */}
                               <td className="px-5 py-3.5 text-right">
-                                <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                                <div className="flex items-center justify-end gap-1 lg:opacity-0 lg:group-hover:opacity-100 transition-all">
                                   <button
                                     onClick={(e) => { e.stopPropagation(); handleToggleStatus(user.id); }}
                                     className={cn(
@@ -518,7 +518,7 @@ export default function UserManagement() {
               ].map(({ role, desc }) => {
                 const rc = getRoleConfig(role);
                 return (
-                  <div key={role} className="flex items-center justify-between px-6 py-3 hover:bg-gray-50/50 transition-colors">
+                  <div key={role} className="flex items-center justify-between px-4 sm:px-6 py-3 hover:bg-gray-50/50 transition-colors gap-2">
                     <div className="flex items-center gap-3">
                       <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${rc.gradient} flex items-center justify-center shadow-sm`}>
                         <rc.icon className="w-3.5 h-3.5 text-white" />
@@ -537,15 +537,27 @@ export default function UserManagement() {
         </div>
 
         {/* ──── Right Detail Panel ──── */}
-        <div className="lg:col-span-4">
+        <div className={cn(
+          "lg:col-span-4",
+          "fixed inset-0 z-[80] lg:relative lg:z-auto",
+          "lg:block",
+          detailPanelOpen ? "block" : "hidden lg:block"
+        )}>
           {selectedUser ? (
             <motion.div
               key={selectedUser.id}
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.25 }}
-              className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden sticky top-6"
+              className="bg-white rounded-none lg:rounded-2xl border-0 lg:border border-gray-100 shadow-none lg:shadow-sm overflow-y-auto lg:overflow-hidden lg:sticky lg:top-6 h-full lg:h-auto"
             >
+              {/* Mobile close button */}
+              <button
+                onClick={() => setDetailPanelOpen(false)}
+                className="lg:hidden absolute top-4 right-4 z-10 w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white hover:bg-white/30 transition-all"
+              >
+                <X className="w-4 h-4" />
+              </button>
               {/* User Profile Header */}
               <div className={`bg-gradient-to-br ${getRoleConfig(selectedUser.role).gradient} p-6 relative overflow-hidden`}>
                 {/* Background pattern */}

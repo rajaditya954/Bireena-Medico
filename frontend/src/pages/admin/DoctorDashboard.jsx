@@ -47,17 +47,17 @@ export default function DoctorDashboard({ user }) {
               <h1 className="text-4xl font-black text-primary-dark tracking-tighter italic">Doctor's Lounge</h1>
               <p className="text-gray-500 font-medium">Hello {name ? (/^dr\.?/i.test(name) ? name : `Dr. ${name}`) : "Doctor"}, you have <span className="text-primary font-black">8 tasks</span> remaining today.</p>
             </div>
-            <div className="flex gap-3">
-               <Link to="/appointments" className="h-14 px-8 bg-primary/10 text-primary-forest rounded-2xl font-bold flex items-center gap-2 hover:bg-primary/20 transition-colors">
+            <div className="flex gap-3 flex-wrap">
+               <Link to="/appointments" className="h-11 sm:h-14 px-4 sm:px-8 bg-primary/10 text-primary-forest rounded-2xl font-bold flex items-center gap-2 hover:bg-primary/20 transition-colors text-sm sm:text-base">
                   <ClipboardList className="w-5 h-5" /> Queue
                </Link>
-               <Link to="/emr" className="h-14 px-8 bg-primary text-white rounded-2xl font-bold flex items-center gap-2 shadow-xl shadow-primary/20 hover:scale-105 transition-transform">
+               <Link to="/emr" className="h-11 sm:h-14 px-4 sm:px-8 bg-primary text-white rounded-2xl font-bold flex items-center gap-2 shadow-xl shadow-primary/20 hover:scale-105 transition-transform text-sm sm:text-base">
                   <Plus className="w-5 h-5" /> Consultation
                </Link>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
             <StatCard title="Total Appointments" value="28" icon={Calendar} color="text-primary" />
             <StatCard title="Patients Seen" value="12" icon={Users} color="text-blue-600" />
             <StatCard title="Avg. Time" value="18m" icon={Clock} color="text-orange-600" />
@@ -125,8 +125,8 @@ export default function DoctorDashboard({ user }) {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 bg-bg-secondary rounded-[3rem] border border-primary/10 shadow-sm overflow-hidden">
-          <div className="p-8 border-b border-primary/10 flex items-center justify-between bg-primary/5">
+        <div className="lg:col-span-2 bg-bg-secondary rounded-[2rem] sm:rounded-[3rem] border border-primary/10 shadow-sm overflow-hidden">
+          <div className="p-4 sm:p-8 border-b border-primary/10 flex items-center justify-between bg-primary/5">
              <div>
                 <h3 className="text-xl font-bold text-primary-dark tracking-tight">Today's Schedule</h3>
                 <p className="text-xs font-bold text-primary-forest/60 uppercase tracking-widest mt-1">April 22 · Wednesday</p>
@@ -142,7 +142,7 @@ export default function DoctorDashboard({ user }) {
                { time: "11:00 AM", patient: "Charlie Sheen", type: "Urgent", status: "Upcoming" },
                { time: "11:45 AM", patient: "Diana Ross", type: "Consultation", status: "Upcoming" },
              ].map((apt, i) => (
-               <div key={i} className="p-6 flex items-center gap-8 group hover:bg-primary/5 transition-colors rounded-2xl">
+               <div key={i} className="p-3 sm:p-6 flex items-center gap-3 sm:gap-8 group hover:bg-primary/5 transition-colors rounded-2xl">
                   <div className="text-center min-w-[70px]">
                      <p className="text-[10px] font-black text-gray-300 uppercase tracking-widest">Time</p>
                      <p className="text-sm font-black text-gray-900">{apt.time.split(' ')[0]}</p>
@@ -160,7 +160,7 @@ export default function DoctorDashboard({ user }) {
                         )}>
                           {apt.status}
                         </span>
-                        <button className="h-10 px-4 bg-primary-dark text-white rounded-xl text-xs font-bold opacity-0 group-hover:opacity-100 transition-all">
+                        <button className="h-10 px-4 bg-primary-dark text-white rounded-xl text-xs font-bold sm:opacity-0 sm:group-hover:opacity-100 transition-all">
                            Open
                         </button>
                      </div>
@@ -171,7 +171,7 @@ export default function DoctorDashboard({ user }) {
         </div>
 
         <div className="space-y-6">
-           <div className="bg-primary-dark p-8 rounded-[3rem] text-white shadow-2xl shadow-primary-dark/20 relative overflow-hidden group">
+           <div className="bg-primary-dark p-5 sm:p-8 rounded-[2rem] sm:rounded-[3rem] text-white shadow-2xl shadow-primary-dark/20 relative overflow-hidden group">
               <div className="relative z-10">
                  <h3 className="text-2xl font-bold mb-4 tracking-tighter">Emergency Calls</h3>
                  <p className="text-primary/60 text-sm font-medium leading-relaxed mb-6">Quickly access the emergency registry and trauma unit alerts.</p>
@@ -182,7 +182,7 @@ export default function DoctorDashboard({ user }) {
               <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-700" />
            </div>
 
-           <div className="bg-bg-secondary p-8 rounded-[3rem] border border-primary/10 shadow-sm relative overflow-hidden group">
+           <div className="bg-bg-secondary p-5 sm:p-8 rounded-[2rem] sm:rounded-[3rem] border border-primary/10 shadow-sm relative overflow-hidden group">
               <div className="absolute -inset-2 bg-primary/10 opacity-0 group-hover:opacity-100 transition-opacity blur-2xl" />
               <div className="relative z-10">
                  <h3 className="text-lg font-bold text-primary-dark tracking-tight mb-4">Patient Operations</h3>
@@ -197,7 +197,7 @@ export default function DoctorDashboard({ user }) {
               </div>
            </div>
 
-           <div className="bg-bg-secondary p-8 rounded-[3rem] border border-primary/10 shadow-sm">
+           <div className="bg-bg-secondary p-5 sm:p-8 rounded-[2rem] sm:rounded-[3rem] border border-primary/10 shadow-sm">
               <h3 className="text-lg font-bold text-primary-dark tracking-tight mb-6">Quick Access</h3>
               <div className="grid grid-cols-2 gap-4">
                  {[

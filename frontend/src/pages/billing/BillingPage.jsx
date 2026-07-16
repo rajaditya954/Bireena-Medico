@@ -82,7 +82,7 @@ export default function Billing() {
   const patient = patients.find((p) => p._id === selectedPatient);
 
   return (
-    <div className="flex flex-col xl:flex-row gap-10 min-h-[80vh]">
+    <div className="flex flex-col xl:flex-row gap-6 sm:gap-10 min-h-[80vh]">
       <div className="flex-1 space-y-8">
         <div className="flex items-start justify-between gap-4">
           <div>
@@ -96,7 +96,7 @@ export default function Billing() {
           )}
         </div>
 
-        <div className="bg-surface p-10 rounded-[3.5rem] border border-border/60 shadow-sm space-y-10">
+        <div className="bg-surface p-4 sm:p-10 rounded-[2rem] sm:rounded-[3.5rem] border border-border/60 shadow-sm space-y-10">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="space-y-4">
               <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Patient</label>
@@ -169,8 +169,8 @@ export default function Billing() {
         </div>
       </div>
 
-      <aside className="xl:w-[450px] flex-shrink-0 flex flex-col gap-8">
-        <div className="bg-brand p-10 rounded-[3.5rem] text-brand-foreground shadow-2xl shadow-brand/20 space-y-10">
+      <aside className="w-full xl:w-[450px] flex-shrink-0 flex flex-col gap-8">
+        <div className="bg-brand p-5 sm:p-10 rounded-[2rem] sm:rounded-[3.5rem] text-brand-foreground shadow-2xl shadow-brand/20 space-y-10">
           <div className="flex items-center gap-4">
             <div className="w-14 h-14 bg-white/10 rounded-[2rem] flex items-center justify-center backdrop-blur-xl border border-white/10">
               <ReceiptIndianRupee className="w-8 h-8 text-emerald-300" />

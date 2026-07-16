@@ -83,7 +83,7 @@ export default function Login() {
 
   return (
     <div
-      className="min-h-screen flex flex-col items-center justify-center p-6 relative overflow-hidden"
+      className="min-h-screen flex flex-col items-center justify-center p-4 sm:p-6 relative overflow-hidden"
       style={{ backgroundColor: "#eef7f2" }}
     >
 
@@ -134,7 +134,7 @@ export default function Login() {
       ))}
 
       {/* LEFT large leaf */}
-      <div className="fixed left-0 bottom-0 w-72 h-96 pointer-events-none opacity-60" aria-hidden="true">
+      <div className="fixed left-0 bottom-0 w-72 h-96 pointer-events-none opacity-60 hidden md:block" aria-hidden="true">
         <svg viewBox="0 0 280 380" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
           {/* stem */}
           <path d="M60 370 Q80 260 160 180" stroke="#6abf8a" strokeWidth="3" strokeLinecap="round" fill="none"/>
@@ -151,7 +151,7 @@ export default function Login() {
       </div>
 
       {/* RIGHT large leaf */}
-      <div className="fixed right-0 bottom-0 w-72 h-96 pointer-events-none opacity-60" aria-hidden="true">
+      <div className="fixed right-0 bottom-0 w-72 h-96 pointer-events-none opacity-60 hidden md:block" aria-hidden="true">
         <svg viewBox="0 0 280 380" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
           <path d="M220 370 Q200 260 120 180" stroke="#6abf8a" strokeWidth="3" strokeLinecap="round" fill="none"/>
           <ellipse cx="180" cy="290" rx="70" ry="28" fill="#a8d8b9" opacity="0.7" transform="rotate(40 180 290)"/>
@@ -163,7 +163,7 @@ export default function Login() {
       </div>
 
       {/* Bottom wave */}
-      <div className="fixed bottom-0 left-0 right-0 pointer-events-none opacity-40" aria-hidden="true">
+      <div className="fixed bottom-0 left-0 right-0 pointer-events-none opacity-40 hidden sm:block" aria-hidden="true">
         <svg viewBox="0 0 1440 120" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full">
           <path d="M0 60 Q360 0 720 60 Q1080 120 1440 60 L1440 120 L0 120Z" fill="#a8d8b9" opacity="0.5"/>
           <path d="M0 80 Q400 30 800 80 Q1100 120 1440 70 L1440 120 L0 120Z" fill="#c5e8d2" opacity="0.5"/>
@@ -193,7 +193,7 @@ export default function Login() {
         transition={{ duration: 0.45, delay: 0.05 }}
         className="relative z-10 w-full max-w-md bg-white rounded-3xl shadow-xl border border-white overflow-hidden"
       >
-        <div className="px-10 pt-10 pb-6">
+        <div className="px-5 sm:px-10 pt-6 sm:pt-10 pb-4 sm:pb-6">
 
           {/* Welcome header */}
           <div className="text-center mb-8">
@@ -327,7 +327,7 @@ export default function Login() {
         </div>
 
         {/* CARD FOOTER */}
-        <div className="mx-6 mb-6 px-5 py-4 rounded-2xl flex items-center gap-4" style={{ backgroundColor: "#f5faf7" }}>
+        <div className="mx-4 sm:mx-6 mb-4 sm:mb-6 px-4 sm:px-5 py-3 sm:py-4 rounded-2xl flex items-center gap-3 sm:gap-4" style={{ backgroundColor: "#f5faf7" }}>
           <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: "#e0f0e8" }}>
             <ShieldCheck className="w-4 h-4" style={{ color: "#1a6b3a" }} />
           </div>
