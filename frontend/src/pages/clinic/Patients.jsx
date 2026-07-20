@@ -517,54 +517,87 @@ const handlePatientSelect = async (patient) => {
               <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
                 {activeTab === "registered" ? (
                   <>
-                    <h2 className="text-base font-bold text-gray-800 mb-3">Select Patient</h2>
-                    <div className="relative mb-4">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                      <input
-                        type="text"
-                        placeholder="Search by Patient Name / ID / Mobile"
-                        value={searchPatientQuery}
-                        onChange={(e) => setSearchPatientQuery(e.target.value)}
-                        className="w-full pl-9 pr-4 py-2 bg-gray-50 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
-                      />
-                    </div>
-                    <div className="space-y-3 max-h-96 overflow-y-auto">
-                      {filteredPatients.map((patient) => (
-                        <div
-                          key={patient.patientId}
-                          onClick={() => handlePatientSelect(patient)}
-                          className={`p-4 rounded-xl border cursor-pointer transition ${selectedPatient?._id === patient._id
-                            ? "border-emerald-500 bg-emerald-50"
-                            : "border-gray-100 hover:bg-gray-50"
-                            }`}
-                        >
+                    {selectedPatient ? (
+                      /* ── Selected Patient Compact Card ── */
+                      <div>
+                        <div className="flex items-center justify-between mb-3">
+                          <h2 className="text-base font-bold text-gray-800">Selected Patient</h2>
+                          <button
+                            type="button"
+                            onClick={() => { setSelectedPatient(null); setSelectedMedicines([]); setAddedAppointments([]); setAppointments([]); }}
+                            className="text-xs font-semibold text-emerald-700 hover:text-emerald-800 underline underline-offset-2"
+                          >
+                            Change Patient
+                          </button>
+                        </div>
+                        <div className="p-4 rounded-xl border border-emerald-500 bg-emerald-50">
                           <div className="flex items-start gap-3">
                             <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 font-bold">
-                              {patient.fullName?.charAt(0)}
+                              {selectedPatient.fullName?.charAt(0)}
                             </div>
                             <div className="flex-1">
                               <div className="flex justify-between">
-                                <h3 className="font-bold text-gray-800">{patient.fullName}</h3>
-                                <span className="text-xs text-gray-400 font-mono">{patient.patientId}</span>
+                                <h3 className="font-bold text-gray-800">{selectedPatient.fullName}</h3>
+                                <span className="text-xs text-gray-400 font-mono">{selectedPatient.patientId}</span>
                               </div>
                               <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-2 text-xs text-gray-500">
-                                <span><span className="font-semibold">Gender:
-                                </span>
-                                  {patient.gender}
-                                </span>
-                                <span><span className="font-semibold">Mobile:</span> {patient.phone}</span>
-                                <span className="col-span-2"><span className="font-semibold">Address:</span> {patient.address}</span>
-                                <span><span className="font-semibold">Blood Group:</span> {patient.bloodGroup}</span>
-                                <span><span className="font-semibold">Allergies:</span> {patient.allergies}</span>
+                                <span><span className="font-semibold">Gender:</span> {selectedPatient.gender}</span>
+                                <span><span className="font-semibold">Mobile:</span> {selectedPatient.phone}</span>
+                                <span className="col-span-2"><span className="font-semibold">Address:</span> {selectedPatient.address}</span>
+                                <span><span className="font-semibold">Blood Group:</span> {selectedPatient.bloodGroup}</span>
+                                <span><span className="font-semibold">Allergies:</span> {selectedPatient.allergies}</span>
                               </div>
                             </div>
                           </div>
                         </div>
-                      ))}
-                      {filteredPatients.length === 0 && (
-                        <div className="text-center text-gray-400 py-8">No patients found</div>
-                      )}
-                    </div>
+                      </div>
+                    ) : (
+                      /* ── Patient Search List ── */
+                      <div>
+                        <h2 className="text-base font-bold text-gray-800 mb-3">Select Patient</h2>
+                        <div className="relative mb-4">
+                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                          <input
+                            type="text"
+                            placeholder="Search by Patient Name / ID / Mobile"
+                            value={searchPatientQuery}
+                            onChange={(e) => setSearchPatientQuery(e.target.value)}
+                            className="w-full pl-9 pr-4 py-2 bg-gray-50 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
+                          />
+                        </div>
+                        <div className="space-y-3 max-h-96 overflow-y-auto">
+                          {filteredPatients.map((patient) => (
+                            <div
+                              key={patient.patientId || patient._id}
+                              onClick={() => handlePatientSelect(patient)}
+                              className="p-4 rounded-xl border border-gray-100 hover:bg-gray-50 cursor-pointer transition"
+                            >
+                              <div className="flex items-start gap-3">
+                                <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 font-bold">
+                                  {patient.fullName?.charAt(0)}
+                                </div>
+                                <div className="flex-1">
+                                  <div className="flex justify-between">
+                                    <h3 className="font-bold text-gray-800">{patient.fullName}</h3>
+                                    <span className="text-xs text-gray-400 font-mono">{patient.patientId}</span>
+                                  </div>
+                                  <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-2 text-xs text-gray-500">
+                                    <span><span className="font-semibold">Gender:</span> {patient.gender}</span>
+                                    <span><span className="font-semibold">Mobile:</span> {patient.phone}</span>
+                                    <span className="col-span-2"><span className="font-semibold">Address:</span> {patient.address}</span>
+                                    <span><span className="font-semibold">Blood Group:</span> {patient.bloodGroup}</span>
+                                    <span><span className="font-semibold">Allergies:</span> {patient.allergies}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                          {filteredPatients.length === 0 && (
+                            <div className="text-center text-gray-400 py-8">No patients found</div>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </>
                 ) : (
                   <>
@@ -757,7 +790,7 @@ const handlePatientSelect = async (patient) => {
                       {selectedMedicines.map((med) => (
                         <tr key={med._id} className="border-b border-gray-50">
                           <td className="px-3 py-2">
-                            <select value={med.medicineName} onChange={(e) => updateMedicine(med._id, "medicineName", e.target.value)} className="w-full px-2 py-1 bg-gray-50 rounded-lg text-xs">
+                            <select value={med.medicineName || ""} onChange={(e) => updateMedicine(med._id, "medicineName", e.target.value)} className="w-full px-2 py-1 bg-gray-50 rounded-lg text-xs">
                               <option value="">Select medicine</option>
                               {filteredMedicineOptions.map(m => (
                                 <option key={m._id} value={m.medicineName}>{m.medicineName}</option>
@@ -769,7 +802,7 @@ const handlePatientSelect = async (patient) => {
                           <td className="px-3 py-2">
                             <input
                               type="number"
-                              value={med.quantity}
+                              value={med.quantity || 0}
                               onChange={(e) =>
                                 updateMedicine(
                                   med._id,
@@ -781,12 +814,12 @@ const handlePatientSelect = async (patient) => {
                             />
                           </td>
                           <td className="px-3 py-2 text-gray-600 text-xs font-medium">
-                            ₹{(med.price || 0).toFixed(2)}
+                            ₹{Number(med.price || 0).toFixed(2)}
                           </td>
                           <td className="px-3 py-2">
                             <input
                               type="text"
-                              value={med.notes}
+                              value={med.notes || ""}
                               onChange={(e) => updateMedicine(med._id, "notes", e.target.value)}
                               className="w-full px-2 py-1 bg-gray-50 rounded-lg text-xs"
                               placeholder="e.g. After food"
@@ -906,10 +939,10 @@ const handlePatientSelect = async (patient) => {
                   <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Medicines</h3>
                   <ul className="space-y-1 text-xs">
                     {selectedMedicines.filter(m => m.medicineName && m.quantity > 0).map(m => (
-                      <li key={m._id} className="flex justify-between"><span>{m.medicineName}</span><span className="font-semibold">x{m.quantity} · ₹{((m.price || 0) * m.quantity).toFixed(2)}</span></li>
+                      <li key={m._id} className="flex justify-between"><span>{m.medicineName}</span><span className="font-semibold">x{m.quantity} · ₹{(Number(m.price || 0) * Number(m.quantity || 0)).toFixed(2)}</span></li>
                     ))}
                     {requestedMedicines.filter(r => r.name && r.quantity > 0).map(r => (
-                      <li key={r.id} className="flex justify-between"><span>{r.name} {r.strength}</span><span className="font-semibold">x{r.quantity} · ₹{((r.price || 0) * r.quantity).toFixed(2)}</span></li>
+                      <li key={r.id} className="flex justify-between"><span>{r.name} {r.strength}</span><span className="font-semibold">x{r.quantity} · ₹{(Number(r.price || 0) * Number(r.quantity || 0)).toFixed(2)}</span></li>
                     ))}
                     {selectedMedicines.filter(m => m.medicineName && m.quantity > 0).length === 0 && requestedMedicines.filter(r => r.name && r.quantity > 0).length === 0 && (
                       <li className="text-gray-400">No items added</li>
