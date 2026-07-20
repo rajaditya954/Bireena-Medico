@@ -89,7 +89,7 @@ export default function Sidebar({ user, isSidebarOpen, handleLogout }) {
         return [
           { name: "Clinic Dashboard", path: "/clinic/dashboard", icon: LayoutDashboard },
           { name: "Add Medicine", path: "/clinic/add-medicine", icon: Pill },
-          { name: "Patients / Dispense", path: "/clinic/patients", icon: Users },
+          { name: "Billing & Dispense", path: "/clinic/patients", icon: Users },
           { name: "Billing", path: "/clinic/billing", icon: Receipt },
           { name: "Stocks", path: "/clinic/stocks", icon: BarChart3 },
           { name: "History", path: "/clinic/history", icon: History },

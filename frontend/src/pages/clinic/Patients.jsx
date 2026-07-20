@@ -14,6 +14,11 @@ import {
   Banknote,
   CheckCircle,
   X,
+  Calendar,
+  Stethoscope,
+  PlusCircle,
+  Clock,
+  IndianRupee,
 } from "lucide-react";
 
 // Mock medicines inventory (for search)
@@ -31,12 +36,13 @@ const mockMedicines = [
 const calculateTotals = (
   items,
   requestedItems,
+  addedAppointments = [],
   discount = 0,
   taxRate = 0.05
 ) => {
 
   const subtotalItems = items.reduce(
-    (sum, med) => sum + (Number(med.quantity || 0) * 10),
+    (sum, med) => sum + (Number(med.quantity || 0) * Number(med.price || 0)),
     0
   );
 
@@ -47,7 +53,12 @@ const calculateTotals = (
     0
   );
 
-  const subtotal = subtotalItems + subtotalRequested;
+  const subtotalAppointments = addedAppointments.reduce(
+    (sum, apt) => sum + Number(apt.consultationFee || 500),
+    0
+  );
+
+  const subtotal = subtotalItems + subtotalRequested + subtotalAppointments;
 
   const tax = subtotal * taxRate;
 
@@ -56,6 +67,7 @@ const calculateTotals = (
   return {
     subtotalItems,
     subtotalRequested,
+    subtotalAppointments,
     subtotal,
     tax,
     total,
@@ -103,6 +115,12 @@ export default function AddMedicineForPatient() {
   const [requestedMedicines, setRequestedMedicines] = useState([
     { id: Date.now() + 4, name: "", strength: "", unitType: "Tablet", quantity: 0, price: 0, notes: "" },
   ]);
+
+  // Appointments & Billings for the selected patient
+  const [appointments, setAppointments] = useState([]);
+  const [patientBillings, setPatientBillings] = useState([]);
+  const [addedAppointments, setAddedAppointments] = useState([]);
+  const [loadingAppointments, setLoadingAppointments] = useState(false);
 
   // Filters for medicine table (registered/non-reg share same search)
   const [medicineSearch, setMedicineSearch] = useState("");
@@ -168,6 +186,70 @@ export default function AddMedicineForPatient() {
       console.log(err);
     }
   };
+
+  // Fetch appointments and billings for a patient
+  const fetchPatientAppointments = async (patientId) => {
+    setLoadingAppointments(true);
+    try {
+      const [aptRes, billRes] = await Promise.all([
+        fetch(
+          `${BASE_URL}/appointments?patientId=${patientId}&history=true&date=all`,
+          { headers: getAuthHeaders() }
+        ),
+        fetch(
+          `${BASE_URL}/billing/patient/${patientId}`,
+          { headers: getAuthHeaders() }
+        ),
+      ]);
+
+      const aptData = await aptRes.json();
+      const billData = await billRes.json();
+
+      const aptList = aptData?.data || [];
+      const billList = billData?.data?.billings || [];
+
+      setAppointments(aptList);
+      setPatientBillings(billList);
+    } catch (err) {
+      console.error("Error fetching appointments/billings:", err);
+      setAppointments([]);
+      setPatientBillings([]);
+    } finally {
+      setLoadingAppointments(false);
+    }
+  };
+
+  // Determine if an appointment has been paid via billing records
+  const isAppointmentPaid = (appointment) => {
+    return patientBillings.some(
+      (bill) =>
+        String(bill.appointmentId) === String(appointment._id) &&
+        (bill.paymentStatus === "PAID" || bill.paymentStatus === "paid" || bill.status === "paid")
+    );
+  };
+
+  // Add an appointment's consultation fee to the current bill
+  const addAppointmentToBill = (appointment) => {
+    // Prevent duplicates
+    if (addedAppointments.find(a => String(a._id) === String(appointment._id))) return;
+    const doctorInfo = appointment.doctorId || {};
+    setAddedAppointments(prev => [
+      ...prev,
+      {
+        _id: appointment._id,
+        appointmentId: appointment.appointmentId,
+        doctorName: appointment.doctorName || doctorInfo.name || "Doctor",
+        consultationFee: doctorInfo.consultationFee || 500,
+        date: appointment.date || new Date(appointment.appointmentDate).toISOString().split("T")[0],
+        status: appointment.status,
+      }
+    ]);
+  };
+
+  const removeAppointmentFromBill = (aptId) => {
+    setAddedAppointments(prev => prev.filter(a => String(a._id) !== String(aptId)));
+  };
+
   // Add new medicine row (from inventory)
   const addMedicineRow = () => {
     setSelectedMedicines([
@@ -220,12 +302,7 @@ export default function AddMedicineForPatient() {
   const updateRequested = (id, field, value) => {
     setRequestedMedicines(requestedMedicines.map(req => {
       if (req.id === id) {
-        let updated = { ...req, [field]: value };
-        // Simple price estimation (you can customize)
-        if (field === "quantity" || field === "strength") {
-          updated.price = 0; // in real app, fetch price manually
-        }
-        return updated;
+        return { ...req, [field]: value };
       }
       return req;
     }));
@@ -234,6 +311,10 @@ export default function AddMedicineForPatient() {
 const handlePatientSelect = async (patient) => {
   setSelectedPatient(patient);
   setSelectedMedicines([]);
+  setAddedAppointments([]);
+
+  // Fetch appointments & billings in parallel with medicines
+  fetchPatientAppointments(patient._id);
 
   try {
 
@@ -346,6 +427,8 @@ const handlePatientSelect = async (patient) => {
 
   requestedMedicines,
 
+  appointments: addedAppointments,
+
   total: totals.total,
 
   paymentMethod,
@@ -368,7 +451,7 @@ const handlePatientSelect = async (patient) => {
     const data = await res.json();
 
     if (data.success) {
-      alert("Requirement Saved");
+      alert("Bill submitted successfully!");
     }
   };
   const removeMedicine = (id) => {
@@ -379,6 +462,7 @@ const handlePatientSelect = async (patient) => {
   const totals = calculateTotals(
     selectedMedicines,
     requestedMedicines,
+    addedAppointments,
     discount,
   );
 
@@ -400,8 +484,8 @@ const handlePatientSelect = async (patient) => {
   return (
     <div className="min-h-screen bg-[#F2F9F6] p-4 md:p-6">
       <div className="max-w-[1600px] mx-auto">
-        <h1 className="text-2xl font-bold text-[#06402B] tracking-tight mb-2">Add Medicine for Patient</h1>
-        <p className="text-gray-500 text-sm mb-6">Select a patient to add medicines and place a requirement.</p>
+        <h1 className="text-2xl font-bold text-[#06402B] tracking-tight mb-2">Billing & Medication Dispense</h1>
+        <p className="text-gray-500 text-sm mb-6">Search for a registered patient, review their appointments, add medicines and generate a consolidated bill.</p>
 
         {/* Tabs */}
         <div className="flex gap-2 border-b border-gray-200 mb-6">
@@ -427,7 +511,7 @@ const handlePatientSelect = async (patient) => {
 
         <form onSubmit={handleSubmit}>
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-            {/* LEFT COLUMN: Patient Info + Medicine Tables */}
+            {/* LEFT COLUMN: Patient Info + Appointments + Medicine Tables */}
             <div className="xl:col-span-2 space-y-6">
               {/* Patient Selection / Non-Reg Form */}
               <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
@@ -542,9 +626,99 @@ const handlePatientSelect = async (patient) => {
                 )}
               </div>
 
-              {/* Add Medicines Section */}
+              {/* ============ BOOKED APPOINTMENTS SECTION ============ */}
+              {activeTab === "registered" && selectedPatient && (
+                <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+                  <h2 className="text-base font-bold text-gray-800 mb-3 flex items-center gap-2">
+                    <Calendar className="w-4 h-4 text-emerald-600" />
+                    Booked Appointments
+                  </h2>
+                  {loadingAppointments ? (
+                    <div className="text-center text-gray-400 py-6 text-sm">Loading appointments...</div>
+                  ) : appointments.length === 0 ? (
+                    <div className="text-center text-gray-400 py-6 text-sm">No appointments found for this patient.</div>
+                  ) : (
+                    <div className="space-y-3 max-h-72 overflow-y-auto">
+                      {appointments.map((apt) => {
+                        const paid = isAppointmentPaid(apt);
+                        const alreadyAdded = addedAppointments.some(a => String(a._id) === String(apt._id));
+                        const doctorInfo = apt.doctorId || {};
+                        const fee = doctorInfo.consultationFee || 500;
+                        const aptDate = apt.date || (apt.appointmentDate ? new Date(apt.appointmentDate).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "-");
+                        const aptTime = apt.slot || "";
+
+                        return (
+                          <div
+                            key={apt._id}
+                            className={`p-4 rounded-xl border transition ${
+                              alreadyAdded
+                                ? "border-emerald-400 bg-emerald-50/50"
+                                : "border-gray-100"
+                            }`}
+                          >
+                            <div className="flex items-center justify-between flex-wrap gap-2">
+                              <div className="flex items-center gap-3">
+                                <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${paid ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-100 text-amber-600'}`}>
+                                  <Stethoscope className="w-4 h-4" />
+                                </div>
+                                <div>
+                                  <p className="text-sm font-bold text-gray-800">
+                                    {apt.doctorName || doctorInfo.name || "Doctor"}
+                                  </p>
+                                  <div className="flex items-center gap-2 text-xs text-gray-500 mt-0.5">
+                                    <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{aptDate} {aptTime && `· ${aptTime}`}</span>
+                                    <span className="text-gray-300">|</span>
+                                    <span className="flex items-center gap-1"><IndianRupee className="w-3 h-3" />₹{fee}</span>
+                                    <span className="text-gray-300">|</span>
+                                    <span className="capitalize">{apt.status || "scheduled"}</span>
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="flex items-center gap-2">
+                                {/* Payment Status Badge */}
+                                {paid ? (
+                                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700">
+                                    <CheckCircle className="w-3 h-3" /> Paid
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-700">
+                                    <AlertCircle className="w-3 h-3" /> Unpaid
+                                  </span>
+                                )}
+
+                                {/* Add to Bill / Already Added */}
+                                {!paid && !alreadyAdded && (
+                                  <button
+                                    type="button"
+                                    onClick={() => addAppointmentToBill(apt)}
+                                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-600 text-white hover:bg-emerald-700 transition shadow-sm"
+                                  >
+                                    <PlusCircle className="w-3.5 h-3.5" /> Add to Bill
+                                  </button>
+                                )}
+                                {alreadyAdded && (
+                                  <button
+                                    type="button"
+                                    onClick={() => removeAppointmentFromBill(apt._id)}
+                                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold bg-red-50 text-red-600 hover:bg-red-100 transition"
+                                  >
+                                    <X className="w-3.5 h-3.5" /> Remove
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Bill Medicines Section */}
               <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-                <h2 className="text-base font-bold text-gray-800 mb-3">Add Medicines</h2>
+                <h2 className="text-base font-bold text-gray-800 mb-3">Bill Medicines (Inventory)</h2>
                 {/* Filters */}
                 <div className="flex flex-col sm:flex-row gap-3 mb-4">
                   <div className="relative flex-1">
@@ -574,6 +748,7 @@ const handlePatientSelect = async (patient) => {
                         <th className="text-left px-3 py-2 text-xs font-semibold text-gray-500">Category</th>
                         <th className="text-left px-3 py-2 text-xs font-semibold text-gray-500">Unit Type</th>
                         <th className="text-left px-3 py-2 text-xs font-semibold text-gray-500">Quantity*</th>
+                        <th className="text-left px-3 py-2 text-xs font-semibold text-gray-500">Price (₹)</th>
                         <th className="text-left px-3 py-2 text-xs font-semibold text-gray-500">Notes (Optional)</th>
                         <th className="text-center px-3 py-2 text-xs font-semibold text-gray-500">Action</th>
                       </tr>
@@ -605,6 +780,9 @@ const handlePatientSelect = async (patient) => {
                               min="1"
                             />
                           </td>
+                          <td className="px-3 py-2 text-gray-600 text-xs font-medium">
+                            ₹{(med.price || 0).toFixed(2)}
+                          </td>
                           <td className="px-3 py-2">
                             <input
                               type="text"
@@ -627,14 +805,14 @@ const handlePatientSelect = async (patient) => {
                   </table>
                 </div>
                 <button type="button" onClick={addMedicineRow} className="mt-3 text-emerald-700 text-sm font-semibold inline-flex items-center gap-1 hover:underline">
-                  <Plus className="w-4 h-4" /> Add Another Medicine
+                  <Plus className="w-4 h-4" /> Add Medicine to Bill
                 </button>
               </div>
 
               {/* Patient Wants Other Medicine? (non-inventory) */}
               <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-                <h2 className="text-base font-bold text-gray-800 mb-3">Patient Wants Other Medicine?</h2>
-                <p className="text-xs text-gray-500 mb-3">Add medicines that are not available in your current inventory.</p>
+                <h2 className="text-base font-bold text-gray-800 mb-3">Other Requested Medicines</h2>
+                <p className="text-xs text-gray-500 mb-3">Add medicines that are not available in your current inventory. Enter a custom price per unit.</p>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead className="bg-gray-50 border-b border-gray-100">
@@ -643,6 +821,7 @@ const handlePatientSelect = async (patient) => {
                         <th className="text-left px-3 py-2 text-xs font-semibold text-gray-500">Strength</th>
                         <th className="text-left px-3 py-2 text-xs font-semibold text-gray-500">Unit Type</th>
                         <th className="text-left px-3 py-2 text-xs font-semibold text-gray-500">Quantity*</th>
+                        <th className="text-left px-3 py-2 text-xs font-semibold text-gray-500">Price (₹)*</th>
                         <th className="text-left px-3 py-2 text-xs font-semibold text-gray-500">Notes (Optional)</th>
                         <th className="text-center px-3 py-2 text-xs font-semibold text-gray-500">Action</th>
                       </tr>
@@ -653,11 +832,12 @@ const handlePatientSelect = async (patient) => {
                           <td className="px-3 py-2"><input type="text" value={req.name} onChange={e => updateRequested(req.id, "name", e.target.value)} className="w-full px-2 py-1 bg-gray-50 rounded-lg text-sm" placeholder="Enter medicine name" /></td>
                           <td className="px-3 py-2"><input type="text" value={req.strength} onChange={e => updateRequested(req.id, "strength", e.target.value)} className="w-full px-2 py-1 bg-gray-50 rounded-lg text-sm" placeholder="e.g. 500mg" /></td>
                           <td className="px-3 py-2">
-                            <select value={req.unit} onChange={e => updateRequested(req.id, "unitType", e.target.value)} className="px-2 py-1 bg-gray-50 rounded-lg text-sm">
+                            <select value={req.unitType} onChange={e => updateRequested(req.id, "unitType", e.target.value)} className="px-2 py-1 bg-gray-50 rounded-lg text-sm">
                               <option>Tablet</option><option>Capsule</option><option>Inhaler</option><option>Syrup</option><option>Injection</option>
                             </select>
                           </td>
                           <td className="px-3 py-2"><input type="number" value={req.quantity} onChange={e => updateRequested(req.id, "quantity", parseInt(e.target.value) || 0)} className="w-20 px-2 py-1 bg-gray-50 rounded-lg text-sm" min="0" /></td>
+                          <td className="px-3 py-2"><input type="number" value={req.price} onChange={e => updateRequested(req.id, "price", parseFloat(e.target.value) || 0)} className="w-24 px-2 py-1 bg-gray-50 rounded-lg text-sm" min="0" step="0.01" placeholder="₹0.00" /></td>
                           <td className="px-3 py-2"><input type="text" value={req.notes} onChange={e => updateRequested(req.id, "notes", e.target.value)} className="w-full px-2 py-1 bg-gray-50 rounded-lg text-xs" placeholder="e.g. Required urgently" /></td>
                           <td className="px-3 py-2 text-center"><button type="button" onClick={() => removeRequested(req.id)} className="text-red-500"><Trash2 className="w-4 h-4" /></button></td>
                         </tr>
@@ -674,7 +854,7 @@ const handlePatientSelect = async (patient) => {
             {/* RIGHT COLUMN: Requirement Summary & Billing */}
             <div className="space-y-6">
               <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 sticky top-6">
-                <h2 className="text-base font-bold text-gray-800 mb-3">Requirement Summary</h2>
+                <h2 className="text-base font-bold text-gray-800 mb-3">Bill Summary</h2>
 
                 {/* Patient Information Summary */}
                 <div className="bg-gray-50 rounded-lg p-3 mb-4">
@@ -700,15 +880,36 @@ const handlePatientSelect = async (patient) => {
                   )}
                 </div>
 
+                {/* Added Appointments Summary */}
+                {addedAppointments.length > 0 && (
+                  <div className="mb-4">
+                    <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Consultation Fees</h3>
+                    <ul className="space-y-1 text-xs">
+                      {addedAppointments.map(apt => (
+                        <li key={apt._id} className="flex justify-between items-center">
+                          <span className="flex items-center gap-1">
+                            <Stethoscope className="w-3 h-3 text-emerald-500" />
+                            {apt.doctorName}
+                          </span>
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold">₹{apt.consultationFee}</span>
+                            <button type="button" onClick={() => removeAppointmentFromBill(apt._id)} className="text-red-400 hover:text-red-600"><X className="w-3 h-3" /></button>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
                 {/* Medicine Summary */}
                 <div className="mb-4">
                   <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Medicines</h3>
                   <ul className="space-y-1 text-xs">
                     {selectedMedicines.filter(m => m.medicineName && m.quantity > 0).map(m => (
-                      <li key={m._id} className="flex justify-between"><span>{m.medicineName}</span><span className="font-semibold">x{m.quantity}</span></li>
+                      <li key={m._id} className="flex justify-between"><span>{m.medicineName}</span><span className="font-semibold">x{m.quantity} · ₹{((m.price || 0) * m.quantity).toFixed(2)}</span></li>
                     ))}
                     {requestedMedicines.filter(r => r.name && r.quantity > 0).map(r => (
-                      <li key={r.id} className="flex justify-between"><span>{r.name} {r.strength}</span><span className="font-semibold">x{r.quantity}</span></li>
+                      <li key={r.id} className="flex justify-between"><span>{r.name} {r.strength}</span><span className="font-semibold">x{r.quantity} · ₹{((r.price || 0) * r.quantity).toFixed(2)}</span></li>
                     ))}
                     {selectedMedicines.filter(m => m.medicineName && m.quantity > 0).length === 0 && requestedMedicines.filter(r => r.name && r.quantity > 0).length === 0 && (
                       <li className="text-gray-400">No items added</li>
@@ -720,8 +921,11 @@ const handlePatientSelect = async (patient) => {
                 <div className="border-t border-gray-100 pt-3">
                   <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Billing & Payment</h3>
                   <div className="space-y-1 text-sm">
-                    <div className="flex justify-between"><span className="text-gray-600">Subtotal (Items)</span><span>₹{totals.subtotalItems.toFixed(2)}</span></div>
+                    <div className="flex justify-between"><span className="text-gray-600">Subtotal (Medicines)</span><span>₹{totals.subtotalItems.toFixed(2)}</span></div>
                     <div className="flex justify-between"><span className="text-gray-600">Other Requested Items</span><span>₹{totals.subtotalRequested.toFixed(2)}</span></div>
+                    {totals.subtotalAppointments > 0 && (
+                      <div className="flex justify-between"><span className="text-gray-600">Consultation Fees</span><span>₹{totals.subtotalAppointments.toFixed(2)}</span></div>
+                    )}
                     <div className="flex justify-between"><span className="text-gray-600">Discount</span><span><input type="number" value={discount} onChange={e => setDiscount(parseFloat(e.target.value) || 0)} className="w-20 px-1 py-0.5 bg-gray-50 rounded text-right text-sm" /> ₹</span></div>
                     <div className="flex justify-between"><span className="text-gray-600">Tax (GST 5%)</span><span>₹{totals.tax.toFixed(2)}</span></div>
                     <div className="flex justify-between font-bold text-gray-800 pt-2 border-t border-gray-100"><span>Total Amount</span><span>₹{totals.total.toFixed(2)}</span></div>
@@ -763,7 +967,7 @@ const handlePatientSelect = async (patient) => {
                 <div className="flex gap-3 mt-6">
                   <button type="button" className="flex-1 py-2.5 border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50 transition">Cancel</button>
                   <button type="submit" className="flex-1 py-2.5 bg-[#06402B] text-white rounded-xl font-bold shadow-md hover:bg-emerald-800 transition flex items-center justify-center gap-2">
-                    <CheckCircle className="w-4 h-4" /> Submit
+                    <CheckCircle className="w-4 h-4" /> Generate Bill
                   </button>
                 </div>
               </div>

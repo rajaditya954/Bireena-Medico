@@ -293,7 +293,8 @@ export const createRequirement = async (req, res) => {
     const {
       patientId,
       medicines,
-      requestedMedicines
+      requestedMedicines,
+      appointments: appointmentItems
     } = req.body;
 
     const saved = [];
@@ -389,6 +390,21 @@ export const createRequirement = async (req, res) => {
           quantity: med.quantity,
           unitPrice: price,
           amount: amount
+        });
+      }
+    }
+
+    // Add appointment consultation fees to billing
+    if (appointmentItems && Array.isArray(appointmentItems)) {
+      for (const apt of appointmentItems) {
+        const fee = apt.consultationFee || 500;
+        subtotal += fee;
+        billingItems.push({
+          serviceName: `Consultation Fee - ${apt.doctorName || 'Doctor'}`,
+          description: `Appointment ${apt.appointmentId || ''} on ${apt.date || ''}`,
+          quantity: 1,
+          unitPrice: fee,
+          amount: fee
         });
       }
     }

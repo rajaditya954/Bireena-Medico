@@ -4,7 +4,7 @@ import { generateResponse, generateError } from "../utils/response.js";
 
 export const getAllAppointments = async (req, res) => {
   try {
-    const { doctorId, date, history } = req.query;
+    const { doctorId, patientId, date, history } = req.query;
 
     let query = {};
     if (history !== "true" && date !== "all") {
@@ -13,6 +13,9 @@ export const getAllAppointments = async (req, res) => {
     }
     if (doctorId && doctorId !== "all") {
       query.doctorId = doctorId;
+    }
+    if (patientId) {
+      query.patientId = patientId;
     }
 
     const appointments = await appointmentService.getAllAppointments(query);
