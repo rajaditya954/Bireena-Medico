@@ -181,7 +181,7 @@ export default function AddMedicineForPatient() {
       const data = await res.json();
       console.log(JSON.stringify(data, null, 2));
 
-      setPatients(data?.data?.patients || []);
+      setPatients(data?.data?.patients || data?.data || []);
     } catch (err) {
       console.log(err);
     }
