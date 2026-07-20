@@ -100,9 +100,9 @@ const ClinicBilling = () => {
   );
 
   // Stats
-  const totalBilled = billings.reduce((sum, b) => sum + (b.total || 0), 0);
+  const totalBilled = billings.reduce((sum, b) => sum + Number(b.total || 0), 0);
   const totalPaid = billings.reduce(
-    (sum, b) => sum + (b.paymentSummary?.paidAmount || 0),
+    (sum, b) => sum + Number(b.paymentSummary?.paidAmount || 0),
     0
   );
   const totalPending = billings.filter(
@@ -138,8 +138,8 @@ const ClinicBilling = () => {
                 <tr>
                   <td>${item.serviceName || "Service"}</td>
                   <td>${item.quantity || 1}</td>
-                  <td>₹${(item.unitPrice || 0).toFixed(2)}</td>
-                  <td>₹${(item.amount || 0).toFixed(2)}</td>
+                  <td>₹${Number(item.unitPrice || 0).toFixed(2)}</td>
+                  <td>₹${Number(item.amount || 0).toFixed(2)}</td>
                 </tr>
               `
                 )
@@ -147,12 +147,12 @@ const ClinicBilling = () => {
             </tbody>
           </table>
           <br/>
-          <p><strong>Subtotal:</strong> ₹${(bill.subtotal || 0).toFixed(2)}</p>
-          <p><strong>Tax:</strong> ₹${(bill.tax || 0).toFixed(2)}</p>
-          <p><strong>Discount:</strong> ₹${(bill.discount || 0).toFixed(2)}</p>
-          <p><strong>Total:</strong> ₹${(bill.total || 0).toFixed(2)}</p>
-          <p><strong>Paid:</strong> ₹${(bill.paymentSummary?.paidAmount || 0).toFixed(2)}</p>
-          <p><strong>Due:</strong> ₹${(bill.paymentSummary?.dueAmount || 0).toFixed(2)}</p>
+          <p><strong>Subtotal:</strong> ₹${Number(bill.subtotal || 0).toFixed(2)}</p>
+          <p><strong>Tax:</strong> ₹${Number(bill.tax || 0).toFixed(2)}</p>
+          <p><strong>Discount:</strong> ₹${Number(bill.discount || 0).toFixed(2)}</p>
+          <p><strong>Total:</strong> ₹${Number(bill.total || 0).toFixed(2)}</p>
+          <p><strong>Paid:</strong> ₹${Number(bill.paymentSummary?.paidAmount || 0).toFixed(2)}</p>
+          <p><strong>Due:</strong> ₹${Number(bill.paymentSummary?.dueAmount || 0).toFixed(2)}</p>
           <hr />
           <p style="text-align:center; color:#888; font-size:12px;">Generated from Bireena Medico Hospital System</p>
         </body>
@@ -454,8 +454,8 @@ const ClinicBilling = () => {
                             <td className="p-2 font-medium">{item.serviceName || "Service"}</td>
                             <td className="p-2 text-gray-500">{item.description || "—"}</td>
                             <td className="p-2">{item.quantity || 1}</td>
-                            <td className="p-2">₹{(item.unitPrice || 0).toFixed(2)}</td>
-                            <td className="p-2 font-semibold">₹{(item.amount || 0).toFixed(2)}</td>
+                            <td className="p-2">₹{Number(item.unitPrice || 0).toFixed(2)}</td>
+                            <td className="p-2 font-semibold">₹{Number(item.amount || 0).toFixed(2)}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -468,35 +468,35 @@ const ClinicBilling = () => {
               <div className="border-t border-gray-100 pt-3 space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Subtotal</span>
-                  <span className="font-medium text-gray-800">₹{(selectedBilling.subtotal || 0).toFixed(2)}</span>
+                  <span className="font-medium text-gray-800">₹{Number(selectedBilling.subtotal || 0).toFixed(2)}</span>
                 </div>
-                {selectedBilling.tax > 0 && (
+                {Number(selectedBilling.tax || 0) > 0 && (
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-600">Tax</span>
-                    <span className="font-medium text-gray-800">₹{selectedBilling.tax.toFixed(2)}</span>
+                    <span className="font-medium text-gray-800">₹{Number(selectedBilling.tax || 0).toFixed(2)}</span>
                   </div>
                 )}
-                {selectedBilling.discount > 0 && (
+                {Number(selectedBilling.discount || 0) > 0 && (
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-600">Discount</span>
-                    <span className="font-medium text-green-600">-₹{selectedBilling.discount.toFixed(2)}</span>
+                    <span className="font-medium text-green-600">-₹{Number(selectedBilling.discount || 0).toFixed(2)}</span>
                   </div>
                 )}
                 <div className="flex justify-between text-sm font-bold border-t border-gray-100 pt-2">
                   <span className="text-gray-800">Total</span>
-                  <span className="text-[#06402B]">₹{(selectedBilling.total || 0).toFixed(2)}</span>
+                  <span className="text-[#06402B]">₹{Number(selectedBilling.total || 0).toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Amount Paid</span>
                   <span className="font-semibold text-emerald-700">
-                    ₹{(selectedBilling.paymentSummary?.paidAmount || 0).toFixed(2)}
+                    ₹{Number(selectedBilling.paymentSummary?.paidAmount || 0).toFixed(2)}
                   </span>
                 </div>
-                {(selectedBilling.paymentSummary?.dueAmount || 0) > 0 && (
+                {Number(selectedBilling.paymentSummary?.dueAmount || 0) > 0 && (
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-600">Amount Due</span>
                     <span className="font-semibold text-red-600">
-                      ₹{selectedBilling.paymentSummary.dueAmount.toFixed(2)}
+                      ₹{Number(selectedBilling.paymentSummary?.dueAmount || 0).toFixed(2)}
                     </span>
                   </div>
                 )}
